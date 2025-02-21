@@ -91,23 +91,32 @@ static uint8_t _getColorIndexForCanvas(hal_canvas* canvas, uint32_t color) {
 
 hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth) {
 	hal_canvas* canvas = malloc(sizeof(hal_canvas));
-	memcpy(canvas->palette, _defaultPalette, sizeof(_defaultPalette));
+	switch (depth) {
+		case 4:
+			memcpy(canvas->palette, _defaultTier2Palette, 16);
+			break;
+
+		case 1:
+		case 8:
+			memcpy(canvas->palette, _defaultPalette, 256);
+			break;
+	}
 
 	canvas->size = sizeX * sizeY;
 	canvas->sizeX = sizeX;
 	canvas->sizeY = sizeY;
 
 	canvas->depth = depth;
-	canvas->foreground = _whiteColorIndex;
-	canvas->background = _blackColorIndex;
+	hal_bufferSetBg(canvas, 0x000000);
+	hal_bufferSetFg(canvas, 0xffffff);
 
 	canvas->chars = malloc(canvas->size);
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
-	memset(canvas->chars, ' ', sizeof(canvas->size));
-	memset(canvas->foregrounds, _whiteColorIndex, sizeof(canvas->size));
-	memset(canvas->backgrounds, _blackColorIndex, sizeof(canvas->size));
+	memset(canvas->chars, ' ', canvas->size);
+	memset(canvas->foregrounds, _whiteColorIndex, canvas->size);
+	memset(canvas->backgrounds, _blackColorIndex, canvas->size);
 
 	return canvas;
 }
@@ -121,12 +130,11 @@ void hal_bufferSetFg(hal_canvas* canvas, uint32_t color) {
 }
 
 void hal_bufferFill(hal_canvas* canvas, hal_pos x, hal_pos y, hal_pos sizeX, hal_pos sizeY, char chr) {
-	x++;
-	y++;
-	hal_color col = _getColorForCanvas(canvas, color);
+	x--;
+	y--;
 	for (size_t ix = x; ix < x + sizeX; ix++) {
 		for (size_t iy = y; iy < y + sizeY; iy++) {
-			size_t index = ix + (iy * sizeX);
+			size_t index = ix + (iy * canvas->sizeX);
 			canvas->chars[index] = chr;
 			canvas->foregrounds[index] = canvas->foreground;
 			canvas->backgrounds[index] = canvas->background;
@@ -149,9 +157,9 @@ void hal_bufferResize(hal_canvas* canvas, hal_pos sizeX, hal_pos sizeY) {
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
-	memset(canvas->chars, ' ', sizeof(canvas->size));
-	memset(canvas->foregrounds, canvas->foreground, sizeof(canvas->size));
-	memset(canvas->backgrounds, canvas->background, sizeof(canvas->size));
+	memset(canvas->chars, ' ', canvas->size);
+	memset(canvas->foregrounds, canvas->foreground, canvas->size);
+	memset(canvas->backgrounds, canvas->background, canvas->size);
 
 	for (size_t ix = 0; ix < sizeX; ix++) {
 		for (size_t iy = 0; iy < sizeY; iy++) {
@@ -451,11 +459,14 @@ void hal_sendBuffer(hal_canvas* canvas) {
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
+			uint8_t background = canvas->backgrounds[index];
+			uint8_t foreground = canvas->foregrounds[index];
 
 			_sendSelect(ix * charSizeX, iy * charSizeY, charSizeX, charSizeY);
 			for (size_t icx = 0; icx < charSizeX; icx++) {
 				for (size_t icy = 0; icy < charSizeY; icy++) {
-					memcpy(charBuffer + icx + (icy * charSizeX), icy % 2 == 0 ? &canvas->foregrounds[index] : &canvas->backgrounds[index], 2);
+					uint8_t paletteIndex = icy % 2 == 0 ? foreground : background;
+					memcpy(charBuffer + ((icx + (icy * charSizeX)) * DISPLAY_BYTES_PER_COLOR), &canvas->palette[paletteIndex], DISPLAY_BYTES_PER_COLOR);
 				}
 			}
 			_sendData(charBuffer, bytesPerChar);
