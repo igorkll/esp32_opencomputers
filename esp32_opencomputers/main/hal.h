@@ -28,19 +28,24 @@
 // ---------------------------------------------- canvas
 
 typedef uint16_t hal_pos;
+typedef uint16_t hal_color;
 typedef struct {
+	hal_color palette[256];
+
+	hal_pos size;
 	hal_pos sizeX;
 	hal_pos sizeY;
-	uint8_t tier;
+	uint8_t depth;
 
     char* chars;
 	uint8_t* foregrounds;
 	uint8_t* backgrounds;
 } hal_canvas;
 
-hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier);
-
-void hal_freeBuffer(hal_canvas* canvas);
+hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth);
+void hal_bufferResize(hal_canvas* canvas, hal_pos sizeX, hal_pos sizeY);
+void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth);
+void hal_bufferFree(hal_canvas* canvas);
 
 // ---------------------------------------------- display
 

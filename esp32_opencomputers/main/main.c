@@ -15,7 +15,7 @@
 
 void app_main() {
 	hal_initDisplay();
-	hal_canvas* canvas = hal_createBuffer(16, 8, 1);
+	hal_canvas* canvas = hal_createBuffer(50, 16, 1);
 
     while (true) {
 		hal_sendBuffer(canvas);
