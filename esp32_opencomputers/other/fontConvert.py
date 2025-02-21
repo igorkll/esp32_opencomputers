@@ -15,7 +15,7 @@ def convertChar(hex_string):
 
 def rasterizeChar(binary_string):
 	strlen = len(binary_string)
-	if strlen >= 16:
+	if strlen >= 32:
 		for i in range(0, strlen, 2):
 			print(format(binary_string[i], '08b').replace('1', '#').replace('0', ' ') + format(binary_string[i+1], '08b').replace('1', '#').replace('0', ' '))
 	else:
