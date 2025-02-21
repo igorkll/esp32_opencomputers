@@ -31,6 +31,36 @@ uint16_t _get_color_gray(hal_color color) {
     return _get_color_value(color) / 3;
 }
 
+uint16_t _get_rgb_components(uint16_t color, uint8_t* r, uint8_t* g, uint8_t* b) {
+    *r = (color >> 11) & 0x1F;
+    *g = (color >> 5) & 0x3F;
+    *b = color & 0x1F;
+}
+
+int _find_closest_color(uint16_t* colors, size_t size, uint16_t target_color) {
+    uint8_t target_r, target_g, target_b;
+    _get_rgb_components(target_color, &target_r, &target_g, &target_b);
+
+    int closest_index = -1;
+    uint32_t min_distance = UINT32_MAX;
+
+    for (size_t i = 0; i < size; i++) {
+        uint8_t r, g, b;
+        _get_rgb_components(colors[i], &r, &g, &b);
+
+        uint32_t distance = (target_r - r) * (target_r - r) +
+                            (target_g - g) * (target_g - g) +
+                            (target_b - b) * (target_b - b);
+
+        if (distance < min_distance) {
+            min_distance = distance;
+            closest_index = i;
+        }
+    }
+
+    return closest_index;
+}
+
 
 hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth) {
 	hal_canvas* canvas = malloc(sizeof(hal_canvas));
@@ -58,10 +88,12 @@ void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth) {
 			break;
 		
 		case 2:
+			static hal_color oldPalette[256];
+			memcpy(oldPalette, canvas->palette, 256);
 			memcpy(canvas->palette, _defaultTier2Palette, 16);
 			for (size_t i = 0; i < canvas->size; i++) {
-				canvas->foregrounds[i] = _get_color_value(canvas->palette[canvas->foregrounds[i]]) > 0 ? _whiteColorIndex : _blackColorIndex;
-				canvas->backgrounds[i] = _get_color_value(canvas->palette[canvas->backgrounds[i]]) > 0 ? _whiteColorIndex : _blackColorIndex;
+				canvas->foregrounds[i] = _find_closest_color(canvas->palette, 16, oldPalette[canvas->foregrounds[i]]);
+				canvas->backgrounds[i] = _find_closest_color(canvas->palette, 16, oldPalette[canvas->backgrounds[i]]);
 			}
 			break;
 
