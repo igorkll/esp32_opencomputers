@@ -15,7 +15,7 @@
 
 void app_main() {
 	hal_initDisplay();
-	hal_canvas* canvas = hal_createBuffer(50, 16, 4);
+	hal_canvas* canvas = hal_createBuffer(50, 16, 1);
 
 	hal_bufferSetBg(canvas, 0xff0000);
 	hal_bufferSetFg(canvas, 0xff00ff);
