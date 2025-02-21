@@ -4,6 +4,9 @@
 #include <string.h>
 #include "funcs.h"
 
+#define MAXSEND         1024 * 8
+#define BYTES_PER_COLOR 2
+
 // ---------------------------------------------- canvas
 
 static uint8_t _blackColorIndex = 16;
@@ -38,7 +41,7 @@ static void _get_rgb_components(uint16_t color, uint8_t* r, uint8_t* g, uint8_t*
     *b = _get_color_blue(color);
 }
 
-static void _get_rgb_components888(uint16_t color, uint8_t* r, uint8_t* g, uint8_t* b) {
+static void _get_rgb_components888(uint32_t color, uint8_t* r, uint8_t* g, uint8_t* b) {
     *r = (color >> 16) & 0xFF;
     *g = (color >> 8) & 0xFF;
     *b = color & 0xFF;
@@ -109,12 +112,12 @@ hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth) {
 	hal_canvas* canvas = malloc(sizeof(hal_canvas));
 	switch (depth) {
 		case 4:
-			memcpy(canvas->palette, _defaultTier2Palette, 16);
+			memcpy(canvas->palette, _defaultTier2Palette, 16 * BYTES_PER_COLOR);
 			break;
 
 		case 1:
 		case 8:
-			memcpy(canvas->palette, _defaultPalette, 256);
+			memcpy(canvas->palette, _defaultPalette, 256 * BYTES_PER_COLOR);
 			break;
 	}
 
@@ -123,26 +126,26 @@ hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth) {
 	canvas->sizeY = sizeY;
 
 	canvas->depth = depth;
-	hal_bufferSetBg(canvas, 0x000000);
-	hal_bufferSetFg(canvas, 0xffffff);
+	hal_bufferSetBg(canvas, 0x000000, false);
+	hal_bufferSetFg(canvas, 0xffffff, false);
 
 	canvas->chars = malloc(canvas->size);
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
 	memset(canvas->chars, ' ', canvas->size);
-	memset(canvas->foregrounds, _whiteColorIndex, canvas->size);
-	memset(canvas->backgrounds, _blackColorIndex, canvas->size);
-
+	memset(canvas->foregrounds, canvas->foreground, canvas->size);
+	memset(canvas->backgrounds, canvas->background, canvas->size);
+	
 	return canvas;
 }
 
-void hal_bufferSetBg(hal_canvas* canvas, uint32_t color) {
-	canvas->background = _getColorIndexForCanvas(canvas, color);
+void hal_bufferSetBg(hal_canvas* canvas, uint32_t color, bool isPal) {
+	canvas->background = isPal ? color : _getColorIndexForCanvas(canvas, color);
 }
 
-void hal_bufferSetFg(hal_canvas* canvas, uint32_t color) {
-	canvas->foreground = _getColorIndexForCanvas(canvas, color);
+void hal_bufferSetFg(hal_canvas* canvas, uint32_t color, bool isPal) {
+	canvas->foreground = isPal ? color : _getColorIndexForCanvas(canvas, color);
 }
 
 void hal_bufferFill(hal_canvas* canvas, hal_pos x, hal_pos y, hal_pos sizeX, hal_pos sizeY, char chr) {
@@ -213,8 +216,8 @@ void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth) {
 		
 		case 4:
 			static hal_color oldPalette[256];
-			memcpy(oldPalette, canvas->palette, 256);
-			memcpy(canvas->palette, _defaultTier2Palette, 16);
+			memcpy(oldPalette, canvas->palette, 256 * BYTES_PER_COLOR);
+			memcpy(canvas->palette, _defaultTier2Palette, 16 * BYTES_PER_COLOR);
 			for (size_t i = 0; i < canvas->size; i++) {
 				canvas->foregrounds[i] = _find_closest_color(canvas->palette, 16, oldPalette[canvas->foregrounds[i]]);
 				canvas->backgrounds[i] = _find_closest_color(canvas->palette, 16, oldPalette[canvas->backgrounds[i]]);
@@ -222,7 +225,7 @@ void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth) {
 			break;
 
 		case 8:
-			memcpy(canvas->palette, _defaultPalette, 16);
+			memcpy(canvas->palette, _defaultPalette, 16 * BYTES_PER_COLOR);
 			break;
 	}
 }
@@ -329,9 +332,6 @@ static _commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos y2) {
     };
 }
 
-#define DISPLAY_MAXSEND         1024 * 8
-#define DISPLAY_BYTES_PER_COLOR 2
-
 spi_device_handle_t display;
 
 typedef struct {
@@ -414,12 +414,12 @@ static void _spi_pre_transfer_callback(spi_transaction_t* t) {
 }
 
 static void _clear() {
-	uint8_t package[DISPLAY_MAXSEND];
-	memset(package, 0, DISPLAY_MAXSEND);
+	uint8_t package[MAXSEND];
+	memset(package, 0, MAXSEND);
 
-	size_t pixelsPerSend = DISPLAY_MAXSEND / DISPLAY_BYTES_PER_COLOR;
+	size_t pixelsPerSend = MAXSEND / BYTES_PER_COLOR;
 	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += pixelsPerSend) {
-		_sendData(package, DISPLAY_MAXSEND);
+		_sendData(package, MAXSEND);
 	}
 }
 
@@ -431,7 +431,7 @@ void hal_initDisplay() {
         .sclk_io_num=DISPLAY_CLK,
         .quadwp_io_num=-1,
         .quadhd_io_num=-1,
-        .max_transfer_sz = DISPLAY_MAXSEND
+        .max_transfer_sz = MAXSEND
     };
     ESP_ERROR_CHECK(spi_bus_initialize(DISPLAY_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
@@ -479,7 +479,7 @@ void hal_initDisplay() {
 void hal_sendBuffer(hal_canvas* canvas) {
 	hal_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	hal_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
-	size_t bytesPerChar = charSizeX * charSizeY * DISPLAY_BYTES_PER_COLOR;
+	size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 	uint8_t charBuffer[bytesPerChar];
 
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
@@ -492,7 +492,9 @@ void hal_sendBuffer(hal_canvas* canvas) {
 			for (size_t icx = 0; icx < charSizeX; icx++) {
 				for (size_t icy = 0; icy < charSizeY; icy++) {
 					uint8_t paletteIndex = false ? foreground : background;
-					memcpy(charBuffer + ((icx + (icy * charSizeX)) * DISPLAY_BYTES_PER_COLOR), &canvas->palette[paletteIndex], DISPLAY_BYTES_PER_COLOR);
+					uint8_t* color = &canvas->palette[paletteIndex];
+					uint16_t newColor = (color[0] << 8) + color[1];
+					memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &newColor, BYTES_PER_COLOR);
 				}
 			}
 			_sendData(charBuffer, bytesPerChar);
