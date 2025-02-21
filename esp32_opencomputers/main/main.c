@@ -14,11 +14,11 @@
 #include "hal.h"
 
 void app_main() {
-	hal_init();
-	hal_createBuffer(1);
+	hal_initDisplay();
+	hal_canvas* canvas = hal_createBuffer(16, 8, 1);
 
     while (true) {
-		hal_sendBuffer();
+		hal_sendBuffer(canvas);
         vTaskDelay(1);
     }
 }

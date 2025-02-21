@@ -1,4 +1,5 @@
 #include <driver/spi_master.h>
+#include <stdint.h>
 
 // ---------------------------------------------- hardware display settings
 
@@ -24,29 +25,28 @@
 #define DISPLAY_OFFSET_X 0
 #define DISPLAY_OFFSET_Y 0
 
-// ----------------------------------------------
-
-#include <stdint.h>
+// ---------------------------------------------- canvas
 
 typedef uint16_t hal_pos;
-
 typedef struct {
+	hal_pos sizeX;
+	hal_pos sizeY;
     char* chars;
 	uint8_t* foregrounds;
 	uint8_t* backgrounds;
 } hal_canvas;
 
-void hal_init();
-void hal_delay(uint32_t milliseconds);
-
-// ---------------------------------------------- canvas
-
 hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier);
 
 void hal_freeBuffer(hal_canvas* canvas);
 
-// ---------------------------------------------- framebuffer
+// ---------------------------------------------- display
 
+void hal_initDisplay();
 void hal_sendBuffer(hal_canvas* canvas);
 
 // ---------------------------------------------- touchscreen
+
+// ---------------------------------------------- other
+
+void hal_delay(uint32_t milliseconds);

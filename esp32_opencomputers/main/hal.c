@@ -3,6 +3,28 @@
 #include <driver/gpio.h>
 #include <string.h>
 
+// ---------------------------------------------- canvas
+
+hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier) {
+	size_t size = sizeX * sizeY;
+	hal_canvas* canvas = malloc(sizeof(hal_canvas));
+	canvas->sizeX = sizeX;
+	canvas->sizeY = sizeY;
+	canvas->chars = malloc(size * sizeof(*canvas->chars));
+	canvas->foregrounds = malloc(size * sizeof(*canvas->foregrounds));
+	canvas->backgrounds = malloc(size * sizeof(*canvas->backgrounds));
+	return canvas;
+}
+
+void hal_freeBuffer(hal_canvas* canvas) {
+	free(canvas->chars);
+	free(canvas->foregrounds);
+	free(canvas->backgrounds);
+	free(canvas);
+}
+
+// ---------------------------------------------- display
+
 typedef struct {
     uint8_t cmd;
     uint8_t data[16];
@@ -13,8 +35,6 @@ typedef struct {
 typedef struct {
     _command list[8];
 } _commandList;
-
-// ---------------------------------------------- display init
 
 static const _command display_enable = {0x29, {0}, 0, 0};
 static const _command display_invert = {0x21, {0}, 0, 0};
@@ -97,21 +117,6 @@ static _commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos y2) {
         }
     };
 }
-
-// ---------------------------------------------- canvas
-
-hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier) {
-	
-}
-
-void hal_freeBuffer(hal_canvas* canvas) {
-	free(canvas->chars);
-	free(canvas->foregrounds);
-	free(canvas->backgrounds);
-	free(canvas);
-}
-
-// ----------------------------------------------
 
 #define DISPLAY_MAXSEND         1024 * 8
 #define DISPLAY_BYTES_PER_COLOR 2
@@ -207,7 +212,7 @@ static void _clear() {
 	}
 }
 
-void hal_init() {
+void hal_initDisplay() {
 	// ---- init spi bus
 	spi_bus_config_t buscfg={
         .miso_io_num=DISPLAY_MISO,
@@ -260,14 +265,6 @@ void hal_init() {
 	_sendSelectAll();
 }
 
-void hal_delay(uint32_t milliseconds) {
-	size_t ticks = milliseconds / portTICK_PERIOD_MS;
-    if (ticks <= 0) ticks = 1;
-    vTaskDelay(ticks);
-}
-
-// ---------------------------------------------- framebuffer
-
 uint8_t t;
 void hal_sendBuffer(hal_canvas* canvas) {
 	uint8_t package[DISPLAY_MAXSEND];
@@ -285,3 +282,11 @@ void hal_sendBuffer(hal_canvas* canvas) {
 }
 
 // ---------------------------------------------- touchscreen
+
+// ---------------------------------------------- other
+
+void hal_delay(uint32_t milliseconds) {
+	size_t ticks = milliseconds / portTICK_PERIOD_MS;
+    if (ticks <= 0) ticks = 1;
+    vTaskDelay(ticks);
+}
