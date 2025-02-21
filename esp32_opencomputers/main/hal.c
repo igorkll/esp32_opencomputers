@@ -99,7 +99,7 @@ static tsgl_driver_commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos
 
 // ----------------------------------------------
 
-#define DISPLAY_PACKET_SIZE 1024
+#define DISPLAY_MAXSEND 1024 * 8
 
 spi_device_handle_t display;
 static uint8_t* sendbuffer = NULL;
@@ -185,10 +185,15 @@ static void _spi_pre_transfer_callback(spi_transaction_t* t) {
     gpio_set_level(pretransfer_info->pin, pretransfer_info->state);
 }
 
-void hal_init() {
-	// ---- init sendbuffer
-	sendbuffer = heap_caps_malloc(DISPLAY_PACKET_SIZE, MALLOC_CAP_DMA);
+static void _clear() {
+	uint8_t package[DISPLAY_MAXSEND];
+	memset(package, 0, DISPLAY_MAXSEND);
+	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += DISPLAY_MAXSEND) {
+		_sendData(package, DISPLAY_MAXSEND);
+	}
+}
 
+void hal_init() {
 	// ---- init spi bus
 	spi_bus_config_t buscfg={
         .miso_io_num=DISPLAY_MISO,
@@ -196,7 +201,7 @@ void hal_init() {
         .sclk_io_num=DISPLAY_CLK,
         .quadwp_io_num=-1,
         .quadhd_io_num=-1,
-        .max_transfer_sz = DISPLAY_PACKET_SIZE
+        .max_transfer_sz = DISPLAY_MAXSEND
     };
     ESP_ERROR_CHECK(spi_bus_initialize(DISPLAY_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
@@ -236,7 +241,7 @@ void hal_init() {
 	#endif
 	_doCommand(_rotate(DISPLAY_ROTATION));
 	_sendSelectAll();
-	hal_sendBuffer();
+	_clear();
 	_doCommand(display_enable);
 	_sendSelectAll();
 }
@@ -276,7 +281,7 @@ void hal_createBuffer(uint8_t tier) {
 		framebuffer = realloc(framebuffer, size);
 	}
 
-
+	sendbuffer = heap_caps_malloc(11, MALLOC_CAP_DMA);
 }
 
 void hal_sendBuffer() {
