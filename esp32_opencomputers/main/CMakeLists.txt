@@ -1,0 +1,6 @@
+idf_component_register(SRCS
+    "main.c"
+
+    INCLUDE_DIRS ".")
+
+fatfs_create_spiflash_image(storage ../filesystem FLASH_IN_PROJECT)
