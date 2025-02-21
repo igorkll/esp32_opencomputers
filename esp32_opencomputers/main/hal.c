@@ -288,7 +288,16 @@ void hal_createBuffer(uint8_t tier) {
 	sendbuffer = heap_caps_malloc(11, MALLOC_CAP_DMA);
 }
 
+uint8_t t;
 void hal_sendBuffer() {
+	uint8_t package[DISPLAY_MAXSEND];
+	memset(package, t++, DISPLAY_MAXSEND);
+
+	size_t pixelsPerSend = DISPLAY_MAXSEND / DISPLAY_BYTES_PER_COLOR;
+	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += pixelsPerSend) {
+		_sendData(package, DISPLAY_MAXSEND);
+	}
+
 	switch (currentTier) {
 		case 1:
 			break;
