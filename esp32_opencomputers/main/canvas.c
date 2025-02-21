@@ -194,15 +194,47 @@ void canvas_setDepth(canvas_t* canvas, uint8_t depth) {
 
 void canvas_setBackground(canvas_t* canvas, uint32_t color, bool isPal) {
 	canvas->background = isPal ? color : _getColorIndexForCanvas(canvas, color);
+	canvas->background_isPal = isPal;
 }
 
 void canvas_setForeground(canvas_t* canvas, uint32_t color, bool isPal) {
 	canvas->foreground = isPal ? color : _getColorIndexForCanvas(canvas, color);
+	canvas->foreground_isPal = isPal;
+}
+
+canvas_fullColor canvas_getBackground(canvas_t* canvas) {
+	if (canvas->background_isPal) {
+		return canvas->background;
+	}
+	return canvas->palette[canvas->background];
+}
+
+canvas_fullColor canvas_getForeground(canvas_t* canvas) {
+	if (canvas->foreground_isPal) {
+		return canvas->foreground;
+	}
+	return canvas->palette[canvas->foreground];
 }
 
 void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, char chr) {
 	x--;
 	y--;
+
+	if (x < 0) {
+		sizeX += x;
+		x = 0;
+	}
+	if (y < 0) {
+		sizeY += y;
+		y = 0;
+	}
+
+	size_t maxSizeX = canvas->sizeX - x;
+	size_t maxSizeY = canvas->sizeY - y;
+	if (sizeX > maxSizeX) sizeX = maxSizeX;
+	if (sizeY > maxSizeY) sizeY = maxSizeY;
+	if (sizeX <= 0 || sizeY <= 0) return;
+
 	for (size_t ix = x; ix < x + sizeX; ix++) {
 		for (size_t iy = y; iy < y + sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
@@ -213,13 +245,65 @@ void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 	}
 }
 
-void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char chr) {
+void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len) {
+	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return;
+
+	x--;
+	y--;
+
+	size_t maxlen = canvas->sizeX - x;
+	if (len > maxlen) len = maxlen;
+	if (len <= 0) return;
+
+	for (size_t i = 0; i < len; i++) {
+		size_t index = i + x + (y * canvas->sizeX);
+		canvas->chars[index] = text[i];
+		canvas->foregrounds[index] = canvas->foreground;
+		canvas->backgrounds[index] = canvas->background;
+	}
+}
+
+void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY) {
+	bool xSide = offsetX > 0;
+	bool ySide = offsetY > 0;
+	canvas_pos xFrom = x - 1;
+	canvas_pos xTo = (x + sizeX) - 2;
+	canvas_pos yFrom = y - 1;
+	canvas_pos yTo = (y + sizeY) - 2;
+
+	for (size_t ix = xFrom; xSide ? ix <= xTo : ix >= xTo; ix += xSide ? 1 : -1) {
+		for (size_t iy = yFrom; ySide ? iy <= yTo : iy >= yTo; iy += ySide ? 1 : -1) {
+			canvas_pos targetX = ix + offsetX;
+			canvas_pos targetY = iy + offsetY;
+			
+			if (targetX >= 0 && y >= 0 && x < canvas->sizeX && y < canvas->sizeY) {
+				size_t targetIndex = targetX + (targetY * canvas->sizeX);
+				canvas_get_result result = canvas_get(canvas, ix, iy);
+				canvas->chars[targetIndex] = result.chr;
+				canvas->foregrounds[targetIndex] = result.foregroundIndex;
+				canvas->backgrounds[targetIndex] = result.backgroundIndex;
+			}
+		}
+	}
+}
+
+canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
+	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return (canvas_get_result) {.chr = ' '};
+
 	x--;
 	y--;
 	size_t index = x + (y * canvas->sizeX);
-	canvas->chars[index] = chr;
-	canvas->foregrounds[index] = canvas->foreground;
-	canvas->backgrounds[index] = canvas->background;
+
+	canvas_paletteIndex foreground = canvas->foregrounds[index];
+	canvas_paletteIndex background = canvas->backgrounds[index];
+
+	canvas_get_result result = {0};
+	result.chr = canvas->chars[index];
+	result.foreground = canvas->palette[foreground];
+	result.background = canvas->palette[background];
+	result.foregroundIndex = foreground;
+	result.backgroundIndex = background;
+	return result;
 }
 
 void canvas_free(canvas_t* canvas) {

@@ -48,6 +48,7 @@ void app_main() {
 			canvas_setBackground(canvas, i, true);
 			canvas_fill(canvas, 4, 1 + i, 3, 1, 'A');
 		}
+		canvas_copy(canvas, 1, 1, 16, 16, 4, 2);
 		hal_sendBuffer(canvas);
 		canvas_free(canvas);
         hal_delay(1000);
