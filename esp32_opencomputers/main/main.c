@@ -7,50 +7,61 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+
 #include "hal.h"
 #include "canvas.h"
+#include "filesystem.h"
+
+static void bsod(canvas_t* canvas, const char* text) {
+	canvas_setDepth(canvas, 8);
+	canvas_setResolution(canvas, 52, 16);
+	canvas_setBackground(canvas, 0x0000ff, false);
+	canvas_setForeground(canvas, 0xffffff, false);
+	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
+
+	size_t len = strlen(text);
+	canvas_pos x = 3;
+	canvas_pos y = 1;
+	for (size_t i = 0; i < len; i++) {
+		char chr = text[i];
+		canvas_set(canvas, x++, y, &chr, 1);
+		if (chr == '\n' || x >= canvas->sizeX) {
+			x = 1;
+			y++;
+		}
+	}
+
+	canvas_setBackground(canvas, 0xffffff, false);
+	canvas_setForeground(canvas, 0x0000ff, false);
+	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0);
+}
 
 void app_main() {
-	hal_initDisplay();
+	hal_init();
+	filesystem_init();
 
-	canvas_t* canvas;
+	canvas_t* canvas = canvas_create(50, 16, 1);
+
+	lua_State* lua = luaL_newstate();
+    luaL_openlibs(lua);
+    if (luaL_dofile(lua, "/storage/machine.lua")) {
+		bsod(canvas, lua_tostring(lua, -1));
+    } else {
+		bsod(canvas, "computer halted");
+	}
+    lua_close(lua);
+
+	hal_sendBuffer(canvas);
+	
     while (true) {
-		canvas = canvas_create(50, 16, 1);
-		canvas_setBackground(canvas, 0xff0000, false);
-		canvas_setForeground(canvas, 0xff00ff, false);
-		canvas_fill(canvas, 3, 3, 3, 2, 'A');
-		hal_sendBuffer(canvas);
-		canvas_free(canvas);
-        hal_delay(1000);
-
-		canvas = canvas_create(50, 16, 4);
-		canvas_setBackground(canvas, 0xff0000, false);
-		canvas_setForeground(canvas, 0xff00ff, false);
-		canvas_fill(canvas, 4, 3, 3, 2, 'A');
-		hal_sendBuffer(canvas);
-		canvas_free(canvas);
-        hal_delay(1000);
-
-		canvas = canvas_create(50, 16, 8);
-		canvas_setBackground(canvas, 0xff0000, false);
-		canvas_setForeground(canvas, 0xff00ff, false);
-		canvas_fill(canvas, 5, 3, 3, 2, 'A');
-		hal_sendBuffer(canvas);
-		canvas_free(canvas);
-        hal_delay(1000);
-
-		canvas = canvas_create(50, 16, 4);
-		for (size_t i = 0; i < 16; i++) {
-			canvas_setBackground(canvas, i, true);
-			canvas_fill(canvas, 4, 1 + i, 3, 1, 'A');
-		}
-		canvas_copy(canvas, 1, 1, 16, 16, 4, 2);
-		hal_sendBuffer(canvas);
-		canvas_free(canvas);
         hal_delay(1000);
     }
 }

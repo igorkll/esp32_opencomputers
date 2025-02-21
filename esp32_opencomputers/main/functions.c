@@ -1,4 +1,5 @@
-#include "funcs.h"
+#include "functions.h"
+#include <math.h>
 
 int nRound(float num) {
     return (int)(num < 0 ? (num - 0.5) : (num + 0.5));

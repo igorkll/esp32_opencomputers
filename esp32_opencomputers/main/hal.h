@@ -26,11 +26,11 @@
 #define DISPLAY_OFFSET_X 0
 #define DISPLAY_OFFSET_Y 0
 
-void hal_initDisplay();
 void hal_sendBuffer(canvas_t* canvas);
 
 // ---------------------------------------------- touchscreen
 
 // ---------------------------------------------- other
 
+void hal_init();
 void hal_delay(uint32_t milliseconds);

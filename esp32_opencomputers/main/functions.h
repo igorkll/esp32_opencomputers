@@ -1,5 +1,4 @@
 #pragma once
-#include <math.h>
 
 int nRound(float num);
 float clamp(float n, float lower, float upper);

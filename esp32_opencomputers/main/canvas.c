@@ -1,8 +1,7 @@
-#include "canvas.h"
-#include "funcs.h"
-
 #include <stdint.h>
 #include <string.h>
+#include "canvas.h"
+#include "functions.h"
 
 #define BYTES_PER_COLOR 2
 
@@ -250,6 +249,8 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 
 	x--;
 	y--;
+
+	if (len == 0) len = strlen(text);
 
 	size_t maxlen = canvas->sizeX - x;
 	if (len > maxlen) len = maxlen;

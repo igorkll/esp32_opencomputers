@@ -1,9 +1,8 @@
-#include "hal.h"
 #include <driver/spi_master.h>
 #include <esp_heap_caps.h>
 #include <driver/gpio.h>
 #include <string.h>
-#include "funcs.h"
+#include "hal.h"
 
 // ---------------------------------------------- display
 
@@ -194,7 +193,7 @@ static void _clear() {
 	}
 }
 
-void hal_initDisplay() {
+static void _initDisplay() {
 	// ---- init spi bus
 	spi_bus_config_t buscfg={
         .miso_io_num=DISPLAY_MISO,
@@ -276,6 +275,10 @@ void hal_sendBuffer(canvas_t* canvas) {
 // ---------------------------------------------- touchscreen
 
 // ---------------------------------------------- other
+
+void hal_init() {
+	_initDisplay();
+}
 
 void hal_delay(uint32_t milliseconds) {
 	size_t ticks = milliseconds / portTICK_PERIOD_MS;
