@@ -10,6 +10,8 @@ hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier) {
 	hal_canvas* canvas = malloc(sizeof(hal_canvas));
 	canvas->sizeX = sizeX;
 	canvas->sizeY = sizeY;
+	canvas->tier = tier;
+
 	canvas->chars = malloc(size * sizeof(*canvas->chars));
 	canvas->foregrounds = malloc(size * sizeof(*canvas->foregrounds));
 	canvas->backgrounds = malloc(size * sizeof(*canvas->backgrounds));
@@ -265,8 +267,9 @@ void hal_initDisplay() {
 	_sendSelectAll();
 }
 
-uint8_t t;
 void hal_sendBuffer(hal_canvas* canvas) {
+	/*
+	static uint8_t t;
 	uint8_t package[DISPLAY_MAXSEND];
 	memset(package, t++, DISPLAY_MAXSEND);
 
@@ -278,6 +281,22 @@ void hal_sendBuffer(hal_canvas* canvas) {
 	switch (currentTier) {
 		case 1:
 			break;
+	}
+	*/
+
+	static uint8_t t;
+
+	hal_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
+	hal_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
+	size_t bytesPerChar = charSizeX * charSizeY * DISPLAY_BYTES_PER_COLOR;
+	uint8_t charBuffer[bytesPerChar];
+
+	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
+		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
+			_sendSelect(ix * charSizeX, iy * charSizeY, charSizeX, charSizeY);
+			memset(charBuffer, t++, bytesPerChar);
+			_sendData(charBuffer, bytesPerChar);
+		}
 	}
 }
 

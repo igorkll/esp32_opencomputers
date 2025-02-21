@@ -31,6 +31,8 @@ typedef uint16_t hal_pos;
 typedef struct {
 	hal_pos sizeX;
 	hal_pos sizeY;
+	uint8_t tier;
+
     char* chars;
 	uint8_t* foregrounds;
 	uint8_t* backgrounds;
