@@ -17,7 +17,7 @@
 void app_main() {
 	hal_initDisplay();
 
-	hal_canvas* canvas;
+	canvas_t* canvas;
     while (true) {
 		canvas = canvas_create(50, 16, 1);
 		canvas_setBackground(canvas, 0xff0000, false);

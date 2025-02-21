@@ -1,6 +1,8 @@
 #include "canvas.h"
-#include <stdint.h>
 #include "funcs.h"
+
+#include <stdint.h>
+#include <string.h>
 
 #define BYTES_PER_COLOR 2
 
@@ -137,8 +139,6 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	char* old_chars = canvas->chars;
 	uint8_t* old_foregrounds = canvas->foregrounds;
 	uint8_t* old_backgrounds = canvas->backgrounds;
-	canvas_pos old_sizeX = canvas->sizeX;
-	canvas_pos old_sizeY = canvas->sizeY;
 
 	canvas->size = sizeX * sizeY;
 	canvas->sizeX = sizeX;
@@ -211,7 +211,6 @@ void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 			canvas->backgrounds[index] = canvas->background;
 		}
 	}
-	printf("%i %i\n", canvas->background, canvas->foreground);
 }
 
 void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char chr) {
