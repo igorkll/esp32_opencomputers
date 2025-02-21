@@ -15,6 +15,9 @@ typedef struct {
 
 // ---------------------------------------------- display init
 
+static const tsgl_driver_command display_enable = {0x29, {0}, 0, 0};
+static const tsgl_driver_command display_invert = {0x21, {0}, 0, 0};
+
 static const tsgl_driver_command display_init[] = {
 	/* rgb 565 - big endian */
 	{0x3A, {0x05}, 1, 0},
@@ -41,9 +44,7 @@ static const tsgl_driver_command display_init[] = {
     /* Sleep Out */
     {0x11, {0}, 0, 100},
     /* Idle mode off */
-    {0x38, {0}, 0, 1},
-	/* enable display */
-	{0x29, {0}, 0, -1}
+    {0x38, {0}, 0, -1},
 };
 
 #define _ROTATION_0 0
@@ -214,6 +215,14 @@ void hal_init() {
 
 	// ---- init display
 
+	gpio_config_t io_conf = {};
+	io_conf.pin_bit_mask |= 1ULL << DISPLAY_DC;
+	#ifdef DISPLAY_RST
+		io_conf.pin_bit_mask |= 1ULL << DISPLAY_RST;
+	#endif
+	io_conf.mode = GPIO_MODE_OUTPUT;
+	gpio_config(&io_conf);
+
 	#ifdef DISPLAY_RST
 		gpio_set_level(DISPLAY_RST, false);
 		hal_delay(100);
@@ -222,7 +231,13 @@ void hal_init() {
 	#endif
 
 	_doCommands(display_init);
+	#ifdef DISPLAY_INVERT
+		_doCommand(display_invert);
+	#endif
 	_doCommand(_rotate(DISPLAY_ROTATION));
+	_sendSelectAll();
+	hal_sendBuffer();
+	_doCommand(display_enable);
 	_sendSelectAll();
 }
 
@@ -267,6 +282,10 @@ void hal_createBuffer(uint8_t tier) {
 void hal_sendBuffer() {
 	switch (currentTier) {
 		case 1:
+			size_t pixelsPerSend = DISPLAY_PACKET_SIZE * 8;
+			for (size_t i = 0; i < DISPLAY_PACKET_SIZE; i++) {
+				sendbuffer[i] = 128;
+			}
 			_sendData(sendbuffer, DISPLAY_PACKET_SIZE);
 			break;
 	}
