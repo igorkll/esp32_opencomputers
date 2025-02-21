@@ -1,7 +1,7 @@
-#include <driver/spi_master.h>
 #include <stdint.h>
+#include "canvas.h"
 
-// ---------------------------------------------- hardware display settings
+// ---------------------------------------------- display
 
 #define DISPLAY_FREQ 60000000
 #define DISPLAY_HOST SPI2_HOST
@@ -25,39 +25,8 @@
 #define DISPLAY_OFFSET_X 0
 #define DISPLAY_OFFSET_Y 0
 
-// ---------------------------------------------- canvas
-
-typedef uint16_t hal_pos;
-typedef uint16_t hal_color;
-typedef struct {
-	hal_color palette[256];
-
-	hal_pos size;
-	hal_pos sizeX;
-	hal_pos sizeY;
-
-	uint8_t depth;
-	uint8_t foreground;
-	uint8_t background;
-
-    char* chars;
-	uint8_t* foregrounds;
-	uint8_t* backgrounds;
-} hal_canvas;
-
-hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth);
-void hal_bufferSetBg(hal_canvas* canvas, uint32_t color, bool isPal);
-void hal_bufferSetFg(hal_canvas* canvas, uint32_t color, bool isPal);
-void hal_bufferFill(hal_canvas* canvas, hal_pos x, hal_pos y, hal_pos sizeX, hal_pos sizeY, char chr);
-void hal_bufferSet(hal_canvas* canvas, hal_pos x, hal_pos y, char chr);
-void hal_bufferResize(hal_canvas* canvas, hal_pos sizeX, hal_pos sizeY);
-void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth);
-void hal_bufferFree(hal_canvas* canvas);
-
-// ---------------------------------------------- display
-
 void hal_initDisplay();
-void hal_sendBuffer(hal_canvas* canvas);
+void hal_sendBuffer(canvas_t* canvas);
 
 // ---------------------------------------------- touchscreen
 
