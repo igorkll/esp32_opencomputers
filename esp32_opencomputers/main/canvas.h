@@ -27,7 +27,7 @@ typedef struct {
 	canvas_paletteIndex* backgrounds;
 } canvas_t;
 
-
+// ----------------------------------------------
 
 canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth);
 
