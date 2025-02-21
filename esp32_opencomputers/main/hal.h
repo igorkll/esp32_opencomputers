@@ -19,6 +19,9 @@
 #define DISPLAY_FLIP_X   false
 #define DISPLAY_FLIP_Y   false
 #define DISPLAY_FLIP_XY  false
+#define DISPLAY_ROTATION 1
+#define DISPLAY_OFFSET_X 0
+#define DISPLAY_OFFSET_Y 0
 
 // ----------------------------------------------
 
