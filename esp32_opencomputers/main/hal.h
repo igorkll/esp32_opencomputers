@@ -15,6 +15,11 @@
 #define DISPLAY_WIDTH  480
 #define DISPLAY_HEIGHT 320
 
+#define DISPLAY_SWAP_RGB false
+#define DISPLAY_FLIP_X   false
+#define DISPLAY_FLIP_Y   false
+#define DISPLAY_FLIP_XY  false
+
 // ----------------------------------------------
 
 #include <stdint.h>

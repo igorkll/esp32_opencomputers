@@ -1,3 +1,6 @@
+// esp-idf - 5.3
+// display - st7796 480x320
+
 #include <sdkconfig.h>
 #include <stdint.h>
 #include <stdlib.h>
