@@ -1,6 +1,7 @@
 #include "hal.h"
 #include <esp_heap_caps.h>
 #include <driver/gpio.h>
+#include <string.h>
 
 typedef struct {
     uint8_t cmd;
@@ -99,7 +100,8 @@ static tsgl_driver_commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos
 
 // ----------------------------------------------
 
-#define DISPLAY_MAXSEND 1024 * 8
+#define DISPLAY_MAXSEND         1024 * 8
+#define DISPLAY_BYTES_PER_COLOR 2
 
 spi_device_handle_t display;
 static uint8_t* sendbuffer = NULL;
@@ -188,7 +190,9 @@ static void _spi_pre_transfer_callback(spi_transaction_t* t) {
 static void _clear() {
 	uint8_t package[DISPLAY_MAXSEND];
 	memset(package, 0, DISPLAY_MAXSEND);
-	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += DISPLAY_MAXSEND) {
+
+	size_t pixelsPerSend = DISPLAY_MAXSEND / DISPLAY_BYTES_PER_COLOR;
+	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += pixelsPerSend) {
 		_sendData(package, DISPLAY_MAXSEND);
 	}
 }
@@ -287,11 +291,6 @@ void hal_createBuffer(uint8_t tier) {
 void hal_sendBuffer() {
 	switch (currentTier) {
 		case 1:
-			size_t pixelsPerSend = DISPLAY_PACKET_SIZE * 8;
-			for (size_t i = 0; i < DISPLAY_PACKET_SIZE; i++) {
-				sendbuffer[i] = 128;
-			}
-			_sendData(sendbuffer, DISPLAY_PACKET_SIZE);
 			break;
 	}
 }
