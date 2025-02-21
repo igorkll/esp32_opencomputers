@@ -14,8 +14,14 @@ def convertChar(hex_string):
     return byte_array
 
 def rasterizeChar(binary_string):
-    for byte in binary_string:
-        print(byte)
+	strlen = len(binary_string)
+	if strlen >= 16:
+		for i in range(0, strlen, 2):
+			print(format(binary_string[i], '08b').replace('1', '#').replace('0', ' ') + format(binary_string[i+1], '08b').replace('1', '#').replace('0', ' '))
+	else:
+		for byte in binary_string:
+			print(format(byte, '08b').replace('1', '#').replace('0', ' '))
 
 for char in alphabet:
+	print(f"---- {char}")
 	rasterizeChar(convertChar(findChar(char)))
