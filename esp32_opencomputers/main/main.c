@@ -45,8 +45,8 @@ void app_main() {
 
 		canvas = canvas_create(50, 16, 4);
 		for (size_t i = 0; i < 16; i++) {
-			hal_bufferSetBg(canvas, i, true);
-			hal_bufferFill(canvas, 4, 1 + i, 3, 1, 'A');
+			canvas_setBackground(canvas, i, true);
+			canvas_fill(canvas, 4, 1 + i, 3, 1, 'A');
 		}
 		hal_sendBuffer(canvas);
 		canvas_free(canvas);
