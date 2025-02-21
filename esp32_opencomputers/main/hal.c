@@ -8,18 +8,18 @@ typedef struct {
     uint8_t data[16];
     uint8_t datalen;
     int16_t delay; //-1 = end of commands
-} tsgl_driver_command;
+} _command;
 
 typedef struct {
-    tsgl_driver_command list[8];
-} tsgl_driver_commandList;
+    _command list[8];
+} _commandList;
 
 // ---------------------------------------------- display init
 
-static const tsgl_driver_command display_enable = {0x29, {0}, 0, 0};
-static const tsgl_driver_command display_invert = {0x21, {0}, 0, 0};
+static const _command display_enable = {0x29, {0}, 0, 0};
+static const _command display_invert = {0x21, {0}, 0, 0};
 
-static const tsgl_driver_command display_init[] = {
+static const _command display_init[] = {
 	/* rgb 565 - big endian */
 	{0x3A, {0x05}, 1, 0},
 	/* Porch Setting */
@@ -52,7 +52,7 @@ static const tsgl_driver_command display_init[] = {
 #define _ROTATION_1 (1<<5) | (1<<6) | (1<<2)
 #define _ROTATION_2 (1<<6) | (1<<7) | (1<<2) | (1<<4)
 #define _ROTATION_3 (1<<5) | (1<<7) | (1<<4)
-static tsgl_driver_command _rotate(uint8_t rotation) {
+static _command _rotate(uint8_t rotation) {
     uint8_t regvalue = 0;
     switch (rotation) {
         default:
@@ -85,11 +85,11 @@ static tsgl_driver_command _rotate(uint8_t rotation) {
         regvalue ^= (1 << 5);
     }
 
-    return (tsgl_driver_command) {0x36, {regvalue}, 1, -1};
+    return (_command) {0x36, {regvalue}, 1, -1};
 }
 
-static tsgl_driver_commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos y2) {
-    return (tsgl_driver_commandList) {
+static _commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos y2) {
+    return (_commandList) {
         .list = {
             {0x2A, {x >> 8, x & 0xff, x2 >> 8, x2 & 0xff}, 4},
             {0x2B, {y >> 8, y & 0xff, y2 >> 8, y2 & 0xff}, 4},
@@ -98,15 +98,25 @@ static tsgl_driver_commandList _select(hal_pos x, hal_pos y, hal_pos x2, hal_pos
     };
 }
 
+// ---------------------------------------------- canvas
+
+hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t tier) {
+	
+}
+
+void hal_freeBuffer(hal_canvas* canvas) {
+	free(canvas->chars);
+	free(canvas->foregrounds);
+	free(canvas->backgrounds);
+	free(canvas);
+}
+
 // ----------------------------------------------
 
 #define DISPLAY_MAXSEND         1024 * 8
 #define DISPLAY_BYTES_PER_COLOR 2
 
 spi_device_handle_t display;
-static uint8_t* sendbuffer = NULL;
-static uint8_t* framebuffer = NULL;
-static uint8_t currentTier;
 
 typedef struct {
     gpio_num_t pin;
@@ -143,7 +153,7 @@ static void _sendData(const uint8_t* data, size_t size) {
     ESP_ERROR_CHECK(spi_device_transmit(display, &transaction));
 }
 
-static bool _doCommand(const tsgl_driver_command command) {
+static bool _doCommand(const _command command) {
 	_sendCommand(command.cmd);
 	if (command.datalen > 0) {
 		_sendData(command.data, command.datalen);
@@ -157,12 +167,12 @@ static bool _doCommand(const tsgl_driver_command command) {
     return false;
 }
 
-static void _doCommands(const tsgl_driver_command* list) {
+static void _doCommands(const _command* list) {
     uint16_t cmd = 0;
     while (!_doCommand(list[cmd++]));
 }
 
-static void _doCommandList(const tsgl_driver_commandList list) {
+static void _doCommandList(const _commandList list) {
     uint16_t cmd = 0;
     while (!_doCommand(list.list[cmd++]));
 }
@@ -258,38 +268,8 @@ void hal_delay(uint32_t milliseconds) {
 
 // ---------------------------------------------- framebuffer
 
-void hal_createBuffer(uint8_t tier) {
-	currentTier = tier;
-
-	size_t size = 0;
-	switch (tier) {
-		case 1: //1 bit per color
-			size = (DISPLAY_WIDTH * DISPLAY_HEIGHT) / 8;
-			break;
-
-		case 2: //4 bit per color
-			size = (DISPLAY_WIDTH * DISPLAY_HEIGHT) / 2;
-			break;
-		
-		case 3: //8 bit per color
-			size = DISPLAY_WIDTH * DISPLAY_HEIGHT;
-			break;
-
-		default:
-			return;
-	}
-
-	if (framebuffer == NULL) {
-		framebuffer = malloc(size);
-	} else {
-		framebuffer = realloc(framebuffer, size);
-	}
-
-	sendbuffer = heap_caps_malloc(11, MALLOC_CAP_DMA);
-}
-
 uint8_t t;
-void hal_sendBuffer() {
+void hal_sendBuffer(hal_canvas* canvas) {
 	uint8_t package[DISPLAY_MAXSEND];
 	memset(package, t++, DISPLAY_MAXSEND);
 
