@@ -263,25 +263,46 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 	}
 }
 
+#include <stdio.h>
+
 void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY) {
-	bool xSide = offsetX > 0;
-	bool ySide = offsetY > 0;
+	bool xSide = offsetX < 0;
+	bool ySide = offsetY < 0;
 	canvas_pos xFrom = x - 1;
 	canvas_pos xTo = (x + sizeX) - 2;
 	canvas_pos yFrom = y - 1;
 	canvas_pos yTo = (y + sizeY) - 2;
 
-	for (size_t ix = xFrom; xSide ? ix <= xTo : ix >= xTo; ix += xSide ? 1 : -1) {
-		for (size_t iy = yFrom; ySide ? iy <= yTo : iy >= yTo; iy += ySide ? 1 : -1) {
+	if (!xSide) {
+		canvas_pos t = xFrom;
+		xFrom = xTo;
+		xTo = t;
+	}
+
+	if (!ySide) {
+		canvas_pos t = yFrom;
+		yFrom = yTo;
+		yTo = t;
+	}
+
+	for (int ix = xFrom; xSide ? (ix <= xTo) : (ix >= xTo); ix += xSide ? 1 : -1) {
+		for (int iy = yFrom; ySide ? (iy <= yTo) : (iy >= yTo); iy += ySide ? 1 : -1) {
 			canvas_pos targetX = ix + offsetX;
 			canvas_pos targetY = iy + offsetY;
-			
-			if (targetX >= 0 && y >= 0 && x < canvas->sizeX && y < canvas->sizeY) {
+
+			if (targetX >= 0 && targetY >= 0 && targetX < canvas->sizeX && targetY < canvas->sizeY) {
+				size_t fromIndex = ix + (iy * canvas->sizeX);
 				size_t targetIndex = targetX + (targetY * canvas->sizeX);
-				canvas_get_result result = canvas_get(canvas, ix, iy);
-				canvas->chars[targetIndex] = result.chr;
-				canvas->foregrounds[targetIndex] = result.foregroundIndex;
-				canvas->backgrounds[targetIndex] = result.backgroundIndex;
+
+				if (targetX >= 0 && targetY >= 0 && targetX < canvas->sizeX && targetY < canvas->sizeY) {
+					canvas->chars[targetIndex] = canvas->chars[fromIndex];
+					canvas->foregrounds[targetIndex] = canvas->foregrounds[fromIndex];
+					canvas->backgrounds[targetIndex] = canvas->backgrounds[fromIndex];
+				} else {
+					canvas->chars[targetIndex] = ' ';
+					canvas->foregrounds[targetIndex] = canvas->foreground;
+					canvas->backgrounds[targetIndex] = canvas->background;
+				}
 			}
 		}
 	}
@@ -301,8 +322,17 @@ canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
 	result.chr = canvas->chars[index];
 	result.foreground = canvas->palette[foreground];
 	result.background = canvas->palette[background];
-	result.foregroundIndex = foreground;
-	result.backgroundIndex = background;
+	
+	if (foreground < 16) {
+		result.foreground_isPal = true;
+		result.foregroundIndex = foreground;
+	}
+
+	if (background < 16) {
+		result.background_isPal = true;
+		result.backgroundIndex = background;
+	}
+
 	return result;
 }
 
