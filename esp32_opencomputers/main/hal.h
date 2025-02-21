@@ -35,7 +35,10 @@ typedef struct {
 	hal_pos size;
 	hal_pos sizeX;
 	hal_pos sizeY;
+
 	uint8_t depth;
+	uint8_t foreground;
+	uint8_t background;
 
     char* chars;
 	uint8_t* foregrounds;

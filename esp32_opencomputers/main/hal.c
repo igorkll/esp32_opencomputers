@@ -69,12 +69,44 @@ hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth) {
 	canvas->size = sizeX * sizeY;
 	canvas->sizeX = sizeX;
 	canvas->sizeY = sizeY;
-	canvas->depth = depth;
 
-	canvas->chars = malloc(canvas->size * sizeof(*canvas->chars));
-	canvas->foregrounds = malloc(canvas->size * sizeof(*canvas->foregrounds));
-	canvas->backgrounds = malloc(canvas->size * sizeof(*canvas->backgrounds));
+	canvas->depth = depth;
+	canvas->foreground = _whiteColorIndex;
+	canvas->background = _blackColorIndex;
+
+	canvas->chars = malloc(canvas->size);
+	canvas->foregrounds = malloc(canvas->size);
+	canvas->backgrounds = malloc(canvas->size);
+
+	memset(canvas->chars, ' ', sizeof(canvas->size));
+	memset(canvas->foregrounds, _whiteColorIndex, sizeof(canvas->size));
+	memset(canvas->backgrounds, _blackColorIndex, sizeof(canvas->size));
+
 	return canvas;
+}
+
+void hal_bufferResize(hal_canvas* canvas, hal_pos sizeX, hal_pos sizeY) {
+	char* old_chars = canvas->chars;
+	uint8_t* old_foregrounds = canvas->foregrounds;
+	uint8_t* old_backgrounds = canvas->backgrounds;
+	hal_pos old_sizeX = canvas->sizeX;
+	hal_pos old_sizeY = canvas->sizeY;
+
+	canvas->size = sizeX * sizeY;
+	canvas->sizeX = sizeX;
+	canvas->sizeY = sizeY;
+
+	canvas->chars = malloc(canvas->size);
+	canvas->foregrounds = malloc(canvas->size);
+	canvas->backgrounds = malloc(canvas->size);
+
+	for () {
+
+	}
+
+	free(old_chars);
+	free(old_foregrounds);
+	free(old_backgrounds);
 }
 
 void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth) {
