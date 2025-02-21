@@ -46,6 +46,9 @@ typedef struct {
 } hal_canvas;
 
 hal_canvas* hal_createBuffer(hal_pos sizeX, hal_pos sizeY, uint8_t depth);
+void hal_bufferSetBg(hal_canvas* canvas, uint32_t color);
+void hal_bufferSetFg(hal_canvas* canvas, uint32_t color);
+void hal_bufferFill(hal_canvas* canvas, hal_pos x, hal_pos y, hal_pos sizeX, hal_pos sizeY, uint32_t color);
 void hal_bufferResize(hal_canvas* canvas, hal_pos sizeX, hal_pos sizeY);
 void hal_bufferSetDepth(hal_canvas* canvas, uint8_t depth);
 void hal_bufferFree(hal_canvas* canvas);
