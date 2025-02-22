@@ -39,11 +39,20 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 #define SOUND_FREQ 8000
 #define SOUND_OUTPUT 0
 
+typedef enum {
+    hal_sound_square,
+	hal_sound_saw,
+	hal_sound_triangle,
+	hal_sound_sin,
+	hal_sound_noise
+} hal_sound_wave;
+
 typedef struct {
     bool enabled;
 	uint64_t disableTimer;
 	uint16_t freq;
 	uint8_t volume;
+	hal_sound_wave wave;
 } hal_sound_channel;
 
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings);

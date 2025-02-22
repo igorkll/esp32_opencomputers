@@ -44,7 +44,26 @@ static void bsod(canvas_t* canvas, const char* text) {
 		.freq = 1000,
 		.volume = 255
 	};
+
+	soundChannel.wave = hal_sound_square;
 	hal_sound_updateChannel(0, soundChannel);
+	hal_delay(2000);
+
+	soundChannel.wave = hal_sound_saw;
+	hal_sound_updateChannel(0, soundChannel);
+	hal_delay(2000);
+
+	soundChannel.wave = hal_sound_triangle;
+	hal_sound_updateChannel(0, soundChannel);
+	hal_delay(2000);
+
+	soundChannel.wave = hal_sound_sin;
+	hal_sound_updateChannel(0, soundChannel);
+	hal_delay(2000);
+
+	soundChannel.wave = hal_sound_noise;
+	hal_sound_updateChannel(0, soundChannel);
+	hal_delay(2000);
 }
 
 static void rawSandbox(lua_State* lua) {
@@ -68,6 +87,6 @@ void _main() {
 	hal_display_sendBuffer(canvas, true);
 	
     while (true) {
-		hal_delay(1900);
+		hal_delay(1000);
     }
 }

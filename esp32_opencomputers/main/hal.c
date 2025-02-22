@@ -414,6 +414,10 @@ static gptimer_handle_t sound_timer;
 static dac_oneshot_handle_t sound_output;
 static uint64_t sound_tick = 0;
 
+#define SOUND_FREQ_M (SOUND_FREQ - 1)
+#define SOUND_FREQ_D (SOUND_FREQ / 2)
+#define SOUND_FREQ_MD (SOUND_FREQ_M / 2)
+
 static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
 	uint16_t value = 0;
 	for (size_t i = 0; i < SOUND_CHANNELS; i++) {
@@ -426,9 +430,30 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 				}
 			}
 
-			if ((sound_tick * channel->freq) % SOUND_FREQ >= (SOUND_FREQ / 2)) {
-				value += channel->volume;
+			uint32_t secondTick = (sound_tick * channel->freq) % SOUND_FREQ;
+			uint8_t localValue = 0;
+			switch (channel->wave) {
+				case hal_sound_square:
+					localValue = secondTick >= (SOUND_FREQ / 2) ? 255 : 0;
+					break;
+
+				case hal_sound_saw:
+					value += secondTick / (SOUND_FREQ_M / 255);
+					break;
+
+				case hal_sound_triangle:
+					value += (SOUND_FREQ_MD - abs(secondTick - SOUND_FREQ_MD)) * 2;
+					break;
+
+				case hal_sound_sin:
+					value += 0;
+					break;
+
+				case hal_sound_noise:
+					value += 0;
+					break;
 			}
+			value += (localValue * channel->volume) / 255;
 		}
 	}
 	uint8_t output = value;
