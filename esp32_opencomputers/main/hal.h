@@ -33,6 +33,12 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- filesystem
 
+// ---------------------------------------------- sound
+
+#define SOUND_CHANNELS 
+
+void hal_sound_setFreq();
+
 // ---------------------------------------------- other
 
 void hal_init();

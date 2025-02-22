@@ -405,11 +405,18 @@ static void _initFilesystem() {
     ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl("/storage", "storage", &storage_mount_config, &s_wl_handle));
 }
 
+// ---------------------------------------------- sound
+
+static void _initSound() {
+
+}
+
 // ---------------------------------------------- other
 
 void hal_init() {
 	_initDisplay();
 	_initFilesystem();
+	_initSound();
 	font_init();
 }
 
