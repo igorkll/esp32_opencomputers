@@ -36,7 +36,7 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 // ---------------------------------------------- sound
 
 #define SOUND_CHANNELS ((8 * 3) + 1)
-#define SOUND_FREQ 40000
+#define SOUND_FREQ 8000
 #define SOUND_OUTPUT 0
 
 typedef struct {
