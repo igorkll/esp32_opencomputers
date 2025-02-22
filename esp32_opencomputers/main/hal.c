@@ -283,6 +283,7 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	if (!firstFlush) {
 		firstFlush = true;
 	} else if (canvas->sizeX != old_sizeX || canvas->sizeY != old_sizeY || pixelPerfect != old_pixelPerfect) {
+		_sendSelectAll();
 		_clear();
 	}
 
