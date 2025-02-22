@@ -512,11 +512,23 @@ void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
 
 // ---------------------------------------------- other
 
-void hal_init() {
-	_initDisplay();
-	_initFilesystem();
-	_initSound();
-	font_init();
+typedef struct {
+	void(*func)(void* arg);
+	void* arg;
+} USERTask;
+
+void _task_callback(void* _task) {
+	USERTask* task = _task;
+	task->func(task->arg);
+	free(task);
+	vTaskDelete(NULL);
+}
+
+void hal_task(void(*func)(void* arg), void* arg) {
+	USERTask* task = malloc(sizeof(USERTask));
+	task->func = func;
+	task->arg = arg;
+	xTaskCreate(_task_callback, "USER_TASK", 4096, task, tskIDLE_PRIORITY, NULL);
 }
 
 void hal_delay(uint32_t milliseconds) {
@@ -528,5 +540,9 @@ void hal_delay(uint32_t milliseconds) {
 // ----------------------------------------------
 
 void app_main() {
+	_initDisplay();
+	_initFilesystem();
+	_initSound();
+	font_init();
 	_main();
 }

@@ -14,10 +14,11 @@
 #include "main.h"
 #include "hal.h"
 #include "canvas.h"
+#include "sound.h"
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
-	canvas_setResolution(canvas, 80, 25);
+	canvas_setResolution(canvas, 50, 16);
 	canvas_setBackground(canvas, 0x0000ff, false);
 	canvas_setForeground(canvas, 0xffffff, false);
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
@@ -38,32 +39,7 @@ static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setForeground(canvas, 0x0000ff, false);
 	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0);
 
-	hal_sound_channel soundChannel = {
-		.enabled = true,
-		.disableTimer = SOUND_FREQ,
-		.freq = 500,
-		.volume = 255
-	};
-
-	soundChannel.wave = hal_sound_square;
-	hal_sound_updateChannel(0, soundChannel);
-	hal_delay(2000);
-
-	soundChannel.wave = hal_sound_saw;
-	hal_sound_updateChannel(0, soundChannel);
-	hal_delay(2000);
-
-	soundChannel.wave = hal_sound_triangle;
-	hal_sound_updateChannel(0, soundChannel);
-	hal_delay(2000);
-
-	soundChannel.wave = hal_sound_sin;
-	hal_sound_updateChannel(0, soundChannel);
-	hal_delay(2000);
-
-	soundChannel.wave = hal_sound_noise;
-	hal_sound_updateChannel(0, soundChannel);
-	hal_delay(2000);
+	sound_computer_beepString("--", 2);
 }
 
 static void rawSandbox(lua_State* lua) {
@@ -73,8 +49,6 @@ static void rawSandbox(lua_State* lua) {
 }
 
 void _main() {
-	hal_init();
-
 	canvas_t* canvas = canvas_create(50, 16, 1);
 	lua_State* lua = luaL_newstate();
     rawSandbox(lua);
@@ -84,7 +58,7 @@ void _main() {
 		bsod(canvas, "computer halted");
 	}
     lua_close(lua);
-	hal_display_sendBuffer(canvas, true);
+	hal_display_sendBuffer(canvas, false);
 	
     while (true) {
 		hal_delay(1000);

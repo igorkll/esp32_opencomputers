@@ -35,7 +35,7 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- sound
 
-#define SOUND_CHANNELS ((8 * 3) + 1)
+#define SOUND_CHANNELS ((8 * 3) + 2)
 #define SOUND_FREQ 40000
 #define SOUND_OUTPUT 0
 
@@ -59,5 +59,5 @@ void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings);
 
 // ---------------------------------------------- other
 
-void hal_init();
+void hal_task(void(*func)(void* arg), void* arg);
 void hal_delay(uint32_t milliseconds);
