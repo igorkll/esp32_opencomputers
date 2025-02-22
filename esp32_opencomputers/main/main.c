@@ -1,28 +1,23 @@
 // esp-idf - 5.3
 // display - st7796 480x320
 
-#include <sdkconfig.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/event_groups.h>
-
 #include "lua.h"
 #include "lauxlib.h"
 #include "lualib.h"
 
+#include "main.h"
 #include "hal.h"
 #include "canvas.h"
-#include "filesystem.h"
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
-	canvas_setResolution(canvas, 20, 50);
+	canvas_setResolution(canvas, 52, 16);
 	canvas_setBackground(canvas, 0x0000ff, false);
 	canvas_setForeground(canvas, 0xffffff, false);
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
@@ -44,9 +39,8 @@ static void bsod(canvas_t* canvas, const char* text) {
 	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0);
 }
 
-void app_main() {
+void _main() {
 	hal_init();
-	filesystem_init();
 
 	canvas_t* canvas = canvas_create(50, 16, 1);
 

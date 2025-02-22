@@ -1,8 +1,15 @@
 #include <driver/spi_master.h>
 #include <esp_heap_caps.h>
 #include <driver/gpio.h>
+#include <esp_vfs.h>
+#include <esp_vfs_fat.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/event_groups.h>
 #include <string.h>
 #include "hal.h"
+#include "main.h"
+#include "font.h"
 
 // ---------------------------------------------- display
 
@@ -293,14 +300,35 @@ void hal_sendBuffer(canvas_t* canvas) {
 
 // ---------------------------------------------- touchscreen
 
+// ---------------------------------------------- filesystem
+
+static void _initFilesystem() {
+	static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+    esp_vfs_fat_mount_config_t storage_mount_config = {
+        .max_files = 4,
+        .format_if_mount_failed = false,
+        .allocation_unit_size = CONFIG_WL_SECTOR_SIZE
+    };
+
+    ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl("/storage", "storage", &storage_mount_config, &s_wl_handle));
+}
+
 // ---------------------------------------------- other
 
 void hal_init() {
 	_initDisplay();
+	_initFilesystem();
+	font_init();
 }
 
 void hal_delay(uint32_t milliseconds) {
 	size_t ticks = milliseconds / portTICK_PERIOD_MS;
     if (ticks <= 0) ticks = 1;
     vTaskDelay(ticks);
+}
+
+// ----------------------------------------------
+
+void app_main() {
+	_main();
 }

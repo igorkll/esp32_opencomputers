@@ -13,15 +13,29 @@ def convertChar(hex_string):
     byte_array = bytearray(int(hex_string[i:i+2], 16) for i in range(0, len(hex_string), 2))
     return byte_array
 
-def rasterizeChar(binary_string):
-	strlen = len(binary_string)
-	if strlen >= 32:
-		for i in range(0, strlen, 2):
-			print(format(binary_string[i], '08b').replace('1', '#').replace('0', ' ') + format(binary_string[i+1], '08b').replace('1', '#').replace('0', ' '))
+def rasterizeChar(binchar):
+	charlen = len(binchar)
+	if charlen >= 32:
+		for i in range(0, charlen, 2):
+			print(format(binchar[i], '08b').replace('1', '#').replace('0', ' ') + format(binchar[i+1], '08b').replace('1', '#').replace('0', ' '))
 	else:
-		for byte in binary_string:
+		for byte in binchar:
 			print(format(byte, '08b').replace('1', '#').replace('0', ' '))
 
-for char in alphabet:
-	print(f"---- {char}")
-	rasterizeChar(convertChar(findChar(char)))
+with open("../filesystem/font.bin", 'wb') as file:
+	for char in alphabet:
+		char_code = bytearray(char.encode('utf-8'))
+		binchar = convertChar(findChar(char))
+		charlen = len(binchar)
+
+		print(f"---- {char} / {list(char_code)}")
+		rasterizeChar(binchar)
+
+		metadata = 0
+		if charlen >= 32:
+			metadata += 1
+
+		file.write(bytearray(metadata))
+		file.write(bytearray(len(char_code)))
+		file.write(char_code)
+		file.write(binchar)
