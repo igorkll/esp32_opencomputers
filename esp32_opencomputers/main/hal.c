@@ -248,6 +248,10 @@ static void _initDisplay() {
 	_sendSelectAll();
 }
 
+static bool firstFlush = false;
+static canvas_pos old_sizeX;
+static canvas_pos old_sizeY;
+static bool old_pixelPerfect;
 void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
@@ -275,6 +279,16 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 
 	canvas_pos offsetX = (DISPLAY_WIDTH / 2) - ((charSizeX * canvas->sizeX) / 2);
 	canvas_pos offsetY = (DISPLAY_HEIGHT / 2) - ((charSizeY * canvas->sizeY) / 2);
+
+	if (!firstFlush) {
+		firstFlush = true;
+	} else if (canvas->sizeX != old_sizeX || canvas->sizeY != old_sizeY || pixelPerfect != old_pixelPerfect) {
+		_clear();
+	}
+
+	old_sizeX = canvas->sizeX;
+	old_sizeY = canvas->sizeY;
+	old_pixelPerfect = pixelPerfect;
 
 	if (canvas->sizeX != canvas->sizeX_current || canvas->sizeY != canvas->sizeY_current) {
 		canvas_freeCache(canvas);
