@@ -20,7 +20,7 @@ void sound_computer_beep(uint16_t freq, float time) {
 		.wave = hal_sound_square
 	};
 	hal_sound_updateChannel(SOUND_CHANNEL_BEEP, channel);
-	hal_delay((time * 1000) + 200);
+	hal_delay((time * 1000) + 100);
 }
 
 static void _beepString(void* _text) {
