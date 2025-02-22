@@ -9,6 +9,7 @@
 #include <driver/gptimer.h>
 #include <driver/dac_oneshot.h>
 #include <string.h>
+#include <math.h>
 #include "hal.h"
 #include "main.h"
 #include "font.h"
@@ -414,6 +415,9 @@ static gptimer_handle_t sound_timer;
 static dac_oneshot_handle_t sound_output;
 static uint64_t sound_tick = 0;
 
+static uint8_t sound_sin[SOUND_FREQ];
+static uint8_t sound_noise[SOUND_FREQ];
+
 #define SOUND_FREQ_M (SOUND_FREQ - 1)
 #define SOUND_FREQ_D (SOUND_FREQ / 2)
 #define SOUND_FREQ_MD (SOUND_FREQ_M / 2)
@@ -430,7 +434,9 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 				}
 			}
 
-			uint32_t secondTick = (sound_tick * channel->freq) % SOUND_FREQ;
+			int freqValue = sound_tick * channel->freq;
+			int secondTick = freqValue % SOUND_FREQ;
+			int tickChange = freqValue / SOUND_FREQ;
 			uint8_t localValue = 0;
 			switch (channel->wave) {
 				case hal_sound_square:
@@ -438,19 +444,19 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 					break;
 
 				case hal_sound_saw:
-					value += secondTick / (SOUND_FREQ_M / 255);
+					localValue += secondTick / (SOUND_FREQ_M / 255);
 					break;
 
 				case hal_sound_triangle:
-					value += (SOUND_FREQ_MD - abs(secondTick - SOUND_FREQ_MD)) * 2;
+					localValue += (SOUND_FREQ_MD - abs(secondTick - SOUND_FREQ_MD)) / (SOUND_FREQ_D / 255);
 					break;
 
 				case hal_sound_sin:
-					value += 0;
+					localValue += sound_sin[secondTick];
 					break;
 
 				case hal_sound_noise:
-					value += 0;
+					localValue += sound_noise[tickChange % SOUND_FREQ];
 					break;
 			}
 			value += (localValue * channel->volume) / 255;
@@ -465,6 +471,11 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 
 static void _initSound() {
 	memset(&sound_channels, 0, SOUND_CHANNELS * sizeof(hal_sound_channel));
+
+	for (size_t i = 0; i < SOUND_FREQ; i++) {
+		sound_sin[i] = nRound(((sin((i / (SOUND_FREQ - 1.0)) * (M_PI * 2.0)) + 1.0) / 2.0) * 255.0);
+		sound_noise[i] = rand() % 256;
+	}
 
 	gptimer_alarm_config_t alarm_config = {
 		.alarm_count = 1,

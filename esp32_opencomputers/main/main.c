@@ -41,8 +41,8 @@ static void bsod(canvas_t* canvas, const char* text) {
 	hal_sound_channel soundChannel = {
 		.enabled = true,
 		.disableTimer = SOUND_FREQ,
-		.freq = 1000,
-		.volume = 255
+		.freq = 500,
+		.volume = 127
 	};
 
 	soundChannel.wave = hal_sound_square;
