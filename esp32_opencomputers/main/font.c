@@ -20,11 +20,14 @@ void font_init() {
 int font_findOffset(char* chr, size_t len) {
 	uint8_t charcode[8];
 	int offset = 0;
-	while (true) {
-		fseek(font, offset + 1, SEEK_SET);
+	while (!feof(font)) {
+		fseek(font, offset, SEEK_SET);
+
+		uint8_t metadata = 0;
+		fread(&metadata, 1, 1, font);
 		
 		uint8_t charlen;
-		fread(charlen, 1, 1, font);
+		fread(&charlen, 1, 1, font);
 
 		if (charlen == len) {
 			fread(charcode, 1, charlen, font);
@@ -32,14 +35,40 @@ int font_findOffset(char* chr, size_t len) {
 				return offset;
 			}
 		}
+
+		bool isWide = metadata & 0b00000001;
+		offset += isWide ? 32 : 16;
 	}
 	return -1;
 }
 
 uint8_t font_charWidth(int offset) {
-	return _charWidth(offset) & 0b00000001;
+	return (_charWidth(offset) & 0b00000001) + 1;
 }
 
 bool font_isWide(int offset) {
-	return font_charWidth(offset) > 0;
+	return font_charWidth(offset) > 1;
+}
+
+bool font_readData(uint8_t* data, int offset) {
+	fseek(font, offset, SEEK_SET);
+
+	uint8_t metadata = 0;
+	fread(&metadata, 1, 1, font);
+	
+	uint8_t charlen;
+	fread(&charlen, 1, 1, font);
+
+	fseek(font, charlen, SEEK_CUR);
+
+	bool isWide = metadata & 0b00000001;
+	fread(data, 1, isWide ? 32 : 16, font);
+
+	return isWide;
+}
+
+bool font_readPixel(uint8_t* data, uint8_t x, uint8_t y) {
+	int offset = y + (x >= 8 ? 8 : 0);
+	int mask = x % 8;
+	return data[offset] & mask;
 }

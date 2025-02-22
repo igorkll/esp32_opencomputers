@@ -274,16 +274,20 @@ void hal_sendBuffer(canvas_t* canvas) {
 
 	size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 	uint8_t charBuffer[bytesPerChar];
+	uint8_t rawCharBuffer[FONT_MAXCHAR];
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
 			uint8_t foreground = canvas->foregrounds[index];
 
+			int charOffset = font_findOffset(&canvas->chars[index], 1);
+			bool isWide = font_readData(rawCharBuffer, charOffset);
+
 			_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
 			for (size_t icx = 0; icx < charSizeX; icx++) {
 				for (size_t icy = 0; icy < charSizeY; icy++) {
-					uint8_t paletteIndex = false ? foreground : background;
+					uint8_t paletteIndex = font_readPixel(rawCharBuffer, icx, icy) ? foreground : background;
 					#ifdef DISPLAY_SWAP_ENDIAN
 						uint8_t* _color = &canvas->palette[paletteIndex];
 						uint16_t color = (_color[0] << 8) + _color[1];
