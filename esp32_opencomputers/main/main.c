@@ -17,7 +17,7 @@
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
-	canvas_setResolution(canvas, 52, 16);
+	canvas_setResolution(canvas, 80, 25);
 	canvas_setBackground(canvas, 0x0000ff, false);
 	canvas_setForeground(canvas, 0xffffff, false);
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
@@ -54,7 +54,7 @@ void _main() {
 	}
     lua_close(lua);
 
-	hal_sendBuffer(canvas, false);
+	hal_sendBuffer(canvas, true);
 
 	hal_delay(1000);
 	

@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <stdint.h>
 #include <math.h>
 
 int nRound(float num) {
@@ -7,6 +8,18 @@ int nRound(float num) {
 
 float clamp(float n, float lower, float upper) {
     return fmax(lower, fmin(n, upper));
+}
+
+uint8_t uint8_pow(uint8_t base, uint8_t exp) {
+    uint8_t result = 1;
+    while (exp)
+    {
+        if (exp % 2)
+           result *= base;
+        exp /= 2;
+        base *= base;
+    }
+    return result;
 }
 
 

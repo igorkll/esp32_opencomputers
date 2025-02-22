@@ -275,6 +275,10 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 			charSizeX = 8;
 			charSizeY = 16;
 		}
+		if (charSizeX * canvas->sizeX > DISPLAY_WIDTH || charSizeY * canvas->sizeY > DISPLAY_HEIGHT) {
+			hal_sendBuffer(canvas, false);
+			return;
+		}
 	} else {
 		if (charSizeX < 1) charSizeX = 1;
 		if (charSizeY < 2) charSizeY = 2;
