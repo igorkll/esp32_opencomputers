@@ -23,8 +23,8 @@ static void bsod(canvas_t* canvas, const char* text) {
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
 
 	size_t len = strlen(text);
-	canvas_pos x = 3;
-	canvas_pos y = 1;
+	canvas_pos x = 1;
+	canvas_pos y = 3;
 	for (size_t i = 0; i < len; i++) {
 		char chr = text[i];
 		canvas_set(canvas, x++, y, &chr, 1);

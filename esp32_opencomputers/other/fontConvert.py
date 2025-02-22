@@ -35,7 +35,7 @@ with open("../filesystem/font.bin", 'wb') as file:
 		if charlen >= 32:
 			metadata += 1
 
-		file.write(bytearray(metadata))
-		file.write(bytearray(len(char_code)))
+		file.write(bytearray([metadata]))
+		file.write(bytearray([len(char_code)]))
 		file.write(char_code)
 		file.write(binchar)

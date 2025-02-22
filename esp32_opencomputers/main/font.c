@@ -1,6 +1,8 @@
 #include "font.h"
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
 
 FILE* font;
 
@@ -20,10 +22,10 @@ void font_init() {
 int font_findOffset(char* chr, size_t len) {
 	uint8_t charcode[8];
 	int offset = 0;
-	while (!feof(font)) {
+	do {
 		fseek(font, offset, SEEK_SET);
 
-		uint8_t metadata = 0;
+		uint8_t metadata;
 		fread(&metadata, 1, 1, font);
 		
 		uint8_t charlen;
@@ -31,19 +33,19 @@ int font_findOffset(char* chr, size_t len) {
 
 		if (charlen == len) {
 			fread(charcode, 1, charlen, font);
-			if (memcpy(charcode, chr, len)) {
+			if (memcmp(charcode, chr, len) == 0) {
 				return offset;
 			}
 		}
 
 		bool isWide = metadata & 0b00000001;
-		offset += isWide ? 32 : 16;
-	}
+		offset += 2 + charlen + (isWide ? 32 : 16);
+	} while (!feof(font));
 	return -1;
 }
 
 uint8_t font_charWidth(int offset) {
-	return (_charWidth(offset) & 0b00000001) + 1;
+	return 1;
 }
 
 bool font_isWide(int offset) {
@@ -63,12 +65,11 @@ bool font_readData(uint8_t* data, int offset) {
 
 	bool isWide = metadata & 0b00000001;
 	fread(data, 1, isWide ? 32 : 16, font);
-
 	return isWide;
 }
 
 bool font_readPixel(uint8_t* data, uint8_t x, uint8_t y) {
 	int offset = y + (x >= 8 ? 8 : 0);
-	int mask = x % 8;
+	int mask = pow(2, 7 - (x % 8));
 	return data[offset] & mask;
 }

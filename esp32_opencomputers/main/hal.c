@@ -10,6 +10,7 @@
 #include "hal.h"
 #include "main.h"
 #include "font.h"
+#include "functions.h"
 
 // ---------------------------------------------- display
 
@@ -111,39 +112,26 @@ static _commandList _select(uint16_t x, uint16_t y, uint16_t x2, uint16_t y2) {
 
 spi_device_handle_t display;
 
-typedef struct {
-    gpio_num_t pin;
-    bool state;
-} spi_pretransfer_info;
-
 static void _sendCommand(const uint8_t cmd) {
-    spi_pretransfer_info pre_transfer_info = {
-        .pin = DISPLAY_DC,
-        .state = false
-    };
+    gpio_set_level(DISPLAY_DC, false);
 
     spi_transaction_t transaction = {
         .length = 8,
-        .tx_buffer = &cmd,
-        .user = (void*)(&pre_transfer_info)
+        .tx_buffer = &cmd
     };
 
-    ESP_ERROR_CHECK(spi_device_transmit(display, &transaction));
+    ESP_ERROR_CHECK(spi_device_polling_transmit(display, &transaction));
 }
 
 static void _sendData(const uint8_t* data, size_t size) {
-    spi_pretransfer_info pre_transfer_info = {
-        .pin = DISPLAY_DC,
-        .state = true
-    };
+    gpio_set_level(DISPLAY_DC, true);
 
-    spi_transaction_t transaction = {
-        .length = size * 8,
-        .tx_buffer = data,
-        .user = (void*)(&pre_transfer_info)
-    };
-    
-    ESP_ERROR_CHECK(spi_device_transmit(display, &transaction));
+	spi_transaction_t transaction = {
+		.length = size * 8,
+		.tx_buffer = data
+	};
+	
+	ESP_ERROR_CHECK(spi_device_polling_transmit(display, &transaction));
 }
 
 static bool _doCommand(const _command command) {
@@ -185,19 +173,27 @@ static void _sendSelectAll() {
     _sendSelect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 }
 
-static void _spi_pre_transfer_callback(spi_transaction_t* t) {
-    spi_pretransfer_info* pretransfer_info = (spi_pretransfer_info*)t->user;
-    gpio_set_level(pretransfer_info->pin, pretransfer_info->state);
+static void _spam(size_t size, uint16_t color) {
+    size_t bytesCount = size * BYTES_PER_COLOR;
+	size_t part = min(MAXSEND, bytesCount);
+    size_t offset = 0;
+    uint8_t* floodPart = malloc(part);
+    if (floodPart == NULL) return;
+    for (size_t i = 0; i < part; i += BYTES_PER_COLOR) {
+        memcpy(floodPart + i, &color, BYTES_PER_COLOR);
+    }
+    while (true) {
+		_sendData(floodPart, min(bytesCount - offset, part));
+        offset += part;
+        if (offset >= bytesCount) {
+            break;
+        }
+    }
+    free(floodPart);
 }
 
 static void _clear() {
-	uint8_t package[MAXSEND];
-	memset(package, 0, MAXSEND);
-
-	size_t pixelsPerSend = MAXSEND / BYTES_PER_COLOR;
-	for (size_t i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i += pixelsPerSend) {
-		_sendData(package, MAXSEND);
-	}
+	_spam(DISPLAY_WIDTH * DISPLAY_HEIGHT, 0);
 }
 
 static void _initDisplay() {
@@ -218,8 +214,7 @@ static void _initDisplay() {
 		.mode = 0,
 		.spics_io_num = DISPLAY_CS,
 		.input_delay_ns = 0,
-		.queue_size = 2,
-		.pre_cb = _spi_pre_transfer_callback,
+		.queue_size = 1,
 		.flags = SPI_DEVICE_NO_DUMMY
 	};
 
@@ -254,6 +249,8 @@ static void _initDisplay() {
 }
 
 void hal_sendBuffer(canvas_t* canvas) {
+	_clear();
+
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
 	if (charSizeY % 2 != 0) charSizeY--;
@@ -272,32 +269,50 @@ void hal_sendBuffer(canvas_t* canvas) {
 	canvas_pos offsetX = (DISPLAY_WIDTH / 2) - ((charSizeX * canvas->sizeX) / 2);
 	canvas_pos offsetY = (DISPLAY_HEIGHT / 2) - ((charSizeY * canvas->sizeY) / 2);
 
-	size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
-	uint8_t charBuffer[bytesPerChar];
-	uint8_t rawCharBuffer[FONT_MAXCHAR];
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
-			uint8_t foreground = canvas->foregrounds[index];
-
-			int charOffset = font_findOffset(&canvas->chars[index], 1);
-			bool isWide = font_readData(rawCharBuffer, charOffset);
-
 			_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
-			for (size_t icx = 0; icx < charSizeX; icx++) {
-				for (size_t icy = 0; icy < charSizeY; icy++) {
-					uint8_t paletteIndex = font_readPixel(rawCharBuffer, icx, icy) ? foreground : background;
-					#ifdef DISPLAY_SWAP_ENDIAN
-						uint8_t* _color = &canvas->palette[paletteIndex];
-						uint16_t color = (_color[0] << 8) + _color[1];
-					#else
-						uint16_t color = canvas->palette[paletteIndex];
-					#endif
-					memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+
+			#ifdef DISPLAY_SWAP_ENDIAN
+				uint8_t* _color = (uint8_t*)(&canvas->palette[background]);
+				canvas_color backgroundColor = (_color[0] << 8) + _color[1];
+			#else
+				canvas_color backgroundColor = canvas->palette[background];
+			#endif
+
+			if (canvas->chars[index] == ' ') {
+				_spam(charSizeX * charSizeY, backgroundColor);
+			} else {
+				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
+				uint8_t charBuffer[bytesPerChar];
+				uint8_t rawCharBuffer[FONT_MAXCHAR];
+				uint8_t foreground = canvas->foregrounds[index];
+
+				int charOffset = font_findOffset(&canvas->chars[index], 1);
+				bool isWide;
+				if (charOffset >= 0) {
+					font_readData(rawCharBuffer, charOffset);
+				} else {
+					memset(rawCharBuffer, 0, FONT_MAXCHAR);
 				}
+
+				#ifdef DISPLAY_SWAP_ENDIAN
+					uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
+					canvas_color foregroundColor = (_color[0] << 8) + _color[1];
+				#else
+					canvas_color foregroundColor = canvas->palette[foreground];
+				#endif
+
+				for (size_t icx = 0; icx < charSizeX; icx++) {
+					for (size_t icy = 0; icy < charSizeY; icy++) {
+						canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
+						memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+					}
+				}
+				_sendData(charBuffer, bytesPerChar);
 			}
-			_sendData(charBuffer, bytesPerChar);
 		}
 	}
 }
