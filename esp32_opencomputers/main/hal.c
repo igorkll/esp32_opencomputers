@@ -14,8 +14,8 @@
 
 // ---------------------------------------------- display
 
-#define MAXSEND 1024 * 8
 #define BYTES_PER_COLOR 2
+#define MAXSEND (DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR)
 
 typedef struct {
     uint8_t cmd;
@@ -174,8 +174,11 @@ static void _sendSelectAll() {
 }
 
 static void _spam(size_t size, uint16_t color) {
+	multi_heap_info_t info;
+    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
+
     size_t bytesCount = size * BYTES_PER_COLOR;
-	size_t part = min(MAXSEND, bytesCount);
+	size_t part = min(info.largest_free_block / 2, bytesCount);
     size_t offset = 0;
     uint8_t* floodPart = malloc(part);
     if (floodPart == NULL) return;
@@ -353,12 +356,27 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 						canvas_color foregroundColor = canvas->palette[foreground];
 					#endif
 
-					for (size_t icx = 0; icx < charSizeX; icx++) {
-						for (size_t icy = 0; icy < charSizeY; icy++) {
-							canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
-							memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+					if (pixelPerfect) {
+						size_t pixelScale = charSizeX / 8;
+						for (size_t icx = 0; icx < 8; icx++) {
+							for (size_t icy = 0; icy < 16; icy++) {
+								canvas_color color = font_readPixel(rawCharBuffer, icx, icy) ? foregroundColor : backgroundColor;
+								for (size_t ibx = 0; ibx < pixelScale; ibx++) {
+									for (size_t iby = 0; iby < pixelScale; iby++) {
+										memcpy(charBuffer + ((ibx + (icx * pixelScale) + (((icy * pixelScale) + iby) * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+									}
+								}
+							}
+						}
+					} else {
+						for (size_t icx = 0; icx < charSizeX; icx++) {
+							for (size_t icy = 0; icy < charSizeY; icy++) {
+								canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
+								memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+							}
 						}
 					}
+					
 					_sendData(charBuffer, bytesPerChar);
 				}
 			}

@@ -58,6 +58,7 @@ void _main() {
 
 	hal_delay(1000);
 	
+	canvas_setResolution(canvas, 16, 4);
 	canvas_setDepth(canvas, 4);
 	canvas_setBackground(canvas, 0xff00ff, false);
 	canvas_setForeground(canvas, 0xff0000, false);
