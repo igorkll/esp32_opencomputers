@@ -7,14 +7,15 @@
 #include <math.h>
 #include <string.h>
 
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 
 #include "main.h"
 #include "hal.h"
 #include "canvas.h"
 #include "sound.h"
+#include "lua_binds.h"
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
@@ -44,8 +45,7 @@ static void bsod(canvas_t* canvas, const char* text) {
 
 static void rawSandbox(lua_State* lua) {
 	luaL_openlibs(lua);
-
-
+	lua_binds_bind(lua);
 }
 
 void _main() {

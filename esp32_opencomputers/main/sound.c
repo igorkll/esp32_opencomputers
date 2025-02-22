@@ -49,7 +49,7 @@ static void _beepString(void* _text) {
 	free(text);
 }
 
-void sound_computer_beepString(char* text, size_t len) {
+void sound_computer_beepString(const char* text, size_t len) {
 	char* string = malloc(len + 1);
 	memcpy(string, text, len);
 	string[len] = 0;
