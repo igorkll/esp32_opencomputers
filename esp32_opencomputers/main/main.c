@@ -15,7 +15,7 @@
 #include "hal.h"
 #include "canvas.h"
 #include "sound.h"
-#include "lua_binds.h"
+#include "lua_binder.h"
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
@@ -45,7 +45,13 @@ static void bsod(canvas_t* canvas, const char* text) {
 
 static void rawSandbox(lua_State* lua) {
 	luaL_openlibs(lua);
-	lua_binds_bind(lua);
+
+	// ---- sound
+	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));
+	LUA_BIND_VOID(sound_computer_beepString, (LUA_ARG_STR, LUA_ARG_INT));
+
+	// ---- hal
+	LUA_BIND_VOID(hal_delay, (LUA_ARG_INT));
 }
 
 void _main() {
