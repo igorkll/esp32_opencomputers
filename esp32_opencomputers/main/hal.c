@@ -249,22 +249,41 @@ static void _initDisplay() {
 void hal_sendBuffer(canvas_t* canvas) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
+	if (charSizeY % 2 != 0) charSizeY--;
+	
+	canvas_pos squareCharSizeX = charSizeY / 2;
+	canvas_pos squareCharSizeY = charSizeX * 2;
+	if (charSizeX > squareCharSizeX) {
+		charSizeX = squareCharSizeX;
+	} else if (charSizeY > squareCharSizeY) {
+		charSizeY = squareCharSizeY;
+	}
+
+	if (charSizeX < 1) charSizeX = 1;
+	if (charSizeY < 2) charSizeY = 2;
+
+	canvas_pos offsetX = (DISPLAY_WIDTH / 2) - ((charSizeX * canvas->sizeX) / 2);
+	canvas_pos offsetY = (DISPLAY_HEIGHT / 2) - ((charSizeY * canvas->sizeY) / 2);
+
 	size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 	uint8_t charBuffer[bytesPerChar];
-
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
 			uint8_t foreground = canvas->foregrounds[index];
 
-			_sendSelect(ix * charSizeX, iy * charSizeY, charSizeX, charSizeY);
+			_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
 			for (size_t icx = 0; icx < charSizeX; icx++) {
 				for (size_t icy = 0; icy < charSizeY; icy++) {
 					uint8_t paletteIndex = false ? foreground : background;
-					uint8_t* color = &canvas->palette[paletteIndex];
-					uint16_t newColor = (color[0] << 8) + color[1];
-					memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &newColor, BYTES_PER_COLOR);
+					#ifdef DISPLAY_SWAP_ENDIAN
+						uint8_t* _color = &canvas->palette[paletteIndex];
+						uint16_t color = (_color[0] << 8) + _color[1];
+					#else
+						uint16_t color = canvas->palette[paletteIndex];
+					#endif
+					memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
 				}
 			}
 			_sendData(charBuffer, bytesPerChar);

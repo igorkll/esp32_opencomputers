@@ -17,14 +17,15 @@
 #define DISPLAY_WIDTH  480
 #define DISPLAY_HEIGHT 320
 
-#define DISPLAY_SWAP_RGB true
-#define DISPLAY_INVERT   true
-#define DISPLAY_FLIP_X   true
-#define DISPLAY_FLIP_Y   false
-#define DISPLAY_FLIP_XY  false
-#define DISPLAY_ROTATION 1
-#define DISPLAY_OFFSET_X 0
-#define DISPLAY_OFFSET_Y 0
+#define DISPLAY_SWAP_ENDIAN true
+#define DISPLAY_SWAP_RGB    true
+#define DISPLAY_INVERT      true
+#define DISPLAY_FLIP_X      true
+#define DISPLAY_FLIP_Y      false
+#define DISPLAY_FLIP_XY     false
+#define DISPLAY_ROTATION    1
+#define DISPLAY_OFFSET_X    0
+#define DISPLAY_OFFSET_Y    0
 
 void hal_sendBuffer(canvas_t* canvas);
 
