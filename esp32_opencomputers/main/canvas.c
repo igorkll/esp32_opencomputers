@@ -130,6 +130,13 @@ canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
 	memset(canvas->chars, ' ', canvas->size);
 	memset(canvas->foregrounds, canvas->foreground, canvas->size);
 	memset(canvas->backgrounds, canvas->background, canvas->size);
+
+	canvas->sizeX_current = 0;
+	canvas->sizeY_current = 0;
+	canvas->palette_current = NULL;
+	canvas->chars_current = NULL;
+	canvas->foregrounds_current = NULL;
+	canvas->backgrounds_current = NULL;
 	
 	return canvas;
 }
@@ -337,7 +344,19 @@ canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
 	return result;
 }
 
+void canvas_freeCache(canvas_t* canvas) {
+	if (canvas->palette_current) free(canvas->palette_current);
+	if (canvas->chars_current) free(canvas->chars_current);
+	if (canvas->foregrounds_current) free(canvas->foregrounds_current);
+	if (canvas->backgrounds_current) free(canvas->backgrounds_current);
+	canvas->palette_current = NULL;
+	canvas->chars_current = NULL;
+	canvas->foregrounds_current = NULL;
+	canvas->backgrounds_current = NULL;
+}
+
 void canvas_free(canvas_t* canvas) {
+	canvas_freeCache(canvas);
 	free(canvas->chars);
 	free(canvas->foregrounds);
 	free(canvas->backgrounds);

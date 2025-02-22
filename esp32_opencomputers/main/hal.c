@@ -248,9 +248,7 @@ static void _initDisplay() {
 	_sendSelectAll();
 }
 
-void hal_sendBuffer(canvas_t* canvas) {
-	_clear();
-
+void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
 	if (charSizeY % 2 != 0) charSizeY--;
@@ -263,58 +261,96 @@ void hal_sendBuffer(canvas_t* canvas) {
 		charSizeY = squareCharSizeY;
 	}
 
-	if (charSizeX < 1) charSizeX = 1;
-	if (charSizeY < 2) charSizeY = 2;
+	if (pixelPerfect) {
+		charSizeX = (charSizeX / 8) * 8;
+		charSizeY = (charSizeY / 16) * 16;
+		if (charSizeX < 8 || charSizeY < 16) {
+			charSizeX = 8;
+			charSizeY = 16;
+		}
+	} else {
+		if (charSizeX < 1) charSizeX = 1;
+		if (charSizeY < 2) charSizeY = 2;
+	}
 
 	canvas_pos offsetX = (DISPLAY_WIDTH / 2) - ((charSizeX * canvas->sizeX) / 2);
 	canvas_pos offsetY = (DISPLAY_HEIGHT / 2) - ((charSizeY * canvas->sizeY) / 2);
+
+	if (canvas->sizeX != canvas->sizeX_current || canvas->sizeY != canvas->sizeY_current) {
+		canvas_freeCache(canvas);
+		canvas->sizeX_current = canvas->sizeX;
+		canvas->sizeY_current = canvas->sizeY;
+	}
+
+	bool force = !canvas->palette_current;
+	if (force) {
+		canvas->palette_current = malloc(256 * BYTES_PER_COLOR);
+		canvas->chars_current = malloc(canvas->size);
+		canvas->backgrounds_current = malloc(canvas->size);
+		canvas->foregrounds_current = malloc(canvas->size);
+	}
 
 	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
-			_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
+			uint8_t foreground = canvas->foregrounds[index];
+			if (force ||
+				canvas->palette[background] != canvas->palette_current[background] ||
+				canvas->palette[foreground] != canvas->palette_current[foreground] ||
+				canvas->chars[index] != canvas->chars_current[index] ||
+				canvas->backgrounds[index] != canvas->backgrounds_current[index] ||
+				canvas->foregrounds[index] != canvas->foregrounds_current[index]) {
+				
+				canvas->chars_current[index] = canvas->chars[index];
+				canvas->backgrounds_current[index] = canvas->backgrounds[index];
+				canvas->foregrounds_current[index] = canvas->foregrounds[index];
 
-			#ifdef DISPLAY_SWAP_ENDIAN
-				uint8_t* _color = (uint8_t*)(&canvas->palette[background]);
-				canvas_color backgroundColor = (_color[0] << 8) + _color[1];
-			#else
-				canvas_color backgroundColor = canvas->palette[background];
-			#endif
-
-			if (canvas->chars[index] == ' ') {
-				_spam(charSizeX * charSizeY, backgroundColor);
-			} else {
-				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
-				uint8_t charBuffer[bytesPerChar];
-				uint8_t rawCharBuffer[FONT_MAXCHAR];
-				uint8_t foreground = canvas->foregrounds[index];
-
-				int charOffset = font_findOffset(&canvas->chars[index], 1);
-				bool isWide;
-				if (charOffset >= 0) {
-					font_readData(rawCharBuffer, charOffset);
-				} else {
-					memset(rawCharBuffer, 0, FONT_MAXCHAR);
-				}
+				_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
 
 				#ifdef DISPLAY_SWAP_ENDIAN
-					uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
-					canvas_color foregroundColor = (_color[0] << 8) + _color[1];
+					uint8_t* _color = (uint8_t*)(&canvas->palette[background]);
+					canvas_color backgroundColor = (_color[0] << 8) + _color[1];
 				#else
-					canvas_color foregroundColor = canvas->palette[foreground];
+					canvas_color backgroundColor = canvas->palette[background];
 				#endif
 
-				for (size_t icx = 0; icx < charSizeX; icx++) {
-					for (size_t icy = 0; icy < charSizeY; icy++) {
-						canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
-						memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+				if (canvas->chars[index] == ' ') {
+					_spam(charSizeX * charSizeY, backgroundColor);
+				} else {
+					size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
+					uint8_t charBuffer[bytesPerChar];
+					uint8_t rawCharBuffer[FONT_MAXCHAR];
+					
+
+					int charOffset = font_findOffset(&canvas->chars[index], 1);
+					bool isWide;
+					if (charOffset >= 0) {
+						font_readData(rawCharBuffer, charOffset);
+					} else {
+						memset(rawCharBuffer, 0, FONT_MAXCHAR);
 					}
+
+					#ifdef DISPLAY_SWAP_ENDIAN
+						uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
+						canvas_color foregroundColor = (_color[0] << 8) + _color[1];
+					#else
+						canvas_color foregroundColor = canvas->palette[foreground];
+					#endif
+
+					for (size_t icx = 0; icx < charSizeX; icx++) {
+						for (size_t icy = 0; icy < charSizeY; icy++) {
+							canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
+							memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+						}
+					}
+					_sendData(charBuffer, bytesPerChar);
 				}
-				_sendData(charBuffer, bytesPerChar);
 			}
 		}
 	}
+
+	memcpy(canvas->palette_current, canvas->palette, 256 * BYTES_PER_COLOR);
 }
 
 // ---------------------------------------------- touchscreen

@@ -26,6 +26,14 @@ typedef struct {
     char* chars;
 	canvas_paletteIndex* foregrounds;
 	canvas_paletteIndex* backgrounds;
+
+	// ---- double buffering
+	canvas_pos sizeX_current;
+	canvas_pos sizeY_current;
+	canvas_color* palette_current;
+	char* chars_current;
+	canvas_paletteIndex* foregrounds_current;
+	canvas_paletteIndex* backgrounds_current;
 } canvas_t;
 
 typedef struct {
@@ -58,4 +66,5 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY);
 canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y);
 
+void canvas_freeCache(canvas_t* canvas);
 void canvas_free(canvas_t* canvas);

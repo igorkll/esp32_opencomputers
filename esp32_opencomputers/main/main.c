@@ -44,6 +44,7 @@ void _main() {
 
 	canvas_t* canvas = canvas_create(50, 16, 1);
 
+	
 	lua_State* lua = luaL_newstate();
     luaL_openlibs(lua);
     if (luaL_dofile(lua, "/storage/machine.lua")) {
@@ -53,9 +54,22 @@ void _main() {
 	}
     lua_close(lua);
 
-	hal_sendBuffer(canvas);
+	hal_sendBuffer(canvas, false);
+
+	hal_delay(1000);
 	
+	canvas_setDepth(canvas, 4);
+	canvas_setBackground(canvas, 0xff00ff, false);
+	canvas_setForeground(canvas, 0xff0000, false);
+	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, 'A');
+	canvas_setBackground(canvas, 0x000000, false);
+	canvas_setForeground(canvas, 0xff8800, false);
+	uint8_t num = 0;
     while (true) {
-        hal_delay(1000);
+		for (size_t i = 1; i <= canvas->sizeX; i++) {
+			canvas_fill(canvas, i, 1, 1, canvas->sizeY, (num++ % 10) + '0');
+			hal_sendBuffer(canvas, true);
+			hal_delay(50);
+		}
     }
 }
