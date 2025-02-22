@@ -6,6 +6,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
+#include <driver/gptimer.h>
+#include <driver/dac_oneshot.h>
 #include <string.h>
 #include "hal.h"
 #include "main.h"
@@ -255,7 +257,7 @@ static bool firstFlush = false;
 static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
-void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
+void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
 	if (charSizeY % 2 != 0) charSizeY--;
@@ -276,7 +278,7 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 			charSizeY = 16;
 		}
 		if (charSizeX * canvas->sizeX > DISPLAY_WIDTH || charSizeY * canvas->sizeY > DISPLAY_HEIGHT) {
-			hal_sendBuffer(canvas, false);
+			hal_display_sendBuffer(canvas, false);
 			return;
 		}
 	} else {
@@ -407,8 +409,68 @@ static void _initFilesystem() {
 
 // ---------------------------------------------- sound
 
-static void _initSound() {
+static hal_sound_channel sound_channels[SOUND_CHANNELS];
+static gptimer_handle_t sound_timer;
+static dac_oneshot_handle_t sound_output;
+static uint64_t sound_tick = 0;
 
+static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
+	uint16_t value = 0;
+	for (size_t i = 0; i < SOUND_CHANNELS; i++) {
+		hal_sound_channel* channel = &sound_channels[i];
+		if (channel->enabled) {
+			if (channel->disableTimer > 0) {
+				channel->disableTimer--;
+				if (channel->disableTimer == 0) {
+					channel->enabled = false;
+				}
+			}
+
+			if ((sound_tick * channel->freq) % SOUND_FREQ >= (SOUND_FREQ / 2)) {
+				value += channel->volume;
+			}
+		}
+	}
+	uint8_t output = value;
+	if (value > 255) output = 255;
+	dac_oneshot_output_voltage(sound_output, output);
+	sound_tick++;
+    return false;
+}
+
+static void _initSound() {
+	memset(&sound_channels, 0, SOUND_CHANNELS * sizeof(hal_sound_channel));
+
+    gptimer_alarm_config_t alarm_config = {
+        .alarm_count = 1,
+        .flags = {
+            .auto_reload_on_alarm = true
+        }
+    };
+
+    gptimer_config_t timer_config = {
+        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+        .direction = GPTIMER_COUNT_UP,
+        .resolution_hz = SOUND_FREQ
+    };
+  
+    gptimer_event_callbacks_t callback_config = {
+        .on_alarm = _timer_ISR,
+    };
+
+    ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &sound_timer));
+    ESP_ERROR_CHECK(gptimer_set_alarm_action(sound_timer, &alarm_config));
+    ESP_ERROR_CHECK(gptimer_register_event_callbacks(sound_timer, &callback_config, NULL));
+    ESP_ERROR_CHECK(gptimer_enable(sound_timer));
+
+	dac_oneshot_config_t conf = {
+		.chan_id = SOUND_OUTPUT
+	};
+	dac_oneshot_new_channel(&conf, &sound_output);
+}
+
+void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
+	sound_channels[index] = settings;
 }
 
 // ---------------------------------------------- other

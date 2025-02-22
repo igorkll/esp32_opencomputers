@@ -27,7 +27,7 @@
 #define DISPLAY_OFFSET_X    0
 #define DISPLAY_OFFSET_Y    0
 
-void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect);
+void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- touchscreen
 
@@ -35,9 +35,18 @@ void hal_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- sound
 
-#define SOUND_CHANNELS 
+#define SOUND_CHANNELS ((8 * 3) + 1)
+#define SOUND_FREQ 40000
+#define SOUND_OUTPUT 0
 
-void hal_sound_setFreq();
+typedef struct {
+    bool enabled;
+	uint64_t disableTimer;
+	uint16_t freq;
+	uint8_t volume;
+} hal_sound_channel;
+
+void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings);
 
 // ---------------------------------------------- other
 

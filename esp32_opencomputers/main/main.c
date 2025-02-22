@@ -38,7 +38,13 @@ static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setForeground(canvas, 0x0000ff, false);
 	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0);
 
-	
+	hal_sound_channel soundChannel = {
+		.enabled = true,
+		.disableTimer = SOUND_FREQ,
+		.freq = 1000,
+		.volume = 255
+	};
+	hal_sound_updateChannel(0, soundChannel);
 }
 
 static void rawSandbox(lua_State* lua) {
@@ -59,7 +65,7 @@ void _main() {
 		bsod(canvas, "computer halted");
 	}
     lua_close(lua);
-	hal_sendBuffer(canvas, true);
+	hal_display_sendBuffer(canvas, true);
 	
     while (true) {
 		hal_delay(1900);
