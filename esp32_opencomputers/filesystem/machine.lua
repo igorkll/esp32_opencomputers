@@ -1059,8 +1059,8 @@ regComponent({
 						return nil, path
 					else
 						local enough, free = spaceAvailable(self, 0)
+						handleBackend.allowWrite = free
 						if not enough then
-							handleBackend.allowWrite = free
 							return nil, "not enough space"
 						end
 					end
@@ -1431,7 +1431,7 @@ regComponent({
 	}
 })
 
-addComponent({maxX = 50, maxY = 16, resX = 50, resY = 16, depth = 8, viewX = 50, viewY = 16}, "gpu", gpuAddress)
+addComponent({maxX = 80, maxY = 25, resX = 50, resY = 16, depth = 1, viewX = 80, viewY = 25}, "gpu", gpuAddress)
 
 ----------------------------------------------------
 
