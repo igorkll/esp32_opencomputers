@@ -3,6 +3,9 @@ local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
 local eepromAddress = "04cbdf2d-701b-4f66-b216-c593d3bc5c62"
 local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
 
+local maxEepromCodeLen = 4096
+local maxEepromDataLen = 256
+
 local function checkArg(n, have, ...)
 	have = type(have)
 	local function check(want, ...)
@@ -42,6 +45,10 @@ local function epcall(...)
 	else
 		error(result[2], 2)
 	end
+end
+
+local function escapePattern(str)
+	return str:gsub("([^%w])", "%%%1")
 end
 
 local sandbox, libcomputer, libunicode, libcomponent
@@ -296,8 +303,9 @@ local baseComponentList = {}
 local componentList = {}
 local addComponentEventEnabled = false
 
-local function regComponent(api)
-	baseComponentList[api.type] = api
+local function regComponent(base)
+	base.slot = base.slot or -1
+	baseComponentList[base.type] = base
 end
 
 local function addComponent(self, ctype, address)
@@ -514,11 +522,25 @@ libcomponent = {
 			error("no such method", 2)
 		end
 
-		return epcall(comp.api[method].callback, ...)
+		return epcall(comp.api[method].callback, comp.self, ...)
     end,
     list = function(filter, exact)
         checkArg(1, filter, "string", "nil")
-        local list = spcall(component.list, filter, not (not exact))
+        local list = {}
+		for address, comp in pairs(componentList) do
+			if filter then
+				if exact then
+					if comp.type == filter then
+						list[address] = comp.type
+					end
+				elseif comp.type:find(escapePattern(filter)) then
+					list[address] = comp.type
+				end
+			else
+				list[address] = comp.type
+			end
+		end
+
         local key = nil
         return setmetatable(
             list,
@@ -584,7 +606,7 @@ libcomponent = {
 		if not comp then
 			return nil, "no such component"
 		end
-		return comp.base.slot or -1
+		return comp.base.slot
     end
 }
 sandbox.component = libcomponent
@@ -597,10 +619,122 @@ regComponent({
 	api = {
 		get = {
 			callback = function(self)
-				return "QWE"
+				local file = io.open("/storage/eeprom.lua", "rb")
+				if file then
+					local data = file:read("*a")
+					file:close()
+					return data
+				end
+				return ""
+			end,
+			direct = true,
+			doc = "function():string -- Get the currently stored byte array."
+		},
+		set = {
+			callback = function(self, code)
+				code = code or ""
+				checkArg(1, code, "string")
+				if #code > maxEepromCodeLen then
+					return nil, "not enough space"
+				end
+				local file = io.open("/storage/eeprom.lua", "wb")
+				if file then
+					file:write(code)
+					file:close()
+				end
 			end,
 			direct = false,
-			doc = "function():string -- Get the currently stored byte array."
+			doc = "function():string -- Overwrite the currently stored byte array."
+		},
+
+		getData = {
+			callback = function(self)
+				local file = io.open("/storage/eeprom.dat", "rb")
+				if file then
+					local data = file:read("*a")
+					file:close()
+					return data
+				end
+				return ""
+			end,
+			direct = true,
+			doc = "function():string -- Gets currently stored byte-array (usually the component address of the main boot device)."
+		},
+		setData = {
+			callback = function(self, data)
+				data = data or ""
+				checkArg(1, data, "string")
+				if #data > maxEepromDataLen then
+					return nil, "not enough space"
+				end
+				local file = io.open("/storage/eeprom.dat", "wb")
+				if file then
+					file:write(data)
+					file:close()
+				end
+			end,
+			direct = false,
+			doc = "function():string -- Overwrites currently stored byte-array with specified string."
+		},
+
+		getLabel = {
+			callback = function(self)
+				local file = io.open("/storage/eeprom.lbl", "rb")
+				if file then
+					local data = file:read("*a")
+					file:close()
+					return data
+				end
+				return "EEPROM"
+			end,
+			direct = true,
+			doc = "function():string -- Get the label of the EEPROM."
+		},
+		setLabel = {
+			callback = function(self, label)
+				label = label or "EEPROM"
+				checkArg(1, label, "string")
+				label = label:sub(1, 24)
+				local file = io.open("/storage/eeprom.lbl", "wb")
+				if file then
+					file:write(label)
+					file:close()
+				end
+				return label
+			end,
+			direct = false,
+			doc = "function():string -- Set the label of the EEPROM."
+		},
+
+		getSize = {
+			callback = function(self)
+				return maxEepromCodeLen
+			end,
+			direct = true,
+			doc = "function():string -- Gets the maximum storage capacity of the EEPROM."
+		},
+		getDataSize = {
+			callback = function(self)
+				return maxEepromDataLen
+			end,
+			direct = true,
+			doc = "function():string -- Gets the maximum data storage capacity of the EEPROM."
+		},
+
+		getChecksum = {
+			callback = function(self)
+				return "00000000"
+			end,
+			direct = true,
+			doc = "function():string -- Gets Checksum of data on EEPROM."
+		},
+		makeReadonly = {
+			callback = function(self, checksum)
+				checkArg(1, checksum, "string")
+				return nil, "incorrect checksum"
+			end,
+			direct = false,
+			doc = "function():string -- Makes the EEPROM Read-only if it isn't. This process cannot be reversed."
 		}
 	}
 })
