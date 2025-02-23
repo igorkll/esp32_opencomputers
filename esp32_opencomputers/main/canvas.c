@@ -252,7 +252,7 @@ void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 	}
 }
 
-void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len) {
+void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len, bool vertical) {
 	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return;
 
 	x--;
@@ -260,15 +260,28 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 
 	if (len == 0) len = strlen(text);
 
-	size_t maxlen = canvas->sizeX - x;
-	if (len > maxlen) len = maxlen;
-	if (len <= 0) return;
+	if (vertical) {
+		size_t maxlen = canvas->sizeY - y;
+		if (len > maxlen) len = maxlen;
+		if (len <= 0) return;
 
-	for (size_t i = 0; i < len; i++) {
-		size_t index = i + x + (y * canvas->sizeX);
-		canvas->chars[index] = text[i];
-		canvas->foregrounds[index] = canvas->foreground;
-		canvas->backgrounds[index] = canvas->background;
+		for (size_t i = 0; i < len; i++) {
+			size_t index = x + ((i + y) * canvas->sizeX);
+			canvas->chars[index] = text[i];
+			canvas->foregrounds[index] = canvas->foreground;
+			canvas->backgrounds[index] = canvas->background;
+		}
+	} else {
+		size_t maxlen = canvas->sizeX - x;
+		if (len > maxlen) len = maxlen;
+		if (len <= 0) return;
+
+		for (size_t i = 0; i < len; i++) {
+			size_t index = i + x + (y * canvas->sizeX);
+			canvas->chars[index] = text[i];
+			canvas->foregrounds[index] = canvas->foreground;
+			canvas->backgrounds[index] = canvas->background;
+		}
 	}
 }
 

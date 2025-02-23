@@ -303,15 +303,21 @@ sandbox._G = sandbox
 ----------------------------------------------------
 
 local displayFlag = false
-
-local function updateDisplay()
-	displayFlag = true
-end
+local displayValue = 0
 
 local function flushDisplay()
 	if displayFlag then
 		hal_display_sendBuffer(canvas, false)
 		displayFlag = false
+		displayValue = 0
+	end
+end
+
+local function updateDisplay()
+	displayFlag = true
+	displayValue = displayValue + 1
+	if displayValue >= 16 then
+		flushDisplay()
 	end
 end
 
@@ -456,38 +462,39 @@ sandbox.computer = libcomputer
 
 libunicode = {
 	char = function(value)
+		if value > 255 then return "*" end
 		return string.char(value)
 	end,
-	len = function(str)
-		return string.len(str)
+	len = function(text)
+		return string.len(text)
 	end,
-	lower = function(str)
-		return string.lower(str)
+	lower = function(text)
+		return string.lower(text)
 	end,
-	reverse = function(str)
-		return string.reverse(str)
+	reverse = function(text)
+		return string.reverse(text)
 	end,
-	sub = function(str)
-		return string.reverse(str)
+	sub = function(text, i, j)
+		return string.sub(text, i, j)
 	end,
-	upper = function(str)
-		return string.upper(str)
+	upper = function(text)
+		return string.upper(text)
 	end,
-	isWide = function(str)
+	isWide = function(char)
 		return false
 	end,
-	charWidth = function(str)
+	charWidth = function(char)
 		return 1
 	end,
-	wlen = function(str)
-		return string.len(str)
+	wlen = function(text)
+		return string.len(text)
 	end,
-	wtrunc = function(str, len)
-		local strlen = libunicode.len(str)
+	wtrunc = function(text, len)
+		local strlen = libunicode.len(text)
 		if len > strlen then
 			error("Index " .. (len - 1) .. " out of bounds for lenght " .. strlen)
 		end
-		return libunicode.sub(str, 1, len - 1)
+		return libunicode.sub(text, 1, len - 1)
 	end
 }
 sandbox.unicode = libunicode

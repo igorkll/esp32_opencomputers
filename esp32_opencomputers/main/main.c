@@ -29,7 +29,7 @@ static void bsod(canvas_t* canvas, const char* text) {
 	canvas_pos y = 3;
 	for (size_t i = 0; i < len; i++) {
 		char chr = text[i];
-		canvas_set(canvas, x++, y, &chr, 1);
+		canvas_set(canvas, x++, y, &chr, 1, false);
 		if (chr == '\n' || x >= canvas->sizeX) {
 			x = 1;
 			y++;
@@ -38,7 +38,7 @@ static void bsod(canvas_t* canvas, const char* text) {
 
 	canvas_setBackground(canvas, 0xffffff, false);
 	canvas_setForeground(canvas, 0x0000ff, false);
-	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0);
+	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0, false);
 
 	sound_computer_beepString("--", 2);
 }
@@ -88,7 +88,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_RETR(canvas_getBackground, (LUA_ARG_USR), LUA_RET_INT);
 	LUA_BIND_RETR(canvas_getForeground, (LUA_ARG_USR), LUA_RET_INT);
 	LUA_BIND_VOID(canvas_fill, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
-	LUA_BIND_VOID(canvas_set, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_STR, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_set, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_STR, LUA_ARG_INT, LUA_ARG_BOOL));
 	LUA_BIND_VOID(canvas_copy, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
 	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
 
