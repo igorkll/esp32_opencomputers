@@ -5,6 +5,9 @@
 * support screen backlight control via screen.turnOff / screen.turnOn
 * screen.getAspectRatio returns the actual aspect ratio of the display
 
+## configuration a project
+1. main/hal.h
+
 ## available components
 * eeprom
 * screen
