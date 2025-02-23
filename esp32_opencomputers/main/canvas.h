@@ -66,5 +66,8 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY);
 canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y);
 
+void canvas_setPaletteColor(canvas_t* canvas, uint8_t index, canvas_fullColor color);
+canvas_fullColor canvas_getPaletteColor(canvas_t* canvas, uint8_t index);
+
 void canvas_freeCache(canvas_t* canvas);
 void canvas_free(canvas_t* canvas);

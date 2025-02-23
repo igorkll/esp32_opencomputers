@@ -90,6 +90,9 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(canvas_fill, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
 	LUA_BIND_VOID(canvas_set, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_STR, LUA_ARG_INT, LUA_ARG_BOOL));
 	LUA_BIND_VOID(canvas_copy, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_setPaletteColor, (LUA_ARG_INT, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_getPaletteColor, (LUA_ARG_INT), LUA_RET_INT);
+	
 	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
 
 	// ---- display

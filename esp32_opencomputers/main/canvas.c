@@ -101,6 +101,20 @@ static uint8_t _getColorIndexForCanvas(canvas_t* canvas, uint32_t color) {
 	return _find_closest_color888(canvas->palette, canvas->depth == 4 ? 16 : 256, color);
 }
 
+#include <stdint.h>
+
+canvas_color fromFullColor(canvas_fullColor rgb888) {
+    uint8_t r = (rgb888 >> 16) & 0xFF;
+    uint8_t g = (rgb888 >> 8) & 0xFF;
+    uint8_t b = rgb888 & 0xFF;
+
+    uint16_t r5 = (r >> 3) & 0x1F;
+    uint16_t g6 = (g >> 2) & 0x3F;
+    uint16_t b5 = (b >> 3) & 0x1F;
+
+    return (r5 << 11) | (g6 << 5) | b5;
+}
+
 // ----------------------------------------------
 
 canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
@@ -356,6 +370,14 @@ canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
 	}
 
 	return result;
+}
+
+void canvas_setPaletteColor(canvas_t* canvas, uint8_t index, canvas_fullColor color) {
+	canvas->palette[index] = fromFullColor(color);
+}
+
+canvas_fullColor canvas_getPaletteColor(canvas_t* canvas, uint8_t index) {
+	return canvas->palette[index];
 }
 
 void canvas_freeCache(canvas_t* canvas) {

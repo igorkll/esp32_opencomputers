@@ -1290,9 +1290,24 @@ regComponent({
 				if isPal ~= nil then
 					checkArg(2, isPal, "boolean")
 				end
+				if isPal then
+					if self.depth == 1 then
+						error("color palette not supported", 2)
+					end
+					if color < 0 or color > 15 then
+						error("invalid palette index", 2)
+					end
+				end
+				local oldBg = self.bg or 0x000000
+				local oldBgPal = self.bg_pal
 				self.bg = color
 				self.bg_pal = not not isPal
 				canvas_setBackground(canvas, color, self.bg_pal)
+				if oldBgPal then
+					return canvas_getPaletteColor(canvas, oldBg), oldBg
+				else
+					return oldBg, nil			
+				end
 			end,
 			direct = false,
 			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Sets the background color to apply to “pixels” modified by other operations from now on. The returned value is the old background color, as the actual value it was set to (i.e. not compressed to the color space currently set). The first value is the previous color as an RGB value. If the color was from the palette, the second value will be the index in the palette. Otherwise it will be nil. Note that the color is expected to be specified in hexadecimal RGB format, i.e. 0xRRGGBB. This is to allow uniform color operations regardless of the color depth supported by the screen and GPU."
@@ -1303,9 +1318,24 @@ regComponent({
 				if isPal ~= nil then
 					checkArg(2, isPal, "boolean")
 				end
+				if isPal then
+					if self.depth == 1 then
+						error("color palette not supported", 2)
+					end
+					if color < 0 or color > 15 then
+						error("invalid palette index", 2)
+					end
+				end
+				local oldFg = self.fg or 0xffffff
+				local oldFgPal = self.fg_pal
 				self.fg = color
 				self.fg_pal = not not isPal
 				canvas_setForeground(canvas, color, self.fg_pal)
+				if oldFgPal then
+					return canvas_getPaletteColor(canvas, oldFg), oldFg
+				else
+					return oldFg, nil			
+				end
 			end,
 			direct = false,
 			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Like setBackground, but for the foreground color."
@@ -1344,6 +1374,34 @@ regComponent({
 			end,
 			direct = true,
 			doc = "function(): number, boolean -- Like getBackground, but for the foreground color."
+		},
+		getPaletteColor = {
+			callback = function(self, index)
+				if self.depth == 1 then
+					error("color palette not supported", 2)
+				end
+				if index < 0 or index > 15 then
+					error("invalid palette index", 2)
+				end
+				return canvas_getPaletteColor(canvas, index)
+			end,
+			direct = false,
+			doc = "function(index: number): number -- Gets the RGB value of the color in the palette at the specified index."
+		},
+		setPaletteColor = {
+			callback = function(self, index, color)
+				if self.depth == 1 then
+					error("color palette not supported", 2)
+				end
+				if index < 0 or index > 15 then
+					error("invalid palette index", 2)
+				end
+				local oldColor = canvas_getPaletteColor(canvas, index)
+				canvas_setPaletteColor(canvas, index, color)
+				return oldColor
+			end,
+			direct = false,
+			doc = "function(index: number): number -- Sets the RGB value of the color in the palette at the specified index."
 		}
 	}
 })
