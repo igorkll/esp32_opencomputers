@@ -35,6 +35,15 @@ local function spcall(...)
 	end
 end
 
+local function epcall(...)
+	local result = {pcall(...)}
+	if result[1] then
+		return table.unpack(result, 2)
+	else
+		error(result[2], 2)
+	end
+end
+
 local sandbox, libcomputer, libunicode, libcomponent
 sandbox = {
 	_VERSION = _VERSION,
@@ -519,14 +528,14 @@ libcomponent = {
         checkArg(2, method, "string")
         local comp = componentList[address]
 		if not comp then
-			return nil, "no such component"
+			error("no such component", 2)
 		end
 
 		if not comp.api[method] then
-			return nil, "no such method"
+			error("no such method", 2)
 		end
 
-		
+		return epcall(comp.api[method].callback, ...)
     end,
     list = function(filter, exact)
         checkArg(1, filter, "string", "nil")
