@@ -54,6 +54,22 @@ local function escapePattern(str)
 	return str:gsub("([^%w])", "%%%1")
 end
 
+local function simplifyFraction(numerator, denominator)
+	local function gcd(a, b)
+		while b ~= 0 do
+			a, b = b, a % b
+		end
+		return a
+	end
+
+    if denominator == 0 then
+		error("can't divide by zero", 2)
+    end
+
+    local divisor = gcd(math.abs(numerator), math.abs(denominator))
+    return numerator / divisor, denominator / divisor
+end
+
 local sandbox, libcomputer, libunicode, libcomponent
 sandbox = {
 	_VERSION = _VERSION,
@@ -789,7 +805,7 @@ regComponent({
 		},
 		getAspectRatio = {
 			callback = function(self)
-				return DISPLAY_WIDTH, DISPLAY_HEIGHT
+				return simplifyFraction(DISPLAY_WIDTH, DISPLAY_HEIGHT)
 			end,
 			direct = true,
 			doc = "function():number, number -- The aspect ratio of the screen. For multi-block screens this is the number of blocks, horizontal and vertical."
