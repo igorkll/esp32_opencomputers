@@ -12,7 +12,7 @@ static uint8_t _increment(uint8_t* v) {
 #define LUA_ARG_INT luaL_checkinteger(L, _increment(&i))
 #define LUA_ARG_NUM luaL_checknumber(L, _increment(&i))
 #define LUA_ARG_STR luaL_checkstring(L, _increment(&i))
-#define LUA_ARG_USR luaL_checkudata(L, _increment(&i), NULL)
+#define LUA_ARG_USR lua_touserdata(L, _increment(&i))
 
 #define LUA_RET_BOOL(val) lua_pushboolean(L, val)
 #define LUA_RET_INT(val) lua_pushinteger(L, val)

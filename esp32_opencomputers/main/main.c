@@ -93,6 +93,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
 
 	// ---- display
+	LUA_BIND_VOID(hal_display_sendBuffer, (LUA_ARG_USR, LUA_ARG_BOOL));
 	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
 
 	// ---- touchscreen

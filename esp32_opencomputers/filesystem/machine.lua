@@ -352,6 +352,7 @@ end
 
 ---------------------------------------------------- computer library
 
+local updateDisplay = false
 libcomputer = {
 	print = print,
 
@@ -394,6 +395,10 @@ libcomputer = {
 		return computer_pushSignal(eventName, ...)
 	end,
 	pullSignal = function(timeout)
+		if updateDisplay then
+			hal_display_sendBuffer(canvas, false)
+			updateDisplay = false
+		end
 		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
 		repeat
 			local signal = coroutine.yield(deadline - computer_uptime())
@@ -1144,14 +1149,17 @@ regComponent({
 			callback = function(self, depth)
 				checkArg(1, depth, "number")
 				if depth == 1 then
+					updateDisplay = true
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "OneBit"
 				elseif depth == 4 then
+					updateDisplay = true
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "FourBit"
 				elseif depth == 8 then
+					updateDisplay = true
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "EightBit"
@@ -1200,7 +1208,8 @@ regComponent({
 				if vertical ~= nil then
 					checkArg(4, vertical, "boolean")
 				end
-				canvas_set(canvas, x, y, text)
+				canvas_set(canvas, x, y, text, #text)
+				updateDisplay = true
 				return true
 			end,
 			direct = false,
@@ -1214,6 +1223,7 @@ regComponent({
 				checkArg(4, sizeY, "number")
 				checkArg(5, char, "string")
 				canvas_fill(canvas, x, y, sizeX, sizeY, string.byte(char))
+				updateDisplay = true
 				return true
 			end,
 			direct = false,
@@ -1228,6 +1238,7 @@ regComponent({
 				checkArg(5, offsetX, "number")
 				checkArg(6, offsetY, "number")
 				canvas_copy(canvas, x, y, sizeX, sizeY, offsetX, offsetY)
+				updateDisplay = true
 				return true
 			end,
 			direct = false,
@@ -1254,6 +1265,21 @@ regComponent({
 			end,
 			direct = false,
 			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Like setBackground, but for the foreground color."
+		},
+		setResolution = {
+			callback = function(self, sizeX, sizeY)
+				checkArg(1, sizeX, "number")
+				checkArg(2, sizeY, "number")
+				if sizeX * sizeY > (self.maxX * self.maxY) or sizeX > self.maxX or sizeY > self.maxY then
+					error("unsupported resolution", 2)
+				end
+				canvas_setResolution(canvas, sizeX, sizeY)
+				self.resX = sizeX
+				self.resY = sizeY
+				updateDisplay = true
+			end,
+			direct = false,
+			doc = "function(width: number, height: number): boolean -- Sets the specified resolution. Can be up to the maximum supported resolution. If a larger or invalid resolution is provided it will throw an error. Returns true if the resolution was changed (may return false if an attempt was made to set it to the same value it was set before), false otherwise."
 		}
 	}
 })

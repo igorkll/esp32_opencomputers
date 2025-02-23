@@ -23,3 +23,4 @@
 * screen
 * filesystem
 * keyboard
+* gpu
