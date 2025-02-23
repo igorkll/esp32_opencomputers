@@ -459,7 +459,7 @@ size_t hal_filesystem_size(const char* path) {
 			}
 
 			if (S_ISDIR(statbuf.st_mode)) {
-				long dir_size = get_directory_size(full_path);
+				long dir_size = hal_filesystem_size(full_path);
 				if (dir_size != -1) {
 					total_size += dir_size;
 				}
@@ -478,9 +478,9 @@ size_t hal_filesystem_size(const char* path) {
 }
 
 bool hal_filesystem_mkdir(const char* path) {
-	if (filesystem_isDirectory(path)) return false;
+	if (hal_filesystem_isDirectory(path)) return false;
     mkdir(path, S_IRWXU);
-    return filesystem_isDirectory(path);
+    return hal_filesystem_isDirectory(path);
 }
 
 size_t hal_filesystem_count(const char* path, bool files, bool dirs) {
