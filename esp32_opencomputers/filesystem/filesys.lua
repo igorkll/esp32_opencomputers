@@ -182,4 +182,12 @@ function filesys.list(path)
 	return {hal_filesystem_list(path)}
 end
 
+function filesys.remove(path)
+	os.remove(path)
+end
+
+function filesys.rename(path, path2)
+	os.rename(path, path2)
+end
+
 return filesys

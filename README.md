@@ -15,7 +15,7 @@
 ## configuration a project
 1. open esp32_opencomputers/main/hal.h - set up the display and touch screen pins
 2. you may need to change the code in open esp32_opencomputers/main/hal.c to work with your hardware (for example, a display with a different touchscreen or a different matrix controller)
-3. place the files of the desired operating system in the esp32_opencomputers/filesystem/system folder
+3. place the files of the desired operating system in the "esp32_opencomputers/filesystem/system" folder (you can take one to choose from from the "operating_systems" folder)
 4. flash the code into the microcontroller and connect all the peripherals according to the settings in esp32_opencomputers/main/hal.h
 
 ## available components

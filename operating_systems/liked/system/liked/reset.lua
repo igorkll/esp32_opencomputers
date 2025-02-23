@@ -1,0 +1,6 @@
+local fs = (...) or require("filesystem")
+fs.remove("/data/cache")
+fs.remove("/data/errorlog.log")
+fs.remove("/data/palette.plt")
+fs.remove("/data/registry.dat")
+fs.remove("/data/screenSaver.scrsv")

@@ -1,0 +1,1 @@
+require("filesystem").remove("/data/cache/mediastore")

@@ -1,0 +1,22 @@
+{
+    forceRestrictedLoader = true,
+    interpreterSandbox = true,
+    onlyInternalDisk = true,
+    noBootmanager = true,
+    noBootViaBootmanager = true,
+    disableCustomMarketUrls = true,
+    disableRootAccess = true,
+    disableRecovery = true,
+    disableExternalBoot = true,
+    disableSystemSettings = true,
+    disableChangeBranch = true,
+    disableDualboot = true,
+    disableMarketForceMode = true,
+    disableCustomFiles = true,
+    disableCustomPrograms = true,
+    disableCustomPackages = true,
+    settingsBlackList = {"eeprom", "buffer", "power", "libraries", "autorun"},
+    filesBlackList = {"/system/firmware/luabios", "/system/firmware/luabios/code.lua", "/system/firmware/luabios/label.txt", "/system/recoveryAccess.lua", "/system/recoveryScript.lua", "/system/core/recovery.lua"},
+    
+    sysmodeVersion = 1
+}

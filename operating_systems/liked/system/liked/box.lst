@@ -1,0 +1,23 @@
+{
+    "installer",
+    "likedbox",
+    "screenSavers",
+    "palettes",
+    "wallpapers",
+    "icons",
+    "bin",
+    "apps",
+    "autoruns",
+    "recoveryScript.lua",
+    "recoveryAccess.lua",
+    "registry.dat",
+    "liked",
+    "logo.lua",
+    "main.lua",
+    "likedlib",
+    "firmware",
+    "sysdata",
+    "branch.cfg",
+    "core/recovery.lua",
+    "sysinfo.cfg"
+}
