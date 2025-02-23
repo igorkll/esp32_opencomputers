@@ -381,6 +381,25 @@ end
 
 ---------------------------------------------------- computer library
 
+local function computer_beep(freq, delay)
+	if type(freq) == "string" then
+		checkArg(1, freq, "string")
+		sound_computer_beepString(freq, #freq)
+	else
+		if freq then checkArg(1, freq, "number") end
+		if delay then checkArg(2, delay, "number") end
+		sound_computer_beep(freq or 440, delay or 0.1)
+	end
+end
+
+local function computer_getDeviceInfo()
+	return {}
+end
+
+local function computer_getProgramLocations()
+	return {}
+end
+
 libcomputer = {
 	print = print,
 
@@ -436,20 +455,13 @@ libcomputer = {
 
 	beep = function(freq, delay)
 		flushDisplay()
-		if type(freq) == "string" then
-			checkArg(1, freq, "string")
-			sound_computer_beepString(freq, #freq)
-		else
-			checkArg(1, freq, "number")
-			checkArg(2, delay, "number")
-			sound_computer_beep(freq, delay)
-		end
+		return epcall(computer_beep, freq, delay)
 	end,
 	getDeviceInfo = function()
-		return {}
+		return epcall(computer_getDeviceInfo)
 	end,
 	getProgramLocations = function()
-		return {}
+		return epcall(computer_getProgramLocations)
 	end,
 
 	getArchitectures = function(...)
@@ -795,6 +807,59 @@ regComponent({
 })
 
 addComponent({}, "keyboard", keyboardAddress)
+
+---------------------------------------------------- computer component
+
+regComponent({
+	type = "computer",
+	slot = -1,
+	api = {
+		isRunning = {
+			callback = function(self)
+				return true
+			end,
+			direct = true,
+			doc = "function():boolean -- Returns whether the computer is currently running."
+		},
+		start = {
+			callback = function(self)
+				return false
+			end,
+			direct = false,
+			doc = "function():boolean -- Tries to start the computer. Returns true on success, false otherwise. Note that this will also return false if the computer was already running. If the computer is currently shutting down, this will cause the computer to reboot instead."
+		},
+		stop = {
+			callback = function(self)
+				coroutine.yield(false)
+			end,
+			direct = false,
+			doc = "function():boolean -- Tries to stop the computer. Returns true on success, false otherwise. Also returns false if the computer is already stopped."
+		},
+		beep = {
+			callback = function(self, freq, delay)
+				return epcall(computer_beep, freq, delay)
+			end,
+			direct = false,
+			doc = "function([frequency:number[, duration:number]]) -- Plays a tone, useful to alert users via audible feedback. Supports frequencies from 20 to 2000Hz, with a duration of up to 5 seconds."
+		},
+		getDeviceInfo = {
+			callback = function(self)
+				return epcall(computer_getDeviceInfo)
+			end,
+			direct = false,
+			doc = "function():table -- Returns a table of device information. Note that this is architecture-specific and some may not implement it at all."
+		},
+		getProgramLocations = {
+			callback = function(self)
+				return epcall(computer_getProgramLocations)
+			end,
+			direct = false,
+			doc = "function():table"
+		}
+	}
+})
+
+addComponent({}, "computer", computerAddress)
 
 ---------------------------------------------------- screen component
 
