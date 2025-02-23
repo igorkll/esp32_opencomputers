@@ -1105,8 +1105,10 @@ regComponent({
 				checkArg(1, reset, "boolean")
 
 				if reset then
-					canvas_setResolution(canvas, self.maxX, self.maxY)
-					canvas_setDepth(canvas, 8)
+					self.resX, self.resY = self.maxX, self.maxY
+					self.depth = 8
+					canvas_setResolution(canvas, self.resX, self.resY)
+					canvas_setDepth(canvas, self.depth)
 				end
 
 				self.address = address
@@ -1129,10 +1131,17 @@ regComponent({
 			direct = true,
 			doc = "function():number -- Gets the maximum supported color depth supported by the GPU and the screen it is bound to (minimum of the two)."
 		},
+		getDepth = {
+			callback = function(self)
+				return self.depth
+			end,
+			direct = true,
+			doc = "function():number -- Gets the maximum supported color depth supported by the GPU and the screen it is bound to (minimum of the two)."
+		},
 	}
 })
 
-addComponent({maxX = 50, maxY = 16}, "gpu", gpuAddress)
+addComponent({maxX = 50, maxY = 16, resX = 50, resY = 16, depth = 8}, "gpu", gpuAddress)
 
 ----------------------------------------------------
 
