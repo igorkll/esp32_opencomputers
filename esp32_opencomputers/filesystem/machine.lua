@@ -1290,7 +1290,9 @@ regComponent({
 				if isPal ~= nil then
 					checkArg(2, isPal, "boolean")
 				end
-				canvas_setBackground(canvas, color, not not isPal)
+				self.bg = color
+				self.bg_pal = not not isPal
+				canvas_setBackground(canvas, color, self.bg_pal)
 			end,
 			direct = false,
 			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Sets the background color to apply to “pixels” modified by other operations from now on. The returned value is the old background color, as the actual value it was set to (i.e. not compressed to the color space currently set). The first value is the previous color as an RGB value. If the color was from the palette, the second value will be the index in the palette. Otherwise it will be nil. Note that the color is expected to be specified in hexadecimal RGB format, i.e. 0xRRGGBB. This is to allow uniform color operations regardless of the color depth supported by the screen and GPU."
@@ -1301,7 +1303,9 @@ regComponent({
 				if isPal ~= nil then
 					checkArg(2, isPal, "boolean")
 				end
-				canvas_setForeground(canvas, color, not not isPal)
+				self.fg = color
+				self.fg_pal = not not isPal
+				canvas_setForeground(canvas, color, self.fg_pal)
 			end,
 			direct = false,
 			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Like setBackground, but for the foreground color."
@@ -1320,6 +1324,26 @@ regComponent({
 			end,
 			direct = false,
 			doc = "function(width: number, height: number): boolean -- Sets the specified resolution. Can be up to the maximum supported resolution. If a larger or invalid resolution is provided it will throw an error. Returns true if the resolution was changed (may return false if an attempt was made to set it to the same value it was set before), false otherwise."
+		},
+		getBackground = {
+			callback = function(self)
+				if self.bg_pal then
+					return self.bg, true
+				end
+				return canvas_getBackground(canvas), false
+			end,
+			direct = true,
+			doc = "function(): number, boolean -- Gets the current background color. This background color is applied to all “pixels” that get changed by other operations."
+		},
+		getForeground = {
+			callback = function(self)
+				if self.fg_pal then
+					return self.fg, true
+				end
+				return canvas_getForeground(canvas), false
+			end,
+			direct = true,
+			doc = "function(): number, boolean -- Like getBackground, but for the foreground color."
 		}
 	}
 })
