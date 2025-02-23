@@ -401,6 +401,7 @@ local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
 	if not screenSelf.precise then
 		sx, sy = math.ceil(sx), math.ceil(sy)
 	end
+	debugPrint(eventName .. " " .. fingerindex .. ": " .. sx .. ", " .. sy)
 	computer_pushSignal(eventName, screenAddress, sx, sy, button, "finger" .. fingerindex)
 end
 
@@ -415,16 +416,13 @@ local function updateTouchscreen()
 			local x, y, z = hal_touchscreen_getPoint(i - 1)
 			debugPrint("finger " .. i .. ": " .. x .. ", " .. y)
 			if not tsState then
-				debugPrint("touch " .. i .. ": " .. x .. ", " .. y)
 				pushTouchscreenEvent("touch", x, y, 0, i)
 				oldTouchscreenStates[i] = {x = x, y = y}
 			elseif tsState.x ~= x or tsState.y ~= y then
-				debugPrint("drag " .. i .. ": " .. x .. ", " .. y)
 				pushTouchscreenEvent("drag", x, y, 0, i)
-				oldTouchscreenStates[i] = false
+				oldTouchscreenStates[i] = {x = x, y = y}
 			end
-		elseif oldTouchscreenStates[i] then
-			debugPrint("drop " .. i .. ": " .. x .. ", " .. y)
+		elseif tsState then
 			pushTouchscreenEvent("drop", tsState.x, tsState.y, 0, i)
 			oldTouchscreenStates[i] = nil
 		end
@@ -524,7 +522,8 @@ libcomputer = {
 		updateTouchscreen()
 		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
 		repeat
-			local signal = coroutine.yield(deadline - computer_uptime())
+			local signal = coroutine.yield()
+			updateTouchscreen()
 			if signal then
 				return table.unpack(signal, 1, signal.n)
 			end

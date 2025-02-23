@@ -63,15 +63,6 @@ static void _list_bind_callback(void* arg, const char* filename) {
 }
 
 static int _list_bind(lua_State* lua) {
-	uint8_t index = luaL_checknumber(lua, 1);
-	hal_touchscreen_point point = hal_touchscreen_getPoint(index);
-	lua_pushinteger(lua, point.x);
-	lua_pushinteger(lua, point.y);
-	lua_pushnumber(lua, point.z);
-	return 3;
-}
-
-static int _getPoint_bind(lua_State* lua) {
 	const char* path = luaL_checkstring(lua, 1);
 	_list_bind_data bind_data = {
 		.lua = lua,
@@ -79,6 +70,15 @@ static int _getPoint_bind(lua_State* lua) {
 	};
 	hal_filesystem_list(path, _list_bind_callback, (void*)(&bind_data));
 	return bind_data.count;
+}
+
+static int _getPoint_bind(lua_State* lua) {
+	uint8_t index = luaL_checknumber(lua, 1);
+	hal_touchscreen_point point = hal_touchscreen_getPoint(index);
+	lua_pushinteger(lua, point.x);
+	lua_pushinteger(lua, point.y);
+	lua_pushnumber(lua, point.z);
+	return 3;
 }
 
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
