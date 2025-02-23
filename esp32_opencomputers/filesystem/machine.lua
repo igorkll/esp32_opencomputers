@@ -37,7 +37,7 @@ local function stringCheckArg(n, have)
 end
 
 local function numberCheckArg(n, have)
-	checkArg(1, have, "string")
+	checkArg(1, have, "number")
 	if have == math.huge or have == -math.huge or have ~= have then
 		return 0
 	end
