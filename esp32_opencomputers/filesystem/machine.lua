@@ -9,6 +9,8 @@ local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
 
+local filesys = require("filesys")
+
 local function checkArg(n, have, ...)
 	have = type(have)
 	local function check(want, ...)
@@ -638,13 +640,7 @@ regComponent({
 	api = {
 		get = {
 			callback = function(self)
-				local file = io.open("/storage/eeprom.lua", "rb")
-				if file then
-					local data = file:read("*a")
-					file:close()
-					return data
-				end
-				return ""
+				return filesys.readFile("/storage/eeprom.lua") or ""
 			end,
 			direct = true,
 			doc = "function():string -- Get the currently stored byte array."
@@ -656,11 +652,7 @@ regComponent({
 				if #code > maxEepromCodeLen then
 					return nil, "not enough space"
 				end
-				local file = io.open("/storage/eeprom.lua", "wb")
-				if file then
-					file:write(code)
-					file:close()
-				end
+				filesys.writeFile("/storage/eeprom.lua", code)
 			end,
 			direct = false,
 			doc = "function(string) -- Overwrite the currently stored byte array."
@@ -668,13 +660,7 @@ regComponent({
 
 		getData = {
 			callback = function(self)
-				local file = io.open("/storage/eeprom.dat", "rb")
-				if file then
-					local data = file:read("*a")
-					file:close()
-					return data
-				end
-				return ""
+				return filesys.readFile("/storage/eeprom.dat") or ""
 			end,
 			direct = true,
 			doc = "function():string -- Gets currently stored byte-array (usually the component address of the main boot device)."
@@ -686,11 +672,7 @@ regComponent({
 				if #data > maxEepromDataLen then
 					return nil, "not enough space"
 				end
-				local file = io.open("/storage/eeprom.dat", "wb")
-				if file then
-					file:write(data)
-					file:close()
-				end
+				filesys.writeFile("/storage/eeprom.dat", data)
 			end,
 			direct = false,
 			doc = "function(string) -- Overwrites currently stored byte-array with specified string."
@@ -698,13 +680,7 @@ regComponent({
 
 		getLabel = {
 			callback = function(self)
-				local file = io.open("/storage/eeprom.lbl", "rb")
-				if file then
-					local data = file:read("*a")
-					file:close()
-					return data
-				end
-				return "EEPROM"
+				return filesys.readFile("/storage/eeprom.lbl") or "EEPROM"
 			end,
 			direct = true,
 			doc = "function():string -- Get the label of the EEPROM."
@@ -714,11 +690,7 @@ regComponent({
 				label = label or "EEPROM"
 				checkArg(1, label, "string")
 				label = label:sub(1, 24)
-				local file = io.open("/storage/eeprom.lbl", "wb")
-				if file then
-					file:write(label)
-					file:close()
-				end
+				filesys.writeFile("/storage/eeprom.lbl", label)
 				return label
 			end,
 			direct = false,
@@ -772,6 +744,8 @@ addComponent({}, "keyboard", keyboardAddress)
 
 ---------------------------------------------------- screen component
 
+local aspectRatioX, aspectRatioY = simplifyFraction(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+
 regComponent({
 	type = "screen",
 	slot = -1,
@@ -805,7 +779,7 @@ regComponent({
 		},
 		getAspectRatio = {
 			callback = function(self)
-				return simplifyFraction(DISPLAY_WIDTH, DISPLAY_HEIGHT)
+				return aspectRatioX, aspectRatioY
 			end,
 			direct = true,
 			doc = "function():number, number -- The aspect ratio of the screen. For multi-block screens this is the number of blocks, horizontal and vertical."
@@ -855,6 +829,45 @@ regComponent({
 })
 
 addComponent({state = true, precise = false, touchModeInverted = false}, "screen", screenAddress)
+
+---------------------------------------------------- filesystem component
+
+regComponent({
+	type = "filesystem",
+	slot = -1,
+	api = {
+		spaceUsed = {
+			callback = function(self)
+				return 
+			end,
+			direct = true,
+			doc = "function():number -- The currently used capacity of the file system, in bytes."
+		},
+		setLabel = {
+			callback = function(self, label)
+				checkArg(1, label, "string")
+				if self.labelReadonly then
+					error("label is read only", 2)
+				end
+				label = label:sub(1, 24)
+				filesys.writeFile(self.path .. ".lbl", label)
+				return label
+			end,
+			direct = true,
+			doc = "function(string):string -- Sets the label of the file system. Returns the new value, which may be truncated."
+		},
+		getLabel = {
+			callback = function(self)
+				return filesys.readFile(self.path .. ".lbl") or self.label
+			end,
+			direct = true,
+			doc = "function():string -- Get the current label of the file system."
+		}
+	}
+})
+
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system"}, "filesystem", diskAddress)
+addComponent({path = "/storage/system", readonly = false, labelReadonly = true, label = "tmpfs"}, "filesystem", tmpAddress)
 
 ----------------------------------------------------
 
