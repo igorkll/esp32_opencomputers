@@ -835,6 +835,7 @@ addComponent({state = true, precise = false, touchModeInverted = false}, "screen
 ---------------------------------------------------- filesystem component
 
 local baseFileCost = 512
+local maxReadPart = 2048
 local fileHandles = {}
 
 local function readonlyCheck(self)
@@ -844,7 +845,7 @@ local function readonlyCheck(self)
 end
 
 local function formatPath(self, path)
-	return filesys.xsconcat(self.path, path) or self.path
+	return filesys.sconcat(self.path, path) or self.path
 end
 
 local function spaceUsed(self)
@@ -996,7 +997,11 @@ regComponent({
 				end
 				mode = mode or "r"
 
-				local handleBackend = {file = filesys.open(formatPath(self, path), mode)}
+				local file, err = filesys.open(formatPath(self, path), mode)
+				if not file then
+					return nil, tostring(err)
+				end
+				local handleBackend = {file = file}
 				if mode:sub(1, 1) == "w" then
 					if self.readonly then
 						return nil, path
@@ -1032,6 +1037,9 @@ regComponent({
 			callback = function(self, handle, count)
 				checkArg(2, count, "number")
 				if fileHandles[handle] then
+					if count > maxReadPart then
+						count = maxReadPart
+					end
 					local str = fileHandles[handle].file:read(count)
 					if str and #str > 0 then
 						return str
