@@ -429,6 +429,10 @@ local function updateTouchscreen()
 	end
 end
 
+local function updateHardware()
+	updateTouchscreen()
+end
+
 ---------------------------------------------------- computer library
 
 local defaultDeviceInfo = {
@@ -519,11 +523,11 @@ libcomputer = {
 	end,
 	pullSignal = function(timeout)
 		flushDisplay()
-		updateTouchscreen()
+		updateHardware()
 		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
 		repeat
 			local signal = coroutine.yield()
-			updateTouchscreen()
+			updateHardware()
 			if signal then
 				return table.unpack(signal, 1, signal.n)
 			end
@@ -670,6 +674,7 @@ libcomponent = {
 			error("no such method", 2)
 		end
 
+		updateHardware()
 		if comp.type ~= "gpu" then
 			flushDisplay()
 		end
