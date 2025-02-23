@@ -302,6 +302,21 @@ sandbox._G = sandbox
 
 ----------------------------------------------------
 
+local displayFlag = false
+
+local function updateDisplay()
+	displayFlag = true
+end
+
+local function flushDisplay()
+	if displayFlag then
+		hal_display_sendBuffer(canvas, false)
+		displayFlag = false
+	end
+end
+
+----------------------------------------------------
+
 local eventList = {}
 
 local function computer_pushSignal(eventName, ...)
@@ -352,7 +367,6 @@ end
 
 ---------------------------------------------------- computer library
 
-local updateDisplay = false
 libcomputer = {
 	print = print,
 
@@ -391,14 +405,12 @@ libcomputer = {
 		coroutine.yield(not not reboot)
 	end,
 	pushSignal = function(eventName, ...)
+		flushDisplay()
 		eventName = stringCheckArg(1, eventName)
 		return computer_pushSignal(eventName, ...)
 	end,
 	pullSignal = function(timeout)
-		if updateDisplay then
-			hal_display_sendBuffer(canvas, false)
-			updateDisplay = false
-		end
+		flushDisplay()
 		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
 		repeat
 			local signal = coroutine.yield(deadline - computer_uptime())
@@ -409,6 +421,7 @@ libcomputer = {
 	end,
 
 	beep = function(freq, delay)
+		flushDisplay()
 		if type(freq) == "string" then
 			checkArg(1, freq, "string")
 			sound_computer_beepString(freq, #freq)
@@ -553,10 +566,16 @@ libcomponent = {
 			error("no such method", 2)
 		end
 
+		if comp.type ~= "gpu" then
+			flushDisplay()
+		end
+
 		return epcall(comp.api[method].callback, comp.self, ...)
     end,
     list = function(filter, exact)
         checkArg(1, filter, "string", "nil")
+		flushDisplay()
+
         local list = {}
 		for address, comp in pairs(componentList) do
 			if filter then
@@ -587,6 +606,8 @@ libcomponent = {
     end,
     methods = function(address)
 		checkArg(1, address, "string")
+		flushDisplay()
+
         local comp = componentList[address]
 		if not comp then
 			return nil, "no such component"
@@ -600,6 +621,8 @@ libcomponent = {
     end,
     fields = function(address)
 		checkArg(1, address, "string")
+		flushDisplay()
+
 		local comp = componentList[address]
 		if not comp then
 			return nil, "no such component"
@@ -608,6 +631,8 @@ libcomponent = {
     end,
     proxy = function(address)
 		checkArg(1, address, "string")
+		flushDisplay()
+
         local comp = componentList[address]
 		if not comp then
 			return nil, "no such component"
@@ -625,6 +650,8 @@ libcomponent = {
     end,
     type = function(address)
 		checkArg(1, address, "string")
+		flushDisplay()
+
         local comp = componentList[address]
 		if not comp then
 			return nil, "no such component"
@@ -633,6 +660,8 @@ libcomponent = {
     end,
     slot = function(address)
 		checkArg(1, address, "string")
+		flushDisplay()
+
         local comp = componentList[address]
 		if not comp then
 			return nil, "no such component"
@@ -1103,6 +1132,9 @@ regComponent({
 				if not componentList[address] then
 					return nil, "invalid address"
 				end
+				if componentList[address].type ~= "screen" then
+					return nil, "not a screen"
+				end
 
 				if reset == nil then
 					reset = true
@@ -1111,6 +1143,7 @@ regComponent({
 
 				if reset then
 					self.resX, self.resY = self.maxX, self.maxY
+					self.viewX, self.viewY = self.maxX, self.maxY
 					self.depth = 8
 					canvas_setResolution(canvas, self.resX, self.resY)
 					canvas_setDepth(canvas, self.depth)
@@ -1149,17 +1182,17 @@ regComponent({
 			callback = function(self, depth)
 				checkArg(1, depth, "number")
 				if depth == 1 then
-					updateDisplay = true
+					updateDisplay()
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "OneBit"
 				elseif depth == 4 then
-					updateDisplay = true
+					updateDisplay()
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "FourBit"
 				elseif depth == 8 then
-					updateDisplay = true
+					updateDisplay()
 					self.depth = depth
 					canvas_setDepth(canvas, self.depth)
 					return "EightBit"
@@ -1209,7 +1242,7 @@ regComponent({
 					checkArg(4, vertical, "boolean")
 				end
 				canvas_set(canvas, x, y, text, #text)
-				updateDisplay = true
+				updateDisplay()
 				return true
 			end,
 			direct = false,
@@ -1223,7 +1256,7 @@ regComponent({
 				checkArg(4, sizeY, "number")
 				checkArg(5, char, "string")
 				canvas_fill(canvas, x, y, sizeX, sizeY, string.byte(char))
-				updateDisplay = true
+				updateDisplay()
 				return true
 			end,
 			direct = false,
@@ -1238,7 +1271,7 @@ regComponent({
 				checkArg(5, offsetX, "number")
 				checkArg(6, offsetY, "number")
 				canvas_copy(canvas, x, y, sizeX, sizeY, offsetX, offsetY)
-				updateDisplay = true
+				updateDisplay()
 				return true
 			end,
 			direct = false,
@@ -1276,7 +1309,7 @@ regComponent({
 				canvas_setResolution(canvas, sizeX, sizeY)
 				self.resX = sizeX
 				self.resY = sizeY
-				updateDisplay = true
+				updateDisplay()
 			end,
 			direct = false,
 			doc = "function(width: number, height: number): boolean -- Sets the specified resolution. Can be up to the maximum supported resolution. If a larger or invalid resolution is provided it will throw an error. Returns true if the resolution was changed (may return false if an attempt was made to set it to the same value it was set before), false otherwise."

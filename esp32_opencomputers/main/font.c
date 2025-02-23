@@ -21,6 +21,19 @@ void font_init() {
 
 int font_findOffset(char* chr, size_t len) {
 	uint8_t charcode[8];
+
+	if (len == 1) {
+		int offset = chr[0] * 19;
+		fseek(font, offset, SEEK_SET);
+
+		uint8_t metadata;
+		fread(&metadata, 1, 1, font);
+
+		if (metadata != 2) {
+			return offset;
+		}
+	}
+
 	int offset = 0;
 	do {
 		fseek(font, offset, SEEK_SET);
@@ -31,7 +44,7 @@ int font_findOffset(char* chr, size_t len) {
 		uint8_t charlen;
 		fread(&charlen, 1, 1, font);
 
-		if (charlen == len) {
+		if (metadata != 2 && charlen == len) {
 			fread(charcode, 1, charlen, font);
 			if (memcmp(charcode, chr, len) == 0) {
 				return offset;

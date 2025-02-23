@@ -23,7 +23,32 @@ def rasterizeChar(binchar):
 			print(format(byte, '08b').replace('1', '#').replace('0', ' '))
 
 with open("../filesystem/font.bin", 'wb') as file:
+	waitList = []
+	moveLimit = 256
 	for char in alphabet:
+		char_code = bytearray(char.encode('utf-8'))
+		binchar = convertChar(findChar(char))
+		charlen = len(binchar)
+
+		if moveLimit > 0 and charlen >= 32:
+			waitList.append(char)
+
+			file.write(bytearray([2]))
+			file.write(bytearray([0]))
+			file.write(bytearray([0]))
+			file.write(b'\0' * 16)
+		else:
+			print(f"---- {char} / {list(char_code)}")
+			rasterizeChar(binchar)
+
+			file.write(bytearray([0]))
+			file.write(bytearray([len(char_code)]))
+			file.write(char_code)
+			file.write(binchar)
+
+		moveLimit = moveLimit - 1
+
+	for char in waitList:
 		char_code = bytearray(char.encode('utf-8'))
 		binchar = convertChar(findChar(char))
 		charlen = len(binchar)
