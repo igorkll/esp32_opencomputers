@@ -445,27 +445,6 @@ sandbox.unicode = libunicode
 -- Caching proxy objects for lower memory use.
 local proxyCache = setmetatable({}, {__mode = "v"})
 
--- Short-term caching of callback directness for improved performance.
-local directCache = setmetatable({}, {__mode = "k"})
-local function isDirect(address, method)
-    local cacheKey = address .. ":" .. method
-    local cachedValue = directCache[cacheKey]
-    if cachedValue ~= nil then
-        return cachedValue
-    end
-    local methods, reason = component_methods(address)
-    if not methods then
-        return false
-    end
-    for name, info in pairs(methods) do
-        if name == method then
-            directCache[cacheKey] = info.direct
-            return info.direct
-        end
-    end
-    error("no such method", 1)
-end
-
 local componentProxy = {
     __index = function(self, key)
         if self.fields[key] and self.fields[key].getter then
@@ -521,7 +500,7 @@ libcomponent = {
 			return nil
 		end
 
-		return tostring(comp.api[method].doc or "undocumented")
+		return comp.api[method].doc
     end,
     invoke = function(address, method, ...)
         checkArg(1, address, "string")
@@ -576,28 +555,16 @@ libcomponent = {
     end,
     proxy = function(address)
 		checkArg(1, address, "string")
-        local type, reason = libcomponent.type(addComponent)
-        if not type then
-            return nil, reason
-        end
-        local slot, reason = libcomponent.slot(addComponent)
-        if not slot then
-            return nil, reason
-        end
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
         if proxyCache[address] then
             return proxyCache[address]
         end
-        local proxy = {address = address, type = type, slot = slot, fields = {}}
-        local methods, reason = spcall(component.methods, address)
-        if not methods then
-            return nil, reason
-        end
-        for method, info in pairs(methods) do
-            if not info.getter and not info.setter then
-                proxy[method] = setmetatable({address = address, name = method}, componentCallback)
-            else
-                proxy.fields[method] = info
-            end
+        local proxy = {address = address, type = comp.type, slot = comp.base.slot, fields = {}}
+        for name in pairs(comp.api) do
+			proxy[name] = setmetatable({address = address, name = name}, componentCallback)
         end
         setmetatable(proxy, componentProxy)
         proxyCache[address] = proxy
