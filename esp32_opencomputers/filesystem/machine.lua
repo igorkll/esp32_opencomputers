@@ -1,3 +1,5 @@
+local debugMode = false
+
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
 local eepromAddress = "04cbdf2d-701b-4f66-b216-c593d3bc5c62"
@@ -595,6 +597,21 @@ libcomponent = {
 
 		if comp.type ~= "gpu" then
 			flushDisplay()
+		end
+
+		if debugMode then
+			local argstbl = {...}
+			local args = {}
+			for i = 1, #argstbl do
+				local val = argstbl[i]
+				local valt = type(val)
+				if valt == "string" then
+					table.insert(args, "\"" .. val .. "\"")
+				else
+					table.insert(args, tostring(val))
+				end
+			end
+			print("component.invoke: " .. comp.type .. " | " .. address:sub(1, 3) .. " | " .. method .. "(" .. table.concat(args, ", ") .. ")")
 		end
 
 		return epcall(comp.api[method].callback, comp.self, ...)
@@ -1198,8 +1215,9 @@ regComponent({
 	}
 })
 
+filesys.makeDirectory("/storage/tmpfs")
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
-addComponent({path = "/tmpfs", readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
+addComponent({path = "/storage/tmpfs", readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
 
