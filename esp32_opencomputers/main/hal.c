@@ -10,6 +10,7 @@
 #include <esp_timer.h>
 #include <driver/dac_oneshot.h>
 #include <string.h>
+#include <driver/i2c.h>
 #include <math.h>
 #include "hal.h"
 #include "main.h"
@@ -267,7 +268,7 @@ static bool firstFlush = false;
 static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
-void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
+hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
 	if (charSizeY % 2 != 0) charSizeY--;
@@ -403,6 +404,123 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 }
 
 // ---------------------------------------------- touchscreen
+
+#ifdef TOUCHSCREEN_FT6336U
+static uint8_t i2c_readReg(uint8_t addr) {
+    uint8_t val = 0;
+    i2c_master_write_read_device(TOUCHSCREEN_HOST, TOUCHSCREEN_ADDR, &addr, 1, &val, 1, 100 / portTICK_PERIOD_MS);
+    return val;
+}
+
+static int i2c_readDualReg(uint8_t addr) {
+    uint8_t read_buf[2];
+    read_buf[0] = i2c_readReg(addr);
+    read_buf[1] = i2c_readReg(addr + 1);
+    return ((read_buf[0] & 0x0f) << 8) | read_buf[1];
+}
+
+static void _initTouchscreen() {
+	i2c_config_t config = {
+		.mode = I2C_MODE_MASTER,
+		.sda_io_num = TOUCHSCREEN_SDA,
+		.scl_io_num = TOUCHSCREEN_SCL,
+		.sda_pullup_en = GPIO_PULLUP_ENABLE,
+		.scl_pullup_en = GPIO_PULLUP_ENABLE,
+		.master.clk_speed = 400000,
+	};
+
+	ESP_ERROR_CHECK(i2c_param_config(TOUCHSCREEN_HOST, &config));
+	ESP_ERROR_CHECK(i2c_driver_install(TOUCHSCREEN_HOST, config.mode, 0, 0, 0));
+
+	gpio_config_t io_conf = {};
+	io_conf.pin_bit_mask |= 1ULL << TOUCHSCREEN_RST;
+	io_conf.mode = GPIO_MODE_OUTPUT;
+	gpio_config(&io_conf);
+
+	gpio_set_level(TOUCHSCREEN_RST, false);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+	gpio_set_level(TOUCHSCREEN_RST, true);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
+}
+
+uint8_t hal_touchscreen_touchCount() {
+	return i2c_readReg(0x02) & 0x0F;
+}
+
+hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
+	float x = 0;
+    float y = 0;
+    float z = 0;
+
+	switch (index) {
+		case 0:
+			x = i2c_readDualReg(0x03);
+			y = i2c_readDualReg(0x05);
+			z = 1;
+			break;
+
+		case 1:
+			x = i2c_readDualReg(0x09);
+			y = i2c_readDualReg(0x0B);
+			z = 1;
+			break;
+	}
+
+    if (TOUCHSCREEN_FLIP_XY) {
+        tsgl_pos t = x;
+        x = y;
+        y = t;
+    }
+
+    if (TOUCHSCREEN_MUL_X != 0) x *= TOUCHSCREEN_MUL_X;
+    if (TOUCHSCREEN_MUL_Y != 0) y *= TOUCHSCREEN_MUL_Y;
+
+    x += TOUCHSCREEN_OFFSET_X;
+    y += TOUCHSCREEN_OFFSET_Y;
+
+    if (x < 0) {
+        x = 0;
+    } else if (x >= TOUCHSCREEN_WIDTH) {
+        x = TOUCHSCREEN_WIDTH - 1;
+    }
+
+    if (y < 0) {
+        y = 0;
+    } else if (y >= TOUCHSCREEN_HEIGHT) {
+        y = TOUCHSCREEN_HEIGHT - 1;
+    }
+
+    bool flipFlip = TOUCHSCREEN_ROTATION == 2 || TOUCHSCREEN_ROTATION == 3;
+    if (TOUCHSCREEN_FLIP_X ^ flipFlip) x = TOUCHSCREEN_WIDTH - 1 - x;
+    if (TOUCHSCREEN_FLIP_Y ^ flipFlip) y = TOUCHSCREEN_HEIGHT - 1 - y;
+
+    switch (touchscreen->rotation) {
+        case 1:
+        case 3:
+            tsgl_pos t = x;
+            x = y;
+            y = TOUCHSCREEN_WIDTH - t;
+            break;
+    }
+
+    return (hal_touchscreen_point) {
+        .x = x + 0.5,
+        .y = y + 0.5,
+        .z = z
+    };
+}
+#else
+static void _initTouchscreen() {
+}
+
+uint8_t hal_touchscreen_touchCount() {
+	return 0;
+}
+
+hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
+	return (hal_touchscreen_point) {.x = 0, .y = 0, .z = 0};
+}
+#endif
 
 // ---------------------------------------------- filesystem
 
@@ -686,6 +804,7 @@ void app_main() {
 	#endif
 	hal_display_backlight(false);
 	_initDisplay();
+	_initTouchscreen();
 	_initFilesystem();
 	_initSound();
 	font_init();

@@ -1,4 +1,4 @@
-local debugMode = false
+local debugMode = true
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
@@ -7,6 +7,8 @@ local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
 local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
 local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
 local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
+
+local screenSelf = {state = true, precise = false, touchModeInverted = false}
 
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
@@ -382,6 +384,45 @@ local function delComponent(address)
 	componentList[address] = nil
 end
 
+----------------------------------------------------
+
+local maxTouchCount = 0
+local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = 0, 0, 6, 12
+local oldTouchscreenStates = {}
+
+local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
+	local sx, sy = x / imageCharSizeX, y / imageCharSizeY
+	if not screenSelf.precise then
+		sx, sy = math.ceil(sx), math.ceil(sy)
+	end
+	computer_pushSignal(eventName, screenAddress, sx, sy, button, "finger" .. fingerindex)
+end
+
+local function updateTouchscreen()
+	local touchCount = hal_touchscreen_touchCount()
+	if touchCount > maxTouchCount then
+		maxTouchCount = touchCount
+	end
+	for i = 1, maxTouchCount do
+		if i <= touchCount then
+			local x, y, z = hal_touchscreen_getPoint(i - 1)
+			if z > 0 then
+				local tsState = oldTouchscreenStates[i]
+				if not tsState then
+					pushTouchscreenEvent("touch", x, y, 0, i)
+					oldTouchscreenStates[i] = {x = x, y = y}
+				elseif tsState.x ~= x or tsState.y ~= y then
+					pushTouchscreenEvent("drag", x, y, 0, i)
+					oldTouchscreenStates[i] = false
+				end
+			elseif oldTouchscreenStates[i] then
+				pushTouchscreenEvent("drop", x, y, 0, i)
+				oldTouchscreenStates[i] = nil
+			end
+		end
+	end
+end
+
 ---------------------------------------------------- computer library
 
 local defaultDeviceInfo = {
@@ -472,6 +513,7 @@ libcomputer = {
 	end,
 	pullSignal = function(timeout)
 		flushDisplay()
+		updateTouchscreen()
 		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
 		repeat
 			local signal = coroutine.yield(deadline - computer_uptime())
@@ -1015,7 +1057,7 @@ regComponent({
 	}
 })
 
-addComponent({state = true, precise = false, touchModeInverted = false}, "screen", screenAddress)
+addComponent(screenSelf, "screen", screenAddress)
 
 ---------------------------------------------------- filesystem component
 

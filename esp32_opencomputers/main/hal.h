@@ -29,10 +29,44 @@
 #define DISPLAY_OFFSET_Y    0
 #define DISPLAY_INVERT_BL   false
 
+typedef struct {
+    canvas_pos startX;
+    canvas_pos startY;
+	canvas_pos charSizeX;
+    canvas_pos charSizeY;
+} hal_display_sendInfo;
+
 void hal_display_backlight(bool state);
-void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
+hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- touchscreen
+
+#define TOUCHSCREEN_FT6336U
+#define TOUCHSCREEN_SDA   5
+#define TOUCHSCREEN_SCL   27
+#define TOUCHSCREEN_HOST  I2C_NUM_0
+#define TOUCHSCREEN_ADDR  0x38
+#define TOUCHSCREEN_RST   23
+
+#define TOUCHSCREEN_FLIP_XY false //swaps X and Y
+#define TOUCHSCREEN_MUL_X 0 // if 0, it is counted as 1
+#define TOUCHSCREEN_MUL_Y 0
+#define TOUCHSCREEN_OFFSET_X 0
+#define TOUCHSCREEN_OFFSET_Y 0
+#define TOUCHSCREEN_WIDTH 320 //required parameters. the width and height of the touch screen in pixels
+#define TOUCHSCREEN_HEIGHT 480
+#define TOUCHSCREEN_FLIP_X false
+#define TOUCHSCREEN_FLIP_Y false
+#define TOUCHSCREEN_ROTATION 1
+
+typedef struct {
+    int x;
+    int y;
+    float z;
+} hal_touchscreen_point;
+
+uint8_t hal_touchscreen_touchCount();
+hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index);
 
 // ---------------------------------------------- filesystem
 
