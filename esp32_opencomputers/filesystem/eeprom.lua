@@ -1,13 +1,3 @@
-while true do
-	component.invoke(component.list("screen")(), "turnOff")
-	computer.beep(500, 0.1)
-	computer.pullSignal(1)
-
-	component.invoke(component.list("screen")(), "turnOn")
-	computer.beep(1300, 0.1)
-	computer.pullSignal(1)
-end
-
 local init
 do
   local component_invoke = component.invoke

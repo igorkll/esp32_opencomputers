@@ -497,6 +497,14 @@ size_t hal_filesystem_count(const char* path, bool files, bool dirs) {
     return count;
 }
 
+size_t hal_filesystem_lastModified(const char* path) {
+	struct stat file_stat;
+    if (stat(path, &file_stat) == -1) {
+        return 0;
+    }
+    return file_stat.st_mtime;
+}
+
 // ---------------------------------------------- sound
 
 static hal_sound_channel sound_channels[SOUND_CHANNELS];

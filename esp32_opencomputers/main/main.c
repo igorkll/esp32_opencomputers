@@ -69,6 +69,7 @@ static void rawSandbox(lua_State* lua) {
 	LUA_BIND_RETR(hal_filesystem_size, (LUA_ARG_STR), LUA_RET_INT);
 	LUA_BIND_RETR(hal_filesystem_mkdir, (LUA_ARG_STR), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_count, (LUA_ARG_STR, LUA_ARG_BOOL, LUA_ARG_BOOL), LUA_RET_INT);
+	LUA_BIND_RETR(hal_filesystem_lastModified, (), LUA_RET_INT);
 
 	// ---- sound
 	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));

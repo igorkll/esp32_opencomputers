@@ -30,9 +30,17 @@ function filesys.xconcat(...) --работает как concat но пути н�
 	return filesys.canonical(table.concat(set, "/"))
 end
 
-function filesys.sconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет false
+function filesys.sconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет nil
 	main = filesys.canonical(main) .. "/"
 	local path = filesys.concat(main, ...) .. "/"
+	if strlib.sub(path, 1, strlib.len(main)) == main then
+		return filesys.canonical(path)
+	end
+end
+
+function filesys.xsconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет nil, пути начинаюшиеся со / НЕ обрабатываються как отновительные а откидывают путь в начало
+	main = filesys.canonical(main) .. "/"
+	local path = filesys.xconcat(main, ...) .. "/"
 	if strlib.sub(path, 1, strlib.len(main)) == main then
 		return filesys.canonical(path)
 	end
@@ -154,12 +162,25 @@ function filesys.isDirectory(path)
 	return hal_filesystem_isDirectory(path)
 end
 
+function filesys.isFile(path)
+	return filesys.exists(path) and not filesys.isDirectory(path)
+end
+
 function filesys.size(path)
 	return hal_filesystem_size(path), hal_filesystem_count(path, true, false), hal_filesystem_count(path, false, true)
 end
 
-function filesys.mkdir(path)
+function filesys.makeDirectory(path)
 	return hal_filesystem_mkdir(path)
+end
+
+function filesys.lastModified(path)
+	return hal_filesystem_lastModified(path)
+end
+
+function filesys.list(path)
+	local list = {}
+	return list
 end
 
 return filesys

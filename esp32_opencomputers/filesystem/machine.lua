@@ -834,10 +834,42 @@ addComponent({state = true, precise = false, touchModeInverted = false}, "screen
 
 ---------------------------------------------------- filesystem component
 
+local baseFileCost = 512
+local fileHandles = {}
+
+local function readonlyCheck(self)
+	if self.readonly then
+		error("filesystem is read only", 3)
+	end
+end
+
+local function formatPath(self, path)
+	return filesys.xsconcat(self.path, path) or self.path
+end
+
+local function spaceUsed(self)
+	local size, files, dirs = filesys.size(self.path)
+	return size + ((files + dirs) * baseFileCost)
+end
+
+local function spaceAvailable(self, need)
+	local used = spaceUsed(self)
+	local total = self.size
+	local free = total - used
+	return free >= need + baseFileCost, free
+end
+
 regComponent({
 	type = "filesystem",
 	slot = -1,
 	api = {
+		isReadOnly = {
+			callback = function(self)
+				return not not self.readonly
+			end,
+			direct = true,
+			doc = "function():boolean -- Returns whether the file system is read-only."
+		},
 		spaceTotal = {
 			callback = function(self)
 				return self.size
@@ -847,8 +879,7 @@ regComponent({
 		},
 		spaceUsed = {
 			callback = function(self)
-				local size, files, dirs = filesys.size(self.path)
-				return size + ((files + dirs) * 512)
+				return spaceUsed(self)
 			end,
 			direct = true,
 			doc = "function():number -- The currently used capacity of the file system, in bytes."
@@ -864,7 +895,7 @@ regComponent({
 				filesys.writeFile(self.path .. ".lbl", label)
 				return label
 			end,
-			direct = true,
+			direct = false,
 			doc = "function(string):string -- Sets the label of the file system. Returns the new value, which may be truncated."
 		},
 		getLabel = {
@@ -873,6 +904,171 @@ regComponent({
 			end,
 			direct = true,
 			doc = "function():string -- Get the current label of the file system."
+		},
+
+		size = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				path = formatPath(self, path)
+				if filesys.isFile(path) then
+					return (filesys.size(path))
+				end
+			end,
+			direct = false,
+			doc = "function():number -- Returns the size of the object at the specified absolute path in the file system."
+		},
+		remove = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				if self.readonly then
+					return false
+				end
+				path = formatPath(self, path)
+				local oldState = filesys.exists(path)
+				filesys.remove(path)
+				local newState = filesys.exists(path)
+				filesys.makeDirectory(self.path)
+				return oldState and not newState
+			end,
+			direct = false,
+			doc = "function(string) -- Removes the object at the specified absolute path in the file system."
+		},
+		rename = {
+			callback = function(self, path, path2)
+				checkArg(1, path, "string")
+				checkArg(2, path2, "string")
+				if self.readonly then
+					return false
+				end
+				return filesys.rename(formatPath(self, path), formatPath(self, path2))
+			end,
+			direct = false,
+			doc = "function(string, string) -- Renames/moves an object from the first specified absolute path in the file system to the second."
+		},
+		lastModified = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				return filesys.lastModified(formatPath(self, path))
+			end,
+			direct = false,
+			doc = "function():number -- Returns the (real world) timestamp of when the object at the specified absolute path in the file system was modified."
+		},
+		makeDirectory = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				if self.readonly then
+					return false
+				end
+				return filesys.makeDirectory(formatPath(self, path))
+			end,
+			direct = false,
+			doc = "function(string):boolean -- Creates a directory at the specified absolute path in the file system. Creates parent directories, if necessary."
+		},
+		exists = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				return filesys.exists(formatPath(self, path))
+			end,
+			direct = false,
+			doc = "function(string):boolean -- Returns whether an object exists at the specified absolute path in the file system."
+		},
+		isDirectory = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				return filesys.isDirectory(formatPath(self, path))
+			end,
+			direct = false,
+			doc = "function(string):boolean -- Returns whether an object exists at the specified absolute path in the file system."
+		},
+		list = {
+			callback = function(self, path)
+				checkArg(1, path, "string")
+				return filesys.list(formatPath(self, path))
+			end,
+			direct = false,
+			doc = "function(string):boolean -- Returns a list of names of objects in the directory at the specified absolute path in the file system."
+		},
+		open = {
+			callback = function(self, path, mode)
+				checkArg(1, path, "string")
+				if mode ~= nil then
+					checkArg(2, mode, "string")
+				end
+				mode = mode or "r"
+
+				local handleBackend = {file = filesys.open(formatPath(self, path), mode)}
+				if mode:sub(1, 1) == "w" then
+					if self.readonly then
+						return nil, path
+					else
+						local enough, free = spaceAvailable(self, 0)
+						if not enough then
+							handleBackend.allowWrite = free
+							return nil, "not enough space"
+						end
+					end
+				end
+
+				local handle = {}
+				fileHandles[handle] = handleBackend
+				return handle
+			end,
+			direct = false,
+			doc = "function(string, string):handle -- Opens a new file descriptor and returns its handle."
+		},
+		close = {
+			callback = function(self, handle)
+				if fileHandles[handle] then
+					fileHandles[handle].file:close()
+					fileHandles[handle] = nil
+					return true
+				end
+				return false
+			end,
+			direct = false,
+			doc = "function(handle) -- Closes an open file descriptor with the specified handle."
+		},
+		read = {
+			callback = function(self, handle, count)
+				checkArg(2, count, "number")
+				if fileHandles[handle] then
+					local str = fileHandles[handle].file:read(count)
+					if str and #str > 0 then
+						return str
+					end
+				end
+				return nil
+			end,
+			direct = false,
+			doc = "function(handle):string -- Reads up to the specified amount of data from an open file descriptor with the specified handle. Returns nil when EOF is reached."
+		},
+		write = {
+			callback = function(self, handle, content)
+				checkArg(2, content, "string")
+				if fileHandles[handle] then
+					local handleBackend = fileHandles[handle]
+					handleBackend.allowWrite = handleBackend.allowWrite - #content
+					if handleBackend.allowWrite < 0 then
+						return nil, "not enough space"
+					end
+					handleBackend.file:write(content)
+					return true
+				end
+				return false
+			end,
+			direct = false,
+			doc = "function(handle, string):boolean -- Writes the specified data to an open file descriptor with the specified handle."
+		},
+		seek = {
+			callback = function(self, handle, whence, offset)
+				checkArg(2, whence, "string")
+				checkArg(3, offset, "number")
+				if fileHandles[handle] then
+					return fileHandles[handle].file:seek(whence, offset)
+				end
+			end,
+			direct = false,
+			doc = "function(handle, string):boolean -- Writes the specified data to an open file descriptor with the specified handle."
 		}
 	}
 })
