@@ -259,10 +259,7 @@ static void _initDisplay() {
 
 void hal_display_backlight(bool state) {
 	#ifdef DISPLAY_BL
-		#ifdef DISPLAY_INVERT_BL
-			state = !state;
-		#endif
-		gpio_set_level(DISPLAY_BL, state);
+		gpio_set_level(DISPLAY_BL, DISPLAY_INVERT_BL ? !state : state);
 	#endif
 }
 
@@ -521,7 +518,9 @@ static void _initSound() {
 }
 
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
+	gptimer_stop(sound_timer);
 	sound_channels[index] = settings;
+	gptimer_start(sound_timer);
 }
 
 // ---------------------------------------------- other

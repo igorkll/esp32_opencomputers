@@ -27,7 +27,7 @@
 #define DISPLAY_ROTATION    1
 #define DISPLAY_OFFSET_X    0
 #define DISPLAY_OFFSET_Y    0
-#define DISPLAY_INVERT_BL   true
+#define DISPLAY_INVERT_BL   false
 
 void hal_display_backlight(bool state);
 void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
