@@ -1,2 +1,3 @@
 build
 sdkconfig
+esp32_opencomputers/filesystem/system
