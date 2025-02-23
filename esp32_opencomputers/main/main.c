@@ -109,7 +109,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
 
 	// ---- touchscreen
-	LUA_BIND_RETR(hal_touchscreen_touchCount, (LUA_ARG_INT), LUA_RET_INT);
+	LUA_BIND_RETR(hal_touchscreen_touchCount, (), LUA_RET_INT);
 	lua_pushcfunction(lua, _getPoint_bind);
     lua_setglobal(lua, "hal_touchscreen_getPoint");
 

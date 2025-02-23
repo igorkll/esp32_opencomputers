@@ -17,6 +17,12 @@ package.path = "/storage/?.lua"
 
 local filesys = require("filesys")
 
+local function debugPrint(...)
+	if debugMode then
+		print(...)
+	end
+end
+
 local function checkArg(n, have, ...)
 	have = type(have)
 	local function check(want, ...)
@@ -404,21 +410,23 @@ local function updateTouchscreen()
 		maxTouchCount = touchCount
 	end
 	for i = 1, maxTouchCount do
+		local tsState = oldTouchscreenStates[i]
 		if i <= touchCount then
 			local x, y, z = hal_touchscreen_getPoint(i - 1)
-			if z > 0 then
-				local tsState = oldTouchscreenStates[i]
-				if not tsState then
-					pushTouchscreenEvent("touch", x, y, 0, i)
-					oldTouchscreenStates[i] = {x = x, y = y}
-				elseif tsState.x ~= x or tsState.y ~= y then
-					pushTouchscreenEvent("drag", x, y, 0, i)
-					oldTouchscreenStates[i] = false
-				end
-			elseif oldTouchscreenStates[i] then
-				pushTouchscreenEvent("drop", x, y, 0, i)
-				oldTouchscreenStates[i] = nil
+			debugPrint("finger " .. i .. ": " .. x .. ", " .. y)
+			if not tsState then
+				debugPrint("touch " .. i .. ": " .. x .. ", " .. y)
+				pushTouchscreenEvent("touch", x, y, 0, i)
+				oldTouchscreenStates[i] = {x = x, y = y}
+			elseif tsState.x ~= x or tsState.y ~= y then
+				debugPrint("drag " .. i .. ": " .. x .. ", " .. y)
+				pushTouchscreenEvent("drag", x, y, 0, i)
+				oldTouchscreenStates[i] = false
 			end
+		elseif oldTouchscreenStates[i] then
+			debugPrint("drop " .. i .. ": " .. x .. ", " .. y)
+			pushTouchscreenEvent("drop", tsState.x, tsState.y, 0, i)
+			oldTouchscreenStates[i] = nil
 		end
 	end
 end
@@ -679,7 +687,7 @@ libcomponent = {
 					table.insert(args, tostring(val))
 				end
 			end
-			print("component.invoke: " .. comp.type .. " | " .. address:sub(1, 3) .. " | " .. method .. "(" .. table.concat(args, ", ") .. ")")
+			debugPrint("component.invoke: " .. comp.type .. " | " .. address:sub(1, 3) .. " | " .. method .. "(" .. table.concat(args, ", ") .. ")")
 		end
 
 		return epcall(comp.api[method].callback, comp.self, ...)
