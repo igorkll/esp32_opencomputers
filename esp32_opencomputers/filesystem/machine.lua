@@ -368,7 +368,8 @@ local function addComponent(self, ctype, address)
 		type = ctype,
 		self = self,
 		base = base,
-		api = base.api
+		api = base.api,
+		deviceinfo = base.deviceinfo
 	}
 
 	if addComponentEventEnabled then
@@ -383,6 +384,15 @@ end
 
 ---------------------------------------------------- computer library
 
+local defaultDeviceInfo = {
+	class = "unknown",
+	description = "opencomputers object",
+	product = "esp32_opencomputers",
+	vendor = "igorkll"
+}
+
+local additionalDeviceInfo = {}
+
 local function computer_beep(freq, delay)
 	if type(freq) == "string" then
 		checkArg(1, freq, "string")
@@ -395,7 +405,23 @@ local function computer_beep(freq, delay)
 end
 
 local function computer_getDeviceInfo()
-	return {}
+	local infolist = {}
+	for address, info in pairs(additionalDeviceInfo) do
+		infolist[address] = info
+	end
+	for address, comp in pairs(componentList) do
+		local info = {}
+		for k, v in pairs(defaultDeviceInfo) do
+			info[k] = v
+		end
+		if comp.deviceinfo then
+			for k, v in pairs(comp.deviceinfo) do
+				info[k] = v
+			end
+		end
+		infolist[address] = info
+	end
+	return infolist
 end
 
 local function computer_getProgramLocations()
@@ -810,6 +836,13 @@ regComponent({
 			direct = false,
 			doc = "function(string) -- Makes the EEPROM Read-only if it isn't. This process cannot be reversed."
 		}
+	},
+	deviceinfo = {
+		capacity = "4096",
+		class = "memory",
+		description = "EEPROM",
+		product = "EEPROM",
+		size = "4096"
 	}
 })
 
@@ -820,7 +853,12 @@ addComponent({}, "eeprom", eepromAddress)
 regComponent({
 	type = "keyboard",
 	slot = -1,
-	api = {}
+	api = {},
+	deviceinfo = {
+		class = "input",
+		description = "Keyboard",
+		product = "Keyboard"
+	}
 })
 
 addComponent({}, "keyboard", keyboardAddress)
@@ -873,6 +911,12 @@ regComponent({
 			direct = false,
 			doc = "function():table"
 		}
+	},
+	deviceinfo = {
+		capacity = "2147483647",
+		class = "system",
+		description = "Computer",
+		product = "Computer"
 	}
 })
 
@@ -961,6 +1005,13 @@ regComponent({
 			direct = true,
 			doc = "function():boolean -- Check to see if Inverted Touch mode is enabled (Sneak-activate opens GUI is set to true)."
 		}
+	},
+	deviceinfo = {
+		capacity = "8000",
+		width = "8",
+		class = "display",
+		description = "Text buffer",
+		product = "display"
 	}
 })
 
@@ -1212,6 +1263,14 @@ regComponent({
 			direct = false,
 			doc = "function(handle, string):boolean -- Writes the specified data to an open file descriptor with the specified handle."
 		}
+	},
+	deviceinfo = {
+		capacity = "4294967",
+		size = "4194304",
+		clock = "200/200/80",
+		class = "volume",
+		description = "Filesystem",
+		product = "Filesystem"
 	}
 })
 
@@ -1511,6 +1570,14 @@ regComponent({
 			direct = false,
 			doc = "function(index: number): number -- Sets the RGB value of the color in the palette at the specified index."
 		}
+	},
+	deviceinfo = {
+		capacity = "8000",
+		class = "display",
+		clock = "2560/2560/320/5120/1280/2560",
+		description = "Filesystem",
+		product = "Filesystem",
+		width = "8"
 	}
 })
 
