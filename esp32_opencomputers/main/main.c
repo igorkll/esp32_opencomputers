@@ -63,11 +63,11 @@ static void _list_bind_callback(void* arg, const char* filename) {
 }
 
 static int _list_bind(lua_State* lua) {
-	uint8_t index = luaL_checknumber(L, 1);
+	uint8_t index = luaL_checknumber(lua, 1);
 	hal_touchscreen_point point = hal_touchscreen_getPoint(index);
-	lua_pushinteger(lua, point.x)
-	lua_pushinteger(lua, point.y)
-	lua_pushnumber(lua, point.z)
+	lua_pushinteger(lua, point.x);
+	lua_pushinteger(lua, point.y);
+	lua_pushnumber(lua, point.z);
 	return 3;
 }
 

@@ -289,8 +289,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 			charSizeY = 16;
 		}
 		if (charSizeX * canvas->sizeX > DISPLAY_WIDTH || charSizeY * canvas->sizeY > DISPLAY_HEIGHT) {
-			hal_display_sendBuffer(canvas, false);
-			return;
+			return hal_display_sendBuffer(canvas, false);
 		}
 	} else {
 		if (charSizeX < 1) charSizeX = 1;
@@ -401,6 +400,13 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 	}
 
 	memcpy(canvas->palette_current, canvas->palette, 256 * BYTES_PER_COLOR);
+
+	return (hal_display_sendInfo) {
+		.startX = offsetX,
+		.startY = offsetY,
+		.charSizeX = charSizeX,
+		.charSizeY = charSizeY
+	};
 }
 
 // ---------------------------------------------- touchscreen
@@ -467,7 +473,7 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 	}
 
     if (TOUCHSCREEN_FLIP_XY) {
-        tsgl_pos t = x;
+        int t = x;
         x = y;
         y = t;
     }
@@ -494,10 +500,10 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
     if (TOUCHSCREEN_FLIP_X ^ flipFlip) x = TOUCHSCREEN_WIDTH - 1 - x;
     if (TOUCHSCREEN_FLIP_Y ^ flipFlip) y = TOUCHSCREEN_HEIGHT - 1 - y;
 
-    switch (touchscreen->rotation) {
+    switch (TOUCHSCREEN_ROTATION) {
         case 1:
         case 3:
-            tsgl_pos t = x;
+            int t = x;
             x = y;
             y = TOUCHSCREEN_WIDTH - t;
             break;
