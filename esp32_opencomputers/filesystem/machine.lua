@@ -744,6 +744,16 @@ regComponent({
 
 addComponent({}, "eeprom", eepromAddress)
 
+---------------------------------------------------- keyboard component
+
+regComponent({
+	type = "keyboard",
+	slot = -1,
+	api = {}
+})
+
+addComponent({}, "keyboard", keyboardAddress)
+
 ---------------------------------------------------- screen component
 
 regComponent({
