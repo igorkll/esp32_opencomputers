@@ -42,6 +42,7 @@ size_t hal_filesystem_size(const char* path);
 bool hal_filesystem_mkdir(const char* path);
 size_t hal_filesystem_count(const char* path, bool files, bool dirs);
 size_t hal_filesystem_lastModified(const char* path);
+void hal_filesystem_list(const char *path, void (*callback)(void* arg, const char *filename), void* arg);
 
 // ---------------------------------------------- sound
 

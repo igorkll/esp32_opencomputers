@@ -418,12 +418,12 @@ static void _initFilesystem() {
 }
 
 bool hal_filesystem_exists(const char* path) {
-	struct stat state;
-    return stat(path, &state) == 0;
+	struct stat state = {0};
+	return stat(path, &state) == 0;
 }
 
 bool hal_filesystem_isDirectory(const char* path) {
-	struct stat state;
+	struct stat state = {0};
     if(stat(path, &state) == 0) {
         if (state.st_mode & S_IFDIR) {
             return true;
@@ -450,8 +450,8 @@ size_t hal_filesystem_size(const char* path) {
 				continue;
 			}
 
-			char full_path[PATH_MAX];
-			snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+			char full_path[PATH_MAX+1];
+			snprintf(full_path, PATH_MAX, "%s/%s", path, entry->d_name);
 
 			if (stat(full_path, &statbuf) == -1) {
 				perror("stat");
@@ -475,6 +475,29 @@ size_t hal_filesystem_size(const char* path) {
 		if (stat(path, &state) == 0) return state.st_size;
 		return 0;
 	}
+}
+
+void hal_filesystem_list(const char *path, void (*callback)(void* arg, const char *filename), void* arg) {
+    struct dirent *entry;
+    DIR *dp = opendir(path);
+
+    if (dp == NULL) {
+        return;
+    }
+
+    while ((entry = readdir(dp)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            if (entry->d_type == DT_DIR) {
+                char dir_name[PATH_MAX+1];
+                snprintf(dir_name, PATH_MAX, "%s/", entry->d_name);
+                callback(arg, dir_name);
+            } else {
+                callback(arg, entry->d_name);
+            }
+        }
+    }
+
+    closedir(dp);
 }
 
 bool hal_filesystem_mkdir(const char* path) {

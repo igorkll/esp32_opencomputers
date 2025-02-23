@@ -353,6 +353,8 @@ end
 ---------------------------------------------------- computer library
 
 libcomputer = {
+	print = print,
+
 	uptime = computer_uptime,
 	address = function()
 		return computerAddress
@@ -435,38 +437,39 @@ sandbox.computer = libcomputer
 ---------------------------------------------------- unicode library
 
 libunicode = {
-	char = function(...)
-		return spcall(unicode.char, ...)
+	char = function(value)
+		return string.char(value)
 	end,
-	len = function(s)
-		return spcall(unicode.len, s)
+	len = function(str)
+		return string.len(str)
 	end,
-	lower = function(s)
-		return spcall(unicode.lower, s)
+	lower = function(str)
+		return string.lower(str)
 	end,
-	reverse = function(s)
-		return spcall(unicode.reverse, s)
+	reverse = function(str)
+		return string.reverse(str)
 	end,
-	sub = function(s, i, j)
-		if j then
-			return spcall(unicode.sub, s, i, j)
+	sub = function(str)
+		return string.reverse(str)
+	end,
+	upper = function(str)
+		return string.upper(str)
+	end,
+	isWide = function(str)
+		return false
+	end,
+	charWidth = function(str)
+		return 1
+	end,
+	wlen = function(str)
+		return string.len(str)
+	end,
+	wtrunc = function(str, len)
+		local strlen = libunicode.len(str)
+		if len > strlen then
+			error("Index " .. (len - 1) .. " out of bounds for lenght " .. strlen)
 		end
-		return spcall(unicode.sub, s, i)
-	end,
-	upper = function(s)
-		return spcall(unicode.upper, s)
-	end,
-	isWide = function(s)
-		return spcall(unicode.isWide, s)
-	end,
-	charWidth = function(s)
-		return spcall(unicode.charWidth, s)
-	end,
-	wlen = function(s)
-		return spcall(unicode.wlen, s)
-	end,
-	wtrunc = function(s, n)
-		return spcall(unicode.wtrunc, s, n)
+		return libunicode.sub(str, 1, len - 1)
 	end
 }
 sandbox.unicode = libunicode

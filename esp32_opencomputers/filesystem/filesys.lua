@@ -179,8 +179,7 @@ function filesys.lastModified(path)
 end
 
 function filesys.list(path)
-	local list = {}
-	return list
+	return {hal_filesystem_list(path)}
 end
 
 return filesys

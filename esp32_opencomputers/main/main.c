@@ -51,6 +51,27 @@ static void blackscreen(canvas_t* canvas) {
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
 }
 
+typedef struct {
+	lua_State* lua;
+	size_t count;
+} _list_bind_data;
+
+static void _list_bind_callback(void* arg, const char* filename) {
+	_list_bind_data* bind_data = (_list_bind_data*)arg;
+	bind_data->count++;
+	lua_pushstring(bind_data->lua, filename);
+}
+
+static int _list_bind(lua_State* lua) {
+	const char* path = luaL_checkstring(lua, 1);
+	_list_bind_data bind_data = {
+		.lua = lua,
+		.count = 0
+	};
+	hal_filesystem_list(path, _list_bind_callback, (void*)(&bind_data));
+	return bind_data.count;
+}
+
 static void rawSandbox(lua_State* lua) {
 	luaL_openlibs(lua);
 
@@ -70,6 +91,8 @@ static void rawSandbox(lua_State* lua) {
 	LUA_BIND_RETR(hal_filesystem_mkdir, (LUA_ARG_STR), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_count, (LUA_ARG_STR, LUA_ARG_BOOL, LUA_ARG_BOOL), LUA_RET_INT);
 	LUA_BIND_RETR(hal_filesystem_lastModified, (LUA_ARG_STR), LUA_RET_INT);
+	lua_pushcfunction(lua, _list_bind);
+    lua_setglobal(lua, "hal_filesystem_list");
 
 	// ---- sound
 	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));
