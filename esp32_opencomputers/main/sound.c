@@ -16,7 +16,7 @@ void sound_computer_beep(uint16_t freq, float time) {
 		.enabled = true,
 		.disableTimer = time * SOUND_FREQ,
 		.freq = freq,
-		.volume = 8,
+		.volume = 255,
 		.wave = hal_sound_square
 	};
 	hal_sound_updateChannel(SOUND_CHANNEL_BEEP, channel);
@@ -29,7 +29,7 @@ static void _beepString(void* _text) {
 	hal_sound_channel channel = {
 		.enabled = true,
 		.freq = 1000,
-		.volume = 8,
+		.volume = 255,
 		.wave = hal_sound_square
 	};
 	

@@ -54,6 +54,13 @@ static void blackscreen(canvas_t* canvas) {
 static void rawSandbox(lua_State* lua) {
 	luaL_openlibs(lua);
 
+	// ---- defines
+	LUA_PUSH_INT(DISPLAY_WIDTH);
+	LUA_PUSH_INT(DISPLAY_HEIGHT);
+
+	// ---- display
+	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
+
 	// ---- sound
 	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));
 	LUA_BIND_VOID(sound_computer_beepString, (LUA_ARG_STR, LUA_ARG_INT));
@@ -67,6 +74,7 @@ static void rawSandbox(lua_State* lua) {
 
 void _main() {
 	canvas_t* canvas = canvas_create(50, 16, 1);
+	hal_display_backlight(true);
 	while (true) {
 		lua_State* lua = luaL_newstate();
 		rawSandbox(lua);

@@ -2,6 +2,9 @@ local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
 local eepromAddress = "04cbdf2d-701b-4f66-b216-c593d3bc5c62"
 local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
+local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
+local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
+local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
@@ -644,7 +647,7 @@ regComponent({
 				end
 			end,
 			direct = false,
-			doc = "function():string -- Overwrite the currently stored byte array."
+			doc = "function(string) -- Overwrite the currently stored byte array."
 		},
 
 		getData = {
@@ -674,7 +677,7 @@ regComponent({
 				end
 			end,
 			direct = false,
-			doc = "function():string -- Overwrites currently stored byte-array with specified string."
+			doc = "function(string) -- Overwrites currently stored byte-array with specified string."
 		},
 
 		getLabel = {
@@ -703,7 +706,7 @@ regComponent({
 				return label
 			end,
 			direct = false,
-			doc = "function():string -- Set the label of the EEPROM."
+			doc = "function(string) -- Set the label of the EEPROM."
 		},
 
 		getSize = {
@@ -711,14 +714,14 @@ regComponent({
 				return maxEepromCodeLen
 			end,
 			direct = true,
-			doc = "function():string -- Gets the maximum storage capacity of the EEPROM."
+			doc = "function():number -- Gets the maximum storage capacity of the EEPROM."
 		},
 		getDataSize = {
 			callback = function(self)
 				return maxEepromDataLen
 			end,
 			direct = true,
-			doc = "function():string -- Gets the maximum data storage capacity of the EEPROM."
+			doc = "function():number -- Gets the maximum data storage capacity of the EEPROM."
 		},
 
 		getChecksum = {
@@ -734,12 +737,98 @@ regComponent({
 				return nil, "incorrect checksum"
 			end,
 			direct = false,
-			doc = "function():string -- Makes the EEPROM Read-only if it isn't. This process cannot be reversed."
+			doc = "function(string) -- Makes the EEPROM Read-only if it isn't. This process cannot be reversed."
 		}
 	}
 })
 
 addComponent({}, "eeprom", eepromAddress)
+
+---------------------------------------------------- screen component
+
+regComponent({
+	type = "screen",
+	slot = -1,
+	api = {
+		isOn = {
+			callback = function(self)
+				return self.state
+			end,
+			direct = true,
+			doc = "function():boolean -- Returns whether the screen is currently on."
+		},
+		turnOn = {
+			callback = function(self)
+				local state = self.state
+				self.state = true
+				hal_display_backlight(self.state)
+				return state, self.state
+			end,
+			direct = true,
+			doc = "function() -- Turns the screen on. Returns whether it was off and the new power state."
+		},
+		turnOff = {
+			callback = function(self)
+				local state = self.state
+				self.state = false
+				hal_display_backlight(self.state)
+				return state, self.state
+			end,
+			direct = true,
+			doc = "function() -- Turns off the screen. Returns whether it was on and the new power state."
+		},
+		getAspectRatio = {
+			callback = function(self)
+				return DISPLAY_WIDTH, DISPLAY_HEIGHT
+			end,
+			direct = true,
+			doc = "function():number, number -- The aspect ratio of the screen. For multi-block screens this is the number of blocks, horizontal and vertical."
+		},
+		getKeyboards = {
+			callback = function(self)
+				return {keyboardAddress}
+			end,
+			direct = false,
+			doc = "function():table -- The list of keyboards attached to the screen."
+		},
+		setPrecise = {
+			callback = function(self, precise)
+				checkArg(1, precise, "boolean")
+				local state = self.state
+				self.precise = precise
+				return state
+			end,
+			direct = true,
+			doc = "function(boolean):boolean -- Set whether to use high-precision mode (sub-pixel mouse event position)."
+		},
+		isPrecise = {
+			callback = function(self)
+				return self.precise
+			end,
+			direct = true,
+			doc = "function():boolean -- Check whether high-precision mode is enabled (sub-pixel mouse event position)."
+		},
+		setTouchModeInverted = {
+			callback = function(self, touchModeInverted)
+				checkArg(1, touchModeInverted, "boolean")
+				local state = self.state
+				self.touchModeInverted = touchModeInverted
+				return state
+			end,
+			direct = true,
+			doc = "function(boolean):boolean -- Sets Inverted Touch mode (Sneak-activate opens GUI if set to true)."
+		},
+		isTouchModeInverted = {
+			callback = function(self)
+				return self.touchModeInverted
+			end,
+			direct = true,
+			doc = "function():boolean -- Check to see if Inverted Touch mode is enabled (Sneak-activate opens GUI is set to true)."
+		}
+	}
+})
+
+addComponent({state = true, precise = false, touchModeInverted = false}, "screen", screenAddress)
 
 ----------------------------------------------------
 

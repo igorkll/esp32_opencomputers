@@ -27,7 +27,9 @@
 #define DISPLAY_ROTATION    1
 #define DISPLAY_OFFSET_X    0
 #define DISPLAY_OFFSET_Y    0
+#define DISPLAY_INVERT_BL   true
 
+void hal_display_backlight(bool state);
 void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- touchscreen
@@ -36,6 +38,7 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- sound
 
+#define SOUND_MASTER_VOLUME 16
 #define SOUND_CHANNELS ((8 * 3) + 2)
 #define SOUND_FREQ 40000
 #define SOUND_OUTPUT 0

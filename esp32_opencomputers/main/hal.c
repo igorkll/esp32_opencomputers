@@ -257,6 +257,15 @@ static void _initDisplay() {
 	_sendSelectAll();
 }
 
+void hal_display_backlight(bool state) {
+	#ifdef DISPLAY_BL
+		#ifdef DISPLAY_INVERT_BL
+			state = !state;
+		#endif
+		gpio_set_level(DISPLAY_BL, state);
+	#endif
+}
+
 static bool firstFlush = false;
 static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
@@ -469,7 +478,7 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 	}
 	uint8_t output = value;
 	if (value > 255) output = 255;
-	dac_oneshot_output_voltage(sound_output, output);
+	dac_oneshot_output_voltage(sound_output, (output * SOUND_MASTER_VOLUME) / 255);
 	sound_tick++;
 	return false;
 }
@@ -550,13 +559,22 @@ size_t hal_freeMemory() {
 	return heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
 
+static size_t totalMemory;
 size_t hal_totalMemory() {
-	return heap_caps_get_total_size(MALLOC_CAP_8BIT);
+	return totalMemory;
 }
 
 // ----------------------------------------------
 
 void app_main() {
+	totalMemory = heap_caps_get_total_size(MALLOC_CAP_8BIT);
+	#ifdef DISPLAY_BL
+		gpio_config_t io_conf = {};
+		io_conf.pin_bit_mask |= 1ULL << DISPLAY_BL;
+		io_conf.mode = GPIO_MODE_OUTPUT;
+		gpio_config(&io_conf);
+	#endif
+	hal_display_backlight(false);
 	_initDisplay();
 	_initFilesystem();
 	_initSound();
