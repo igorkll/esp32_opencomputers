@@ -36,6 +36,14 @@ local function stringCheckArg(n, have)
 	return have
 end
 
+local function numberCheckArg(n, have)
+	checkArg(1, have, "string")
+	if have == math.huge or have == -math.huge or have ~= have then
+		return 0
+	end
+	return math.floor(have)
+end
+
 local function spcall(...)
 	local result = table.pack(pcall(...))
 	if not result[1] then
@@ -1233,8 +1241,8 @@ regComponent({
 		},
 		get = {
 			callback = function(self, x, y)
-				checkArg(1, x, "number")
-				checkArg(2, y, "number")
+				x = numberCheckArg(1, x)
+				y = numberCheckArg(2, y)
 				return " ", 0, 0, 0, 0
 			end,
 			direct = false,
@@ -1242,8 +1250,8 @@ regComponent({
 		},
 		set = {
 			callback = function(self, x, y, text, vertical)
-				checkArg(1, x, "number")
-				checkArg(2, y, "number")
+				x = numberCheckArg(1, x)
+				y = numberCheckArg(2, y)
 				checkArg(3, text, "string")
 				if vertical ~= nil then
 					checkArg(4, vertical, "boolean")
@@ -1257,10 +1265,10 @@ regComponent({
 		},
 		fill = {
 			callback = function(self, x, y, sizeX, sizeY, char)
-				checkArg(1, x, "number")
-				checkArg(2, y, "number")
-				checkArg(3, sizeX, "number")
-				checkArg(4, sizeY, "number")
+				x = numberCheckArg(1, x)
+				y = numberCheckArg(2, y)
+				sizeX = numberCheckArg(3, sizeX)
+				sizeY = numberCheckArg(4, sizeY)
 				checkArg(5, char, "string")
 				canvas_fill(canvas, x, y, sizeX, sizeY, string.byte(char))
 				updateDisplay()
@@ -1271,12 +1279,12 @@ regComponent({
 		},
 		copy = {
 			callback = function(self, x, y, sizeX, sizeY, offsetX, offsetY)
-				checkArg(1, x, "number")
-				checkArg(2, y, "number")
-				checkArg(3, sizeX, "number")
-				checkArg(4, sizeY, "number")
-				checkArg(5, offsetX, "number")
-				checkArg(6, offsetY, "number")
+				x = numberCheckArg(1, x)
+				y = numberCheckArg(2, y)
+				sizeX = numberCheckArg(3, sizeX)
+				sizeY = numberCheckArg(4, sizeY)
+				offsetX = numberCheckArg(5, offsetX)
+				offsetY = numberCheckArg(6, offsetY)
 				canvas_copy(canvas, x, y, sizeX, sizeY, offsetX, offsetY)
 				updateDisplay()
 				return true
@@ -1342,18 +1350,35 @@ regComponent({
 		},
 		setResolution = {
 			callback = function(self, sizeX, sizeY)
-				checkArg(1, sizeX, "number")
-				checkArg(2, sizeY, "number")
+				sizeX = numberCheckArg(1, sizeX)
+				sizeY = numberCheckArg(2, sizeY)
 				if sizeX * sizeY > (self.maxX * self.maxY) or sizeX > self.maxX or sizeY > self.maxY then
 					error("unsupported resolution", 2)
 				end
 				canvas_setResolution(canvas, sizeX, sizeY)
+				local oldX, oldY = self.resX, self.resY
 				self.resX = sizeX
 				self.resY = sizeY
 				updateDisplay()
+				return sizeX ~= oldX or sizeY ~= oldY
 			end,
 			direct = false,
 			doc = "function(width: number, height: number): boolean -- Sets the specified resolution. Can be up to the maximum supported resolution. If a larger or invalid resolution is provided it will throw an error. Returns true if the resolution was changed (may return false if an attempt was made to set it to the same value it was set before), false otherwise."
+		},
+		setViewport = {
+			callback = function(self, sizeX, sizeY)
+				sizeX = numberCheckArg(1, sizeX)
+				sizeY = numberCheckArg(2, sizeY)
+				if sizeX * sizeY > (self.maxX * self.maxY) or sizeX > self.maxX or sizeY > self.maxY then
+					error("unsupported viewport size", 2)
+				end
+				local oldX, oldY = self.viewX, self.viewY
+				self.viewX = sizeX
+				self.viewY = sizeY
+				return sizeX ~= oldX or sizeY ~= oldY
+			end,
+			direct = false,
+			doc = "function(width: number, height: number): boolean -- Set the current viewport resolution. Returns true if it was changed (may return false if an attempt was made to set it to the same value it was set before), false otherwise. This makes it look like screen resolution is lower, but the actual resolution stays the same. Characters outside top-left corner of specified size are just hidden, and are intended for rendering or storing things off-screen and copying them to the visible area when needed. Changing resolution will change viewport to whole screen."
 		},
 		getBackground = {
 			callback = function(self)
