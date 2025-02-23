@@ -7,6 +7,7 @@
 
 ## warnings
 * the project can only be compiled by the GCC compiler
+* you need an esp32 with external memory (PSRAM/SPIRAM) or a large amount of HEAP in order for you to have enough memory for lua. otherwise, you can forget about running any operating system
 
 ## additional functions
 * computer.print - alias to standard print in lua. it is needed to output information to the microcontroller debugging console

@@ -1087,6 +1087,53 @@ regComponent({
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
 addComponent({path = "/tmpfs", readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
+---------------------------------------------------- gpu component
+
+regComponent({
+	type = "gpu",
+	slot = -1,
+	api = {
+		bind = {
+			callback = function(self, address, reset)
+				if not componentList[address] then
+					return nil, "invalid address"
+				end
+
+				if reset == nil then
+					reset = true
+				end
+				checkArg(1, reset, "boolean")
+
+				if reset then
+					canvas_setResolution(canvas, self.maxX, self.maxY)
+					canvas_setDepth(canvas, 8)
+				end
+
+				self.address = address
+				return true
+			end,
+			direct = false,
+			doc = "function(address: string[, reset: boolean=true]):boolean[, string] -- Tries to bind the GPU to a screen with the specified address. Returns true on success, false and an error message on failure. Resets the screen's settings if reset is 'true'. A GPU can only be bound to one screen at a time. All operations on it will work on the bound screen. If you wish to control multiple screens at once, you'll need to put more than one graphics card into your computer."
+		},
+		getScreen = {
+			callback = function(self)
+				return self.address
+			end,
+			direct = true,
+			doc = "function():string -- Get the address of the screen the GPU is bound to."
+		},
+		maxDepth = {
+			callback = function(self)
+				return 8
+			end,
+			direct = true,
+			doc = "function():number -- Gets the maximum supported color depth supported by the GPU and the screen it is bound to (minimum of the two)."
+		},
+	}
+})
+
+addComponent({maxX = 50, maxY = 16}, "gpu", gpuAddress)
+
 ----------------------------------------------------
 
 local function pullEvent(vm)

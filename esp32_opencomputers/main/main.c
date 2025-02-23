@@ -72,12 +72,25 @@ static int _list_bind(lua_State* lua) {
 	return bind_data.count;
 }
 
-static void rawSandbox(lua_State* lua) {
+static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
+	LUA_PUSH_USR(canvas);
 
 	// ---- defines
 	LUA_PUSH_INT(DISPLAY_WIDTH);
 	LUA_PUSH_INT(DISPLAY_HEIGHT);
+
+	// ---- canvas
+	LUA_BIND_VOID(canvas_setResolution, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_setDepth, (LUA_ARG_USR, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_setBackground, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_BOOL));
+	LUA_BIND_VOID(canvas_setForeground, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_BOOL));
+	LUA_BIND_RETR(canvas_getBackground, (LUA_ARG_USR), LUA_RET_INT);
+	LUA_BIND_RETR(canvas_getForeground, (LUA_ARG_USR), LUA_RET_INT);
+	LUA_BIND_VOID(canvas_fill, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_set, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_STR, LUA_ARG_INT));
+	LUA_BIND_VOID(canvas_copy, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
+	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
 
 	// ---- display
 	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
@@ -110,7 +123,7 @@ void _main() {
 	hal_display_backlight(true);
 	while (true) {
 		lua_State* lua = luaL_newstate();
-		rawSandbox(lua);
+		rawSandbox(lua, canvas);
 		if (luaL_dofile(lua, "/storage/machine.lua")) {
 			char* err = lua_tostring(lua, -1);
 			HAL_LOGE("lua crashed: %s\n", err);
