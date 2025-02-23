@@ -537,6 +537,18 @@ void hal_delay(uint32_t milliseconds) {
 	vTaskDelay(ticks);
 }
 
+float hal_uptime() {
+	return esp_timer_get_time() / 1000.0 / 1000.0;
+}
+
+size_t hal_freeMemory() {
+	return heap_caps_get_free_size(MALLOC_CAP_8BIT);
+}
+
+size_t hal_totalMemory() {
+	return heap_caps_get_total_size(MALLOC_CAP_8BIT);
+}
+
 // ----------------------------------------------
 
 void app_main() {

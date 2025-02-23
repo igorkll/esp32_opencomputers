@@ -61,3 +61,6 @@ void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings);
 
 void hal_task(void(*func)(void* arg), void* arg);
 void hal_delay(uint32_t milliseconds);
+float hal_uptime();
+size_t hal_freeMemory();
+size_t hal_totalMemory();
