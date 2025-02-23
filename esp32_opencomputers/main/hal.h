@@ -36,6 +36,12 @@ void hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect);
 
 // ---------------------------------------------- filesystem
 
+bool hal_filesystem_exists(const char* path);
+bool hal_filesystem_isDirectory(const char* path);
+size_t hal_filesystem_size(const char* path);
+bool hal_filesystem_mkdir(const char* path);
+size_t hal_filesystem_count(const char* path, bool files, bool dirs);
+
 // ---------------------------------------------- sound
 
 #define SOUND_MASTER_VOLUME 16

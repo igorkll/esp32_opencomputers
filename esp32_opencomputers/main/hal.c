@@ -417,6 +417,86 @@ static void _initFilesystem() {
 	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl("/storage", "storage", &storage_mount_config, &s_wl_handle));
 }
 
+bool hal_filesystem_exists(const char* path) {
+	struct stat state;
+    return stat(path, &state) == 0;
+}
+
+bool hal_filesystem_isDirectory(const char* path) {
+	struct stat state;
+    if(stat(path, &state) == 0) {
+        if (state.st_mode & S_IFDIR) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
+size_t hal_filesystem_size(const char* path) {
+	if (hal_filesystem_isDirectory(path)) {
+		long total_size = 0;
+		struct dirent *entry;
+		struct stat statbuf;
+		DIR *dp = opendir(path);
+
+		if (dp == NULL) {
+			return 0;
+		}
+
+		while ((entry = readdir(dp)) != NULL) {
+			if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+				continue;
+			}
+
+			char full_path[PATH_MAX];
+			snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+			if (stat(full_path, &statbuf) == -1) {
+				perror("stat");
+				continue;
+			}
+
+			if (S_ISDIR(statbuf.st_mode)) {
+				long dir_size = get_directory_size(full_path);
+				if (dir_size != -1) {
+					total_size += dir_size;
+				}
+			} else {
+				total_size += statbuf.st_size;
+			}
+		}
+
+		closedir(dp);
+		return total_size;
+	} else {
+		struct stat state;
+		if (stat(path, &state) == 0) return state.st_size;
+		return 0;
+	}
+}
+
+bool hal_filesystem_mkdir(const char* path) {
+	if (filesystem_isDirectory(path)) return false;
+    mkdir(path, S_IRWXU);
+    return filesystem_isDirectory(path);
+}
+
+size_t hal_filesystem_count(const char* path, bool files, bool dirs) {
+	DIR *dir = opendir(path);
+    if (dir == NULL) return 0;
+    uint16_t count = 0;
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, ".") == 0) continue;
+        if (entry->d_type == DT_DIR && strcmp(entry->d_name, "..") == 0) continue;
+        if ((files && entry->d_type == DT_REG) || (dirs && entry->d_type == DT_DIR)) count++;
+    }
+    closedir(dir);
+    return count;
+}
+
 // ---------------------------------------------- sound
 
 static hal_sound_channel sound_channels[SOUND_CHANNELS];

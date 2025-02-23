@@ -9,6 +9,8 @@ local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
 
+package.path = "/storage/?.lua"
+
 local filesys = require("filesys")
 
 local function checkArg(n, have, ...)
@@ -836,13 +838,22 @@ regComponent({
 	type = "filesystem",
 	slot = -1,
 	api = {
+		spaceTotal = {
+			callback = function(self)
+				return self.size
+			end,
+			direct = true,
+			doc = "function():number -- The overall capacity of the file system, in bytes."
+		},
 		spaceUsed = {
 			callback = function(self)
-				return 
+				local size, files, dirs = filesys.size(self.path)
+				return size + ((files + dirs) * 512)
 			end,
 			direct = true,
 			doc = "function():number -- The currently used capacity of the file system, in bytes."
 		},
+
 		setLabel = {
 			callback = function(self, label)
 				checkArg(1, label, "string")
@@ -866,8 +877,8 @@ regComponent({
 	}
 })
 
-addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system"}, "filesystem", diskAddress)
-addComponent({path = "/storage/system", readonly = false, labelReadonly = true, label = "tmpfs"}, "filesystem", tmpAddress)
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
+addComponent({path = "/tmpfs", readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
 ----------------------------------------------------
 
