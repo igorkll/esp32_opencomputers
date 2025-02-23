@@ -17,8 +17,6 @@
 #include "sound.h"
 #include "lua_binder.h"
 
-const char* TAG = "opencomputers";
-
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
 	canvas_setResolution(canvas, 50, 16);
@@ -74,11 +72,14 @@ void _main() {
 		rawSandbox(lua);
 		if (luaL_dofile(lua, "/storage/machine.lua")) {
 			char* err = lua_tostring(lua, -1);
-			ESP_LOGE(TAG, "lua crashed: %s\n", err);
+			HAL_LOGE("lua crashed: %s\n", err);
 			bsod(canvas, err);
+			lua_close(lua);
+			hal_display_sendBuffer(canvas, false);
+			break;
 		} else {
 			bool reboot = lua_toboolean(lua, -1);
-			ESP_LOGI(TAG, "shutdown: %i\n", reboot);
+			HAL_LOGI("shutdown: %i\n", reboot);
 			blackscreen(canvas);
 			if (!reboot) {
 				lua_close(lua);

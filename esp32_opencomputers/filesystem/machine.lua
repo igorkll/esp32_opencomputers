@@ -1,5 +1,7 @@
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
+local eepromAddress = "04cbdf2d-701b-4f66-b216-c593d3bc5c62"
+local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
 
 local function checkArg(n, have, ...)
 	have = type(have)
@@ -33,7 +35,7 @@ local function spcall(...)
 	end
 end
 
-local sandbox
+local sandbox, libcomputer, libunicode, libcomponent
 sandbox = {
 	_VERSION = _VERSION,
 
@@ -271,14 +273,46 @@ local function computer_pushSignal(eventName, ...)
 	return false
 end
 
+----------------------------------------------------
+
 local bootUptime = hal_uptime()
+
 local function computer_uptime()
 	return math.floor((hal_uptime() - bootUptime) * 10) / 10;
 end
 
+----------------------------------------------------
+
+local baseComponentList = {}
+local componentList = {}
+local addComponentEventEnabled = false
+
+local function regComponent(api)
+	baseComponentList[api.type] = api
+end
+
+local function addComponent(self, ctype, address)
+	local base = baseComponentList[ctype]
+	componentList[address] = {
+		type = ctype,
+		self = self,
+		base = base,
+		api = base.api
+	}
+
+	if addComponentEventEnabled then
+		computer_pushSignal("component_added", address, ctype)
+	end
+end
+
+local function delComponent(address)
+	computer_pushSignal("component_removed", address, componentList[address].type)
+	componentList[address] = nil
+end
+
 ---------------------------------------------------- computer library
 
-local libcomputer = {
+libcomputer = {
 	uptime = computer_uptime,
 	address = function()
 		return computerAddress
@@ -293,10 +327,10 @@ local libcomputer = {
 		return hal_totalMemory()
 	end,
 	energy = function()
-		
+		return 10000
 	end,
 	maxEnergy = function()
-		
+		return 10000
 	end,
 
 	users = function()
@@ -356,10 +390,246 @@ local libcomputer = {
 		end
 	end
 }
-
 sandbox.computer = libcomputer
 
+---------------------------------------------------- unicode library
+
+libunicode = {
+	char = function(...)
+		return spcall(unicode.char, ...)
+	end,
+	len = function(s)
+		return spcall(unicode.len, s)
+	end,
+	lower = function(s)
+		return spcall(unicode.lower, s)
+	end,
+	reverse = function(s)
+		return spcall(unicode.reverse, s)
+	end,
+	sub = function(s, i, j)
+		if j then
+			return spcall(unicode.sub, s, i, j)
+		end
+		return spcall(unicode.sub, s, i)
+	end,
+	upper = function(s)
+		return spcall(unicode.upper, s)
+	end,
+	isWide = function(s)
+		return spcall(unicode.isWide, s)
+	end,
+	charWidth = function(s)
+		return spcall(unicode.charWidth, s)
+	end,
+	wlen = function(s)
+		return spcall(unicode.wlen, s)
+	end,
+	wtrunc = function(s, n)
+		return spcall(unicode.wtrunc, s, n)
+	end
+}
+sandbox.unicode = libunicode
+
 ---------------------------------------------------- component library
+
+-- Caching proxy objects for lower memory use.
+local proxyCache = setmetatable({}, {__mode = "v"})
+
+-- Short-term caching of callback directness for improved performance.
+local directCache = setmetatable({}, {__mode = "k"})
+local function isDirect(address, method)
+    local cacheKey = address .. ":" .. method
+    local cachedValue = directCache[cacheKey]
+    if cachedValue ~= nil then
+        return cachedValue
+    end
+    local methods, reason = component_methods(address)
+    if not methods then
+        return false
+    end
+    for name, info in pairs(methods) do
+        if name == method then
+            directCache[cacheKey] = info.direct
+            return info.direct
+        end
+    end
+    error("no such method", 1)
+end
+
+local componentProxy = {
+    __index = function(self, key)
+        if self.fields[key] and self.fields[key].getter then
+            return libcomponent.invoke(self.address, key)
+        else
+            rawget(self, key)
+        end
+    end,
+    __newindex = function(self, key, value)
+        if self.fields[key] and self.fields[key].setter then
+            return libcomponent.invoke(self.address, key, value)
+        elseif self.fields[key] and self.fields[key].getter then
+            error("field is read-only")
+        else
+            rawset(self, key, value)
+        end
+    end,
+    __pairs = function(self)
+        local keyProxy, keyField, value
+        return function()
+            if not keyField then
+                repeat
+                    keyProxy, value = next(self, keyProxy)
+                until not keyProxy or keyProxy ~= "fields"
+            end
+            if not keyProxy then
+                keyField, value = next(self.fields, keyField)
+            end
+            return keyProxy or keyField, value
+        end
+    end
+}
+
+local componentCallback = {
+    __call = function(self, ...)
+        return libcomponent.invoke(self.address, self.name, ...)
+    end,
+    __tostring = function(self)
+        return libcomponent.doc(self.address, self.name) or "function"
+    end
+}
+
+libcomponent = {
+    doc = function(address, method)
+        checkArg(1, address, "string")
+        checkArg(2, method, "string")
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+
+		if not comp.api[method] then
+			return nil
+		end
+
+		return tostring(comp.api[method].doc or "undocumented")
+    end,
+    invoke = function(address, method, ...)
+        checkArg(1, address, "string")
+        checkArg(2, method, "string")
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+
+		if not comp.api[method] then
+			return nil, "no such method"
+		end
+
+		
+    end,
+    list = function(filter, exact)
+        checkArg(1, filter, "string", "nil")
+        local list = spcall(component.list, filter, not (not exact))
+        local key = nil
+        return setmetatable(
+            list,
+            {
+                __call = function()
+                    key = next(list, key)
+                    if key then
+                        return key, list[key]
+                    end
+                end
+            }
+        )
+    end,
+    methods = function(address)
+		checkArg(1, address, "string")
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+
+        local methods = {}
+		for name, method in pairs(comp.api) do
+			methods[name] = not not method.direct
+		end
+		return methods
+    end,
+    fields = function(address)
+		checkArg(1, address, "string")
+		local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+        return {}
+    end,
+    proxy = function(address)
+		checkArg(1, address, "string")
+        local type, reason = libcomponent.type(addComponent)
+        if not type then
+            return nil, reason
+        end
+        local slot, reason = libcomponent.slot(addComponent)
+        if not slot then
+            return nil, reason
+        end
+        if proxyCache[address] then
+            return proxyCache[address]
+        end
+        local proxy = {address = address, type = type, slot = slot, fields = {}}
+        local methods, reason = spcall(component.methods, address)
+        if not methods then
+            return nil, reason
+        end
+        for method, info in pairs(methods) do
+            if not info.getter and not info.setter then
+                proxy[method] = setmetatable({address = address, name = method}, componentCallback)
+            else
+                proxy.fields[method] = info
+            end
+        end
+        setmetatable(proxy, componentProxy)
+        proxyCache[address] = proxy
+        return proxy
+    end,
+    type = function(address)
+		checkArg(1, address, "string")
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+		return comp.type
+    end,
+    slot = function(address)
+		checkArg(1, address, "string")
+        local comp = componentList[address]
+		if not comp then
+			return nil, "no such component"
+		end
+		return comp.base.slot or -1
+    end
+}
+sandbox.component = libcomponent
+
+---------------------------------------------------- eeprom component
+
+regComponent({
+	type = "eeprom",
+	slot = -1,
+	api = {
+		get = {
+			callback = function(self)
+				return "QWE"
+			end,
+			direct = false,
+			doc = "function():string -- Get the currently stored byte array."
+		}
+	}
+})
+
+addComponent({}, "eeprom", eepromAddress)
 
 ----------------------------------------------------
 
@@ -376,6 +646,7 @@ local function bootstrap()
 		if code and #code > 0 then
 			local bios, reason = load(code, "=bios", nil, sandbox)
 			if bios then
+				addComponentEventEnabled = true
 				return coroutine.create(bios), {n=0}
 			end
 			error("failed loading bios: " .. reason, 0)

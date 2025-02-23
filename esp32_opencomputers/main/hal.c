@@ -7,6 +7,7 @@
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 #include <driver/gptimer.h>
+#include <esp_timer.h>
 #include <driver/dac_oneshot.h>
 #include <string.h>
 #include <math.h>
@@ -14,6 +15,8 @@
 #include "main.h"
 #include "font.h"
 #include "functions.h"
+
+const char* HAL_LOG_TAG = "opencomputers";
 
 // ---------------------------------------------- display
 
@@ -415,8 +418,10 @@ static gptimer_handle_t sound_timer;
 static dac_oneshot_handle_t sound_output;
 static uint64_t sound_tick = 0;
 
-static uint8_t sound_sin[SOUND_FREQ];
-static uint8_t sound_noise[SOUND_FREQ];
+#define SOUND_ARRAY_DIV 4
+#define SOUND_ARRAY_SIZE (SOUND_FREQ / SOUND_ARRAY_DIV)
+static uint8_t sound_sin[SOUND_ARRAY_SIZE];
+static uint8_t sound_noise[SOUND_ARRAY_SIZE];
 
 #define SOUND_FREQ_M (SOUND_FREQ - 1)
 #define SOUND_FREQ_D (SOUND_FREQ / 2)
@@ -452,11 +457,11 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 					break;
 
 				case hal_sound_sin:
-					localValue += sound_sin[secondTick];
+					localValue += sound_sin[secondTick / SOUND_ARRAY_DIV];
 					break;
 
 				case hal_sound_noise:
-					localValue += sound_noise[tickChange % SOUND_FREQ];
+					localValue += sound_noise[tickChange % SOUND_ARRAY_SIZE];
 					break;
 			}
 			value += (localValue * channel->volume) / 255;
@@ -472,8 +477,8 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 static void _initSound() {
 	memset(&sound_channels, 0, SOUND_CHANNELS * sizeof(hal_sound_channel));
 
-	for (size_t i = 0; i < SOUND_FREQ; i++) {
-		sound_sin[i] = nRound(((sin((i / (SOUND_FREQ - 1.0)) * (M_PI * 2.0)) + 1.0) / 2.0) * 255.0);
+	for (size_t i = 0; i < SOUND_ARRAY_SIZE; i++) {
+		sound_sin[i] = nRound(((sin((i / (SOUND_ARRAY_SIZE - 1.0)) * (M_PI * 2.0)) + 1.0) / 2.0) * 255.0);
 		sound_noise[i] = rand() % 256;
 	}
 

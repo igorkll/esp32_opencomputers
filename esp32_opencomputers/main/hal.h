@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <esp_log.h>
 #include "canvas.h"
 
 // ---------------------------------------------- display
@@ -56,6 +57,14 @@ typedef struct {
 } hal_sound_channel;
 
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings);
+
+// ---------------------------------------------- logs
+
+extern const char* HAL_LOG_TAG;
+
+#define HAL_LOGI(...) ESP_LOGI(HAL_LOG_TAG, __VA_ARGS__)
+#define HAL_LOGE(...) ESP_LOGE(HAL_LOG_TAG, __VA_ARGS__)
+#define HAL_LOGW(...) ESP_LOGW(HAL_LOG_TAG, __VA_ARGS__)
 
 // ---------------------------------------------- other
 
