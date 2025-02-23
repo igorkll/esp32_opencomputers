@@ -1109,6 +1109,8 @@ regComponent({
 					self.depth = 8
 					canvas_setResolution(canvas, self.resX, self.resY)
 					canvas_setDepth(canvas, self.depth)
+					canvas_setBackground(canvas, 0x000000, false)
+					canvas_setForeground(canvas, 0xffffff, false)
 				end
 
 				self.address = address
@@ -1136,12 +1138,127 @@ regComponent({
 				return self.depth
 			end,
 			direct = true,
-			doc = "function():number -- Gets the maximum supported color depth supported by the GPU and the screen it is bound to (minimum of the two)."
+			doc = "function():number -- The currently set color depth of the GPU/screen, in bits. Can be 1, 4 or 8."
 		},
+		setDepth = {
+			callback = function(self, depth)
+				checkArg(1, depth, "number")
+				if depth == 1 then
+					self.depth = depth
+					canvas_setDepth(canvas, self.depth)
+					return "OneBit"
+				elseif depth == 4 then
+					self.depth = depth
+					canvas_setDepth(canvas, self.depth)
+					return "FourBit"
+				elseif depth == 8 then
+					self.depth = depth
+					canvas_setDepth(canvas, self.depth)
+					return "EightBit"
+				else
+					error("unsupported depth", 2)
+				end
+			end,
+			direct = false,
+			doc = "function():string -- Sets the color depth to use. Can be up to the maximum supported color depth. If a larger or invalid value is provided it will throw an error. Returns the old depth as one of the strings OneBit, FourBit, or EightBit."
+		},
+		maxResolution = {
+			callback = function(self)
+				return self.maxX, self.maxY
+			end,
+			direct = true,
+			doc = "function():number, number -- Gets the maximum resolution supported by the GPU and the screen it is bound to (minimum of the two)."
+		},
+		getResolution = {
+			callback = function(self)
+				return self.resX, self.resY
+			end,
+			direct = true,
+			doc = "function():number, number -- Gets the currently set resolution."
+		},
+		getViewport = {
+			callback = function(self)
+				return self.viewX, self.viewY
+			end,
+			direct = true,
+			doc = "function():number, number -- Get the current viewport resolution."
+		},
+		get = {
+			callback = function(self, x, y)
+				checkArg(1, x, "number")
+				checkArg(2, y, "number")
+				return " ", 0, 0, 0, 0
+			end,
+			direct = false,
+			doc = "function(number, number): string, number, number, number or nil, number or nil -- Gets the character currently being displayed at the specified coordinates. The second and third returned values are the fore- and background color, as hexvalues. If the colors are from the palette, the fourth and fifth values specify the palette index of the color, otherwise they are nil."
+		},
+		set = {
+			callback = function(self, x, y, text, vertical)
+				checkArg(1, x, "number")
+				checkArg(2, y, "number")
+				checkArg(3, text, "string")
+				if vertical ~= nil then
+					checkArg(4, vertical, "boolean")
+				end
+				canvas_set(canvas, x, y, text)
+				return true
+			end,
+			direct = false,
+			doc = "function(x: number, y: number, value: string[, vertical:boolean]):boolean -- Writes a string to the screen, starting at the specified coordinates. The string will be copied to the screen's buffer directly, in a single row. This means even if the specified string contains line breaks, these will just be printed as special characters, the string will not be displayed over multiple lines. Returns true if the string was set to the buffer, false otherwise."
+		},
+		fill = {
+			callback = function(self, x, y, sizeX, sizeY, char)
+				checkArg(1, x, "number")
+				checkArg(2, y, "number")
+				checkArg(3, sizeX, "number")
+				checkArg(4, sizeY, "number")
+				checkArg(5, char, "string")
+				canvas_fill(canvas, x, y, sizeX, sizeY, string.byte(char))
+				return true
+			end,
+			direct = false,
+			doc = "function(x: number, y: number, width: number, height: number, char: string): boolean -- Fills a rectangle in the screen buffer with the specified character. The target rectangle is specified by the x and y coordinates and the rectangle's width and height. The fill character char must be a string of length one, i.e. a single character. Returns true on success, false otherwise."
+		},
+		copy = {
+			callback = function(self, x, y, sizeX, sizeY, offsetX, offsetY)
+				checkArg(1, x, "number")
+				checkArg(2, y, "number")
+				checkArg(3, sizeX, "number")
+				checkArg(4, sizeY, "number")
+				checkArg(5, offsetX, "number")
+				checkArg(6, offsetY, "number")
+				canvas_copy(canvas, x, y, sizeX, sizeY, offsetX, offsetY)
+				return true
+			end,
+			direct = false,
+			doc = "function(x: number, y: number, width: number, height: number, tx: number, ty: number): boolean -- Copies a portion of the screens buffer to another location. The source rectangle is specified by the x, y, width and height parameters. The target rectangle is defined by x + tx, y + ty, width and height. Returns true on success, false otherwise."
+		},
+		setBackground = {
+			callback = function(self, color, isPal)
+				checkArg(1, color, "number")
+				if isPal ~= nil then
+					checkArg(2, isPal, "boolean")
+				end
+				canvas_setBackground(canvas, color, not not isPal)
+			end,
+			direct = false,
+			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Sets the background color to apply to “pixels” modified by other operations from now on. The returned value is the old background color, as the actual value it was set to (i.e. not compressed to the color space currently set). The first value is the previous color as an RGB value. If the color was from the palette, the second value will be the index in the palette. Otherwise it will be nil. Note that the color is expected to be specified in hexadecimal RGB format, i.e. 0xRRGGBB. This is to allow uniform color operations regardless of the color depth supported by the screen and GPU."
+		},
+		setForeground = {
+			callback = function(self, color, isPal)
+				checkArg(1, color, "number")
+				if isPal ~= nil then
+					checkArg(2, isPal, "boolean")
+				end
+				canvas_setForeground(canvas, color, not not isPal)
+			end,
+			direct = false,
+			doc = "function(color: number[, isPaletteIndex: boolean]): number[, index] -- Like setBackground, but for the foreground color."
+		}
 	}
 })
 
-addComponent({maxX = 50, maxY = 16, resX = 50, resY = 16, depth = 8}, "gpu", gpuAddress)
+addComponent({maxX = 50, maxY = 16, resX = 50, resY = 16, depth = 8, viewX = 50, viewY = 16}, "gpu", gpuAddress)
 
 ----------------------------------------------------
 
