@@ -178,10 +178,11 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	for (size_t ix = 0; ix < sizeX; ix++) {
 		for (size_t iy = 0; iy < sizeY; iy++) {
 			size_t index = ix + (iy * sizeX);
-			if (ix >= 0 && iy >= 0 && ix < old_sizeX && iy < old_sizeY) {
-				canvas->chars[index] = old_chars[index];
-				canvas->foregrounds[index] = old_foregrounds[index];
-				canvas->backgrounds[index] = old_backgrounds[index];
+			if (ix < old_sizeX && iy < old_sizeY) {
+				size_t _index = ix + (iy * old_sizeX);
+				canvas->chars[index] = old_chars[_index];
+				canvas->foregrounds[index] = old_foregrounds[_index];
+				canvas->backgrounds[index] = old_backgrounds[_index];
 			} else {
 				canvas->chars[index] = ' ';
 				canvas->foregrounds[index] = canvas->foreground;
@@ -310,7 +311,6 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 #include <stdio.h>
 
 void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY) {
-	/*
 	bool xSide = offsetX < 0;
 	bool ySide = offsetY < 0;
 	canvas_pos xFrom = x - 1;
@@ -353,7 +353,6 @@ void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 			}
 		}
 	}
-	*/
 }
 
 canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
