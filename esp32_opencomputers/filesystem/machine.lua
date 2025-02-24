@@ -1,7 +1,7 @@
-local resolutionX = 50
-local resolutionY = 16
+local resolutionX = 80
+local resolutionY = 25
 
-local debugMode = false
+local debugMode = true
 local pixelPerfect = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
@@ -1587,7 +1587,7 @@ regComponent({
 
 filesys.makeDirectory("/storage/tmpfs")
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
-addComponent({ram = {}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
+addComponent({ram = {used = 0}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
 
