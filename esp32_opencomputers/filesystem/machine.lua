@@ -1,3 +1,6 @@
+local resolutionX = 50
+local resolutionY = 16
+
 local debugMode = false
 local pixelPerfect = false
 
@@ -9,7 +12,7 @@ local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
 local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
 local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 
-local screenSelf = {state = true, precise = false, touchModeInverted = false}
+local screenSelf, gpuSelf
 
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
@@ -395,9 +398,19 @@ local maxTouchCount = 0
 local oldTouchscreenStates = {}
 
 local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
-	local sx, sy = x / imageCharSizeX, y / imageCharSizeY
+	local sx, sy = (x - imageStartX) / imageCharSizeX, (y - imageStartY) / imageCharSizeY
 	if not screenSelf.precise then
 		sx, sy = math.ceil(sx), math.ceil(sy)
+	end
+	if sx < 1 then
+		sx = 1
+	elseif sx > gpuSelf.resX then
+		sx = gpuSelf.resX
+	end
+	if sy < 1 then
+		sy = 1
+	elseif sy > gpuSelf.resY then
+		sy = gpuSelf.resY
 	end
 	debugPrint(eventName .. " " .. fingerindex .. ": " .. sx .. ", " .. sy)
 	computer_pushSignal(eventName, screenAddress, sx, sy, button, "finger" .. fingerindex)
@@ -1057,12 +1070,13 @@ regComponent({
 	}
 })
 
+screenSelf = {state = true, precise = false, touchModeInverted = false}
 addComponent(screenSelf, "screen", screenAddress)
 
 ---------------------------------------------------- filesystem component
 
 local baseFileCost = 512
-local maxReadPart = 2048
+local maxReadPart = 32 * 1024
 local fileHandles = {}
 
 local function readonlyCheck(self)
@@ -1472,16 +1486,16 @@ regComponent({
 						return nil, path
 					end
 				else
-					--[[
 					local file, err = filesys.open(formatPath(self, path), mode)
 					if not file then
 						return nil, tostring(err)
 					end
 
 					handleBackend.file = file
-					]]
 
+					--[[
 					handleBackend.file = createCacheFile(self, formatPath(self, path), not binMode, writeMode, appendMode)
+					]]
 				end
 
 				local handle = {}
@@ -1873,7 +1887,15 @@ regComponent({
 	}
 })
 
-addComponent({maxX = 80, maxY = 25, resX = 50, resY = 16, depth = 1, viewX = 80, viewY = 25}, "gpu", gpuAddress)
+gpuSelf = {
+	maxX = resolutionX, maxY = resolutionY,
+	
+	viewX = 50, viewY = 16,
+	resX = 50, resY = 16,
+	depth = 1
+}
+
+addComponent(gpuSelf, "gpu", gpuAddress)
 
 ----------------------------------------------------
 

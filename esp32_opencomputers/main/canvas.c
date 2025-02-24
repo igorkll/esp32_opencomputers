@@ -247,6 +247,8 @@ canvas_fullColor canvas_getForeground(canvas_t* canvas) {
 }
 
 void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, char chr) {
+	if (x > canvas->sizeX || y > canvas->sizeY) return;
+
 	x--;
 	y--;
 
