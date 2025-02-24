@@ -185,32 +185,14 @@ static void _sendSelectAll() {
 	_sendSelect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 }
 
-static void _spam(size_t size, uint16_t color) {
-	/*
-	size_t bytesCount = size * BYTES_PER_COLOR;
-	size_t part = min(MAXSEND, bytesCount);
-	size_t offset = 0;
-	uint8_t* floodPart = malloc(part);
-	if (floodPart == NULL) return;
-	for (size_t i = 0; i < part; i += BYTES_PER_COLOR) {
-		memcpy(floodPart + i, &color, BYTES_PER_COLOR);
-	}
-	while (true) {
-		_sendData(floodPart, min(bytesCount - offset, part));
-		offset += part;
-		if (offset >= bytesCount) {
-			break;
-		}
-	}
-	free(floodPart);
-	*/
-}
-
 static void _clear() {
-	_spam(DISPLAY_WIDTH * DISPLAY_HEIGHT, 0);
 }
 
 // ----------------------------------------------
+
+bool _on_color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t* edata, void* user) {
+	return true;
+}
 
 static void _initDisplay() {
 	// ---- init spi bus
@@ -232,12 +214,16 @@ static void _initDisplay() {
 		.lcd_cmd_bits = 8,
 		.lcd_param_bits = 8,
 		.spi_mode = 0,
-		.trans_queue_depth = 16,
+		.trans_queue_depth = 64,
 	};
 	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(DISPLAY_HOST, &io_config, &display));
 
-	// ---- init display
+	esp_lcd_panel_io_callbacks_t callback_config = {
+		.on_color_trans_done = _on_color_trans_done,
+	};
+	ESP_ERROR_CHECK(esp_lcd_panel_io_register_event_callbacks(display, &callback_config, NULL));
 
+	// ---- init display
 	gpio_config_t io_conf = {};
 	io_conf.pin_bit_mask |= 1ULL << DISPLAY_DC;
 	#ifdef DISPLAY_RST
@@ -360,13 +346,17 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 					canvas_color backgroundColor = canvas->palette[background];
 				#endif
 
-				if (false && canvas->chars[index] == ' ') {
-					_spam(charSizeX * charSizeY, backgroundColor);
+				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
+				uint8_t charBuffer[bytesPerChar];
+				if (canvas->chars[index] == ' ') {
+					for (size_t icx = 0; icx < charSizeX; icx++) {
+						for (size_t icy = 0; icy < charSizeY; icy++) {
+							memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);
+						}
+					}
+					_sendData(charBuffer, bytesPerChar);
 				} else {
-					size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
-					uint8_t* charBuffer = malloc(bytesPerChar);
 					uint8_t rawCharBuffer[FONT_MAXCHAR];
-					
 
 					int charOffset = font_findOffset(&canvas->chars[index], 1);
 					bool isWide;
