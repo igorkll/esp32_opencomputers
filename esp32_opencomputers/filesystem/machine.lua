@@ -1,4 +1,5 @@
-local debugMode = true
+local debugMode = false
+local pixelPerfect = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
@@ -13,6 +14,7 @@ local screenSelf = {state = true, precise = false, touchModeInverted = false}
 local maxEepromCodeLen = 4096
 local maxEepromDataLen = 256
 
+math.randomseed(_defaultRandom)
 package.path = "/storage/?.lua"
 
 local filesys = require("filesys")
@@ -21,6 +23,10 @@ local function debugPrint(...)
 	if debugMode then
 		print(...)
 	end
+end
+
+local function getRealTime()
+	return 0
 end
 
 local function checkArg(n, have, ...)
@@ -57,18 +63,9 @@ end
 local function spcall(...)
 	local result = table.pack(pcall(...))
 	if not result[1] then
-		error(tostring(result[2]), 0)
+		error(tostring(result[2]), 3)
 	else
 		return table.unpack(result, 2, result.n)
-	end
-end
-
-local function epcall(...)
-	local result = {pcall(...)}
-	if result[1] then
-		return table.unpack(result, 2)
-	else
-		error(result[2], 2)
 	end
 end
 
@@ -320,12 +317,14 @@ sandbox._G = sandbox
 
 ----------------------------------------------------
 
+local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
+
 local displayFlag = false
 local displayValue = 0
 
 local function flushDisplay()
 	if displayFlag then
-		hal_display_sendBuffer(canvas, false)
+		imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
 		displayFlag = false
 		displayValue = 0
 	end
@@ -393,7 +392,6 @@ end
 ----------------------------------------------------
 
 local maxTouchCount = 0
-local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = 0, 0, 6, 12
 local oldTouchscreenStates = {}
 
 local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
@@ -527,13 +525,13 @@ libcomputer = {
 
 	beep = function(freq, delay)
 		flushDisplay()
-		return epcall(computer_beep, freq, delay)
+		return spcall(computer_beep, freq, delay)
 	end,
 	getDeviceInfo = function()
-		return epcall(computer_getDeviceInfo)
+		return spcall(computer_getDeviceInfo)
 	end,
 	getProgramLocations = function()
-		return epcall(computer_getProgramLocations)
+		return spcall(computer_getProgramLocations)
 	end,
 
 	getArchitectures = function(...)
@@ -684,7 +682,7 @@ libcomponent = {
 			debugPrint("component.invoke: " .. comp.type .. " | " .. address:sub(1, 3) .. " | " .. method .. "(" .. table.concat(args, ", ") .. ")")
 		end
 
-		return epcall(comp.api[method].callback, comp.self, ...)
+		return spcall(comp.api[method].callback, comp.self, ...)
     end,
     list = function(filter, exact)
         checkArg(1, filter, "string", "nil")
@@ -936,21 +934,21 @@ regComponent({
 		},
 		beep = {
 			callback = function(self, freq, delay)
-				return epcall(computer_beep, freq, delay)
+				return spcall(computer_beep, freq, delay)
 			end,
 			direct = false,
 			doc = "function([frequency:number[, duration:number]]) -- Plays a tone, useful to alert users via audible feedback. Supports frequencies from 20 to 2000Hz, with a duration of up to 5 seconds."
 		},
 		getDeviceInfo = {
 			callback = function(self)
-				return epcall(computer_getDeviceInfo)
+				return spcall(computer_getDeviceInfo)
 			end,
 			direct = false,
 			doc = "function():table -- Returns a table of device information. Note that this is architecture-specific and some may not implement it at all."
 		},
 		getProgramLocations = {
 			callback = function(self)
-				return epcall(computer_getProgramLocations)
+				return spcall(computer_getProgramLocations)
 			end,
 			direct = false,
 			doc = "function():table"
@@ -1346,7 +1344,7 @@ regComponent({
 				if self.ram then
 					local file = ramFsRead(self, path)
 					if file and file.isFile then
-						return file.lastModified
+						return file.lastModified or 0
 					end
 					return 0
 				else
@@ -1466,6 +1464,7 @@ regComponent({
 							dir[filename] = {isFile = true, content = ""}
 							self.ram.used = self.ram.used + baseFileCost
 						end
+						dir[filename].lastModified = getRealTime()
 						handleBackend.file = createRamFile(self, dir[filename], not binMode)
 					elseif dir[filename] then
 						handleBackend.file = createRamFile(self, dir[filename], not binMode)
@@ -1878,7 +1877,7 @@ addComponent({maxX = 80, maxY = 25, resX = 50, resY = 16, depth = 1, viewX = 80,
 
 ----------------------------------------------------
 
-local function pullEvent(vm, wait)
+local function pullEvent(wait)
 	local deadline = computer_uptime() + wait
 	repeat
 		updateHardware()
@@ -1886,6 +1885,7 @@ local function pullEvent(vm, wait)
 			return table.remove(eventList, 1)
 		end
 	until computer_uptime() >= deadline
+	return {}
 end
 
 local function bootstrap()
@@ -1920,8 +1920,7 @@ while true do
 			else
 				return false
 			end
-		elseif returnType == "number" then
-			args = pullEvent(result[2])
 		end
 	end
+	args = pullEvent(result[2])
 end

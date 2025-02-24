@@ -3,6 +3,8 @@
 #include <stddef.h>
 
 #define FONT_MAXCHAR 32
+#define FONT_CACHE_OFFSETS
+#define FONT_CACHE_DATA
 
 void font_init();
 int font_findOffset(char* chr, size_t len);

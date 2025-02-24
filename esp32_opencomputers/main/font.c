@@ -3,8 +3,15 @@
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
+#include <map.h>
 
 FILE* font;
+#ifdef FONT_CACHE_OFFSETS
+	hashmap* cache_offsets;
+#endif
+#ifdef FONT_CACHE_DATA
+	hashmap* cache_data;
+#endif
 
 uint8_t _getMetadata(int offset) {
 	fseek(font, offset, SEEK_SET);
@@ -34,7 +41,14 @@ int font_findOffset(char* chr, size_t len) {
 		}
 	}
 
-	int offset = 0;
+	int offset = -1;
+	#ifdef FONT_CACHE_OFFSETS
+		if (hashmap_get(cache_offsets, chr, len, &offset) != 0) {
+			return offset;
+		}
+		offset = -1
+	#endif
+
 	do {
 		fseek(font, offset, SEEK_SET);
 
@@ -47,14 +61,23 @@ int font_findOffset(char* chr, size_t len) {
 		if (metadata != 2 && charlen == len) {
 			fread(charcode, 1, charlen, font);
 			if (memcmp(charcode, chr, len) == 0) {
-				return offset;
+				break;
 			}
 		}
 
 		bool isWide = metadata & 0b00000001;
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
-	return -1;
+
+	#ifdef FONT_CACHE_OFFSETS
+		char* cpy_chr = malloc(len);
+		int* cpy_val = malloc(sizeof(int));
+		memcpy(cpy_chr, chr, len);
+		memcpy(cpy_val, &offset, sizeof(int));
+		hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
+	#endif
+
+	return offset;
 }
 
 uint8_t font_charWidth(int offset) {
@@ -65,7 +88,27 @@ bool font_isWide(int offset) {
 	return font_charWidth(offset) > 1;
 }
 
+#ifdef FONT_CACHE_DATA
+	typedef struct {
+		uint8_t* data;
+		uint8_t metadata;
+	} FontDataCache;
+#endif
+
 bool font_readData(uint8_t* data, int offset) {
+	
+	#ifdef FONT_CACHE_DATA
+	{
+		FontDataCache* fontDataCache;
+		if (hashmap_get(cache_data, &offset, sizeof(offset), fontDataCache) != 0) {
+			bool isWide = fontDataCache->metadata & 0b00000001;
+			size_t charsize = isWide ? 32 : 16;
+			memcpy(data, fontDataCache->data, charsize);
+			return isWide;
+		}
+	}
+	#endif
+
 	uint8_t metadata = _getMetadata(offset);
 	
 	uint8_t charlen;
@@ -73,7 +116,18 @@ bool font_readData(uint8_t* data, int offset) {
 	fseek(font, charlen, SEEK_CUR);
 
 	bool isWide = metadata & 0b00000001;
-	fread(data, 1, isWide ? 32 : 16, font);
+	size_t charsize = isWide ? 32 : 16;
+	fread(data, 1, charsize, font);
+
+	#ifdef FONT_CACHE_DATA
+		FontDataCache* fontDataCache = malloc(sizeof(FontDataCache));
+		fontDataCache->data = malloc(charsize);
+		fontDataCache->metadata = metadata;
+		memcpy(fontDataCache->data, data, charsize);
+
+		hashmap_set(cache_offsets, &offset, sizeof(offset), fontDataCache);
+	#endif
+
 	return isWide;
 }
 

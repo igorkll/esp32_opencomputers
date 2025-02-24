@@ -8,6 +8,7 @@
 #include <freertos/event_groups.h>
 #include <driver/gptimer.h>
 #include <esp_timer.h>
+#include <esp_random.h>
 #include <driver/dac_oneshot.h>
 #include <string.h>
 #include <driver/i2c.h>
@@ -558,6 +559,18 @@ bool hal_filesystem_isDirectory(const char* path) {
     return false;
 }
 
+bool hal_filesystem_isFile(const char* path) {
+	struct stat state = {0};
+    if(stat(path, &state) == 0) {
+        if (state.st_mode & S_IFMT) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 size_t hal_filesystem_size(const char* path) {
 	if (hal_filesystem_isDirectory(path)) {
 		long total_size = 0;
@@ -787,6 +800,10 @@ void hal_delay(uint32_t milliseconds) {
 
 float hal_uptime() {
 	return esp_timer_get_time() / 1000.0 / 1000.0;
+}
+
+uint32_t hal_random() {
+	return esp_random();
 }
 
 size_t hal_freeMemory() {

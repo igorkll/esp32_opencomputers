@@ -81,9 +81,22 @@ static int _getPoint_bind(lua_State* lua) {
 	return 3;
 }
 
+static int _sendBuffer_bind(lua_State* lua) {
+	canvas_t* canvas = lua_touserdata(lua, 1);
+	bool pixelPerfect = lua_toboolean(lua, 2);
+	hal_display_sendInfo sendInfo = hal_display_sendBuffer(canvas, pixelPerfect);
+	lua_pushinteger(lua, sendInfo.startX);
+	lua_pushinteger(lua, sendInfo.startY);
+	lua_pushinteger(lua, sendInfo.charSizeX);
+	lua_pushinteger(lua, sendInfo.charSizeY);
+	return 4;
+}
+
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
+	lua_pushinteger(lua, hal_random());
+    lua_setglobal(lua, "_defaultRandom");
 
 	// ---- defines
 	LUA_PUSH_INT(DISPLAY_WIDTH);
@@ -105,7 +118,8 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
 
 	// ---- display
-	LUA_BIND_VOID(hal_display_sendBuffer, (LUA_ARG_USR, LUA_ARG_BOOL));
+	lua_pushcfunction(lua, _sendBuffer_bind);
+    lua_setglobal(lua, "hal_display_sendBuffer");
 	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
 
 	// ---- touchscreen
@@ -116,6 +130,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	// ---- filesystem
 	LUA_BIND_RETR(hal_filesystem_exists, (LUA_ARG_STR), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_isDirectory, (LUA_ARG_STR), LUA_RET_BOOL);
+	LUA_BIND_RETR(hal_filesystem_isFile, (LUA_ARG_STR), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_size, (LUA_ARG_STR), LUA_RET_INT);
 	LUA_BIND_RETR(hal_filesystem_mkdir, (LUA_ARG_STR), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_count, (LUA_ARG_STR, LUA_ARG_BOOL, LUA_ARG_BOOL), LUA_RET_INT);

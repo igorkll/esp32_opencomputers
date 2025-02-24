@@ -174,7 +174,7 @@ function filesys.isDirectory(path)
 end
 
 function filesys.isFile(path)
-	return filesys.exists(path) and not filesys.isDirectory(path)
+	return hal_filesystem_isFile(path)
 end
 
 function filesys.size(path)

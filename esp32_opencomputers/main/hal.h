@@ -72,6 +72,7 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index);
 
 bool hal_filesystem_exists(const char* path);
 bool hal_filesystem_isDirectory(const char* path);
+bool hal_filesystem_isFile(const char* path);
 size_t hal_filesystem_size(const char* path);
 bool hal_filesystem_mkdir(const char* path);
 size_t hal_filesystem_count(const char* path, bool files, bool dirs);
@@ -116,5 +117,6 @@ extern const char* HAL_LOG_TAG;
 void hal_task(void(*func)(void* arg), void* arg);
 void hal_delay(uint32_t milliseconds);
 float hal_uptime();
+uint32_t hal_random();
 size_t hal_freeMemory();
 size_t hal_totalMemory();
