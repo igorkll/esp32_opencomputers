@@ -24,6 +24,12 @@ uint8_t _getMetadata(int offset) {
 
 void font_init() {
 	font = fopen("/storage/font.bin", "rb");
+	#ifdef FONT_CACHE_OFFSETS
+		cache_offsets = hashmap_create();
+	#endif
+	#ifdef FONT_CACHE_DATA
+		cache_data = hashmap_create();
+	#endif
 }
 
 int font_findOffset(char* chr, size_t len) {
@@ -41,14 +47,14 @@ int font_findOffset(char* chr, size_t len) {
 		}
 	}
 
-	int offset = -1;
 	#ifdef FONT_CACHE_OFFSETS
-		if (hashmap_get(cache_offsets, chr, len, &offset) != 0) {
-			return offset;
+		int* offsetPtr;
+		if (hashmap_get(cache_offsets, chr, len, &offsetPtr) != 0) {
+			return *offsetPtr;
 		}
-		offset = -1
 	#endif
 
+	int offset = -1;
 	do {
 		fseek(font, offset, SEEK_SET);
 
@@ -100,7 +106,7 @@ bool font_readData(uint8_t* data, int offset) {
 	#ifdef FONT_CACHE_DATA
 	{
 		FontDataCache* fontDataCache;
-		if (hashmap_get(cache_data, &offset, sizeof(offset), fontDataCache) != 0) {
+		if (hashmap_get(cache_data, &offset, sizeof(offset), &fontDataCache) != 0) {
 			bool isWide = fontDataCache->metadata & 0b00000001;
 			size_t charsize = isWide ? 32 : 16;
 			memcpy(data, fontDataCache->data, charsize);
@@ -125,7 +131,7 @@ bool font_readData(uint8_t* data, int offset) {
 		fontDataCache->metadata = metadata;
 		memcpy(fontDataCache->data, data, charsize);
 
-		hashmap_set(cache_offsets, &offset, sizeof(offset), fontDataCache);
+		hashmap_set(cache_data, &offset, sizeof(offset), fontDataCache);
 	#endif
 
 	return isWide;
