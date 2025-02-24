@@ -397,7 +397,7 @@ end
 local maxTouchCount = 0
 local oldTouchscreenStates = {}
 
-local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
+local function convertPos(x, y)
 	local sx, sy = (x - imageStartX) / imageCharSizeX, (y - imageStartY) / imageCharSizeY
 	if not screenSelf.precise then
 		sx, sy = math.ceil(sx), math.ceil(sy)
@@ -412,8 +412,12 @@ local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
 	elseif sy > gpuSelf.resY then
 		sy = gpuSelf.resY
 	end
-	debugPrint(eventName .. " " .. fingerindex .. ": " .. sx .. ", " .. sy)
-	computer_pushSignal(eventName, screenAddress, sx, sy, button, "finger" .. fingerindex)
+	return sx, sy
+end
+
+local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
+	debugPrint(eventName .. " " .. fingerindex .. ": " .. x .. ", " .. y)
+	computer_pushSignal(eventName, screenAddress, x, y, button, "finger" .. fingerindex)
 end
 
 local function updateHardware()
@@ -424,17 +428,18 @@ local function updateHardware()
 	for i = 1, maxTouchCount do
 		local tsState = oldTouchscreenStates[i]
 		if i <= touchCount then
-			local x, y, z = hal_touchscreen_getPoint(i - 1)
-			debugPrint("finger " .. i .. ": " .. x .. ", " .. y)
+			local x, y = hal_touchscreen_getPoint(i - 1)
+			x, y = convertPos(x, y)
 			if not tsState then
+				oldTouchscreenStates[i] = {x = x, y = y, b = 0}
 				pushTouchscreenEvent("touch", x, y, 0, i)
-				oldTouchscreenStates[i] = {x = x, y = y}
 			elseif tsState.x ~= x or tsState.y ~= y then
-				pushTouchscreenEvent("drag", x, y, 0, i)
-				oldTouchscreenStates[i] = {x = x, y = y}
+				tsState.x = x
+				tsState.y = y
+				pushTouchscreenEvent("drag", x, y, tsState.b, i)
 			end
 		elseif tsState then
-			pushTouchscreenEvent("drop", tsState.x, tsState.y, 0, i)
+			pushTouchscreenEvent("drop", tsState.x, tsState.y, tsState.b, i)
 			oldTouchscreenStates[i] = nil
 		end
 	end
