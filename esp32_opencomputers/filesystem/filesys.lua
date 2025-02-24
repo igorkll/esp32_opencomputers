@@ -136,22 +136,33 @@ function filesys.open(path, mode)
 end
 
 function filesys.writeFile(path, content)
-	local file = filesys.open(path, "wb")
+	local file, err = filesys.open(path, "wb")
 	if file then
 		file:write(content)
 		file:close()
 		return true
 	end
-	return false
+	return nil, tostring(err)
+end
+
+function filesys.appendFile(path, content)
+	local file, err = filesys.open(path, "ab")
+	if file then
+		file:write(content)
+		file:close()
+		return true
+	end
+	return nil, tostring(err)
 end
 
 function filesys.readFile(path)
-	local file = filesys.open(path, "rb")
+	local file, err = filesys.open(path, "rb")
 	if file then
 		local data = file:read("*a")
 		file:close()
 		return data
 	end
+	return nil, tostring(err)
 end
 
 function filesys.exists(path)

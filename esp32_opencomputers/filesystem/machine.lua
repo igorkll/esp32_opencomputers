@@ -1118,21 +1118,23 @@ local function ramFsRead(self, path, getLast)
 	return obj, last
 end
 
+local function seekFunction(self, mode, val)
+	checkArg(1, mode, "string")
+	checkArg(2, val, "number")
+	if mode == "set" then
+		self.cursor = val
+	elseif mode == "cur" then
+		self.cursor = self.cursor + val
+	else
+		error("invalid mode", 2)
+	end
+	self.cursor = math.floor(self.cursor)
+	if self.cursor < 0 then self.cursor = 0 end
+	return self.cursor
+end
+
 local ramFsMethods = {
-	seek = function(self, mode, val)
-		checkArg(1, mode, "string")
-		checkArg(2, val, "number")
-		if mode == "set" then
-			self.cursor = val
-		elseif mode == "cur" then
-			self.cursor = self.cursor + val
-		else
-			error("invalid mode", 2)
-		end
-		self.cursor = math.floor(self.cursor)
-		if self.cursor < 0 then self.cursor = 0 end
-		return self.cursor
-	end,
+	seek = seekFunction,
 	read = function(self, bytes)
 		local str = self.strtool.sub(self.file.content, self.cursor + 1, self.cursor + bytes)
 		self.cursor = self.cursor + bytes
@@ -1150,6 +1152,45 @@ local ramFsMethods = {
 
 local function createRamFile(self, file, unicode)
 	return setmetatable({cursor = 0, file = file, strtool = unicode and libunicode or string, self = self}, {__index = ramFsMethods})
+end
+
+local cacheFsMethods = {
+	seek = seekFunction,
+	read = function(self, bytes)
+		local str = self.strtool.sub(self.content, self.cursor + 1, self.cursor + bytes)
+		self.cursor = self.cursor + bytes
+		return str
+	end,
+	write = function(self, str)
+		self.cursor = self.cursor + self.strtool.len(str)
+		self.content = self.content .. str
+		return true
+	end,
+	close = function(self)
+		if self.writeMode then
+			self.file:write(self.content)
+			self.file:close()
+		end
+	end
+}
+
+local function createCacheFile(self, path, unicode, writeMode, appendMode)
+	local obj = setmetatable({cursor = 0, path = path, strtool = unicode and libunicode or string, self = self, writeMode = writeMode, appendMode = appendMode}, {__index = cacheFsMethods})
+	local err
+	if writeMode then
+		obj.file, err = filesys.open(path, appendMode and (unicode and "a" or "ab") or (unicode and "w" or "wb"))
+		if not obj.file then
+			return nil, err
+		end
+
+		obj.content = ""
+	else
+		obj.content, err = filesys.readFile(path)
+		if not obj.content then
+			return nil, err
+		end
+	end
+	return obj
 end
 
 regComponent({
@@ -1432,12 +1473,16 @@ regComponent({
 						return nil, path
 					end
 				else
+					--[[
 					local file, err = filesys.open(formatPath(self, path), mode)
 					if not file then
 						return nil, tostring(err)
 					end
 
 					handleBackend.file = file
+					]]
+
+					handleBackend.file = createCacheFile(self, formatPath(self, path), not binMode, writeMode, appendMode)
 				end
 
 				local handle = {}
