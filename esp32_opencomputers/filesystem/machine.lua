@@ -405,7 +405,7 @@ local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
 	computer_pushSignal(eventName, screenAddress, sx, sy, button, "finger" .. fingerindex)
 end
 
-local function updateTouchscreen()
+local function updateHardware()
 	local touchCount = hal_touchscreen_touchCount()
 	if touchCount > maxTouchCount then
 		maxTouchCount = touchCount
@@ -427,10 +427,6 @@ local function updateTouchscreen()
 			oldTouchscreenStates[i] = nil
 		end
 	end
-end
-
-local function updateHardware()
-	updateTouchscreen()
 end
 
 ---------------------------------------------------- computer library
@@ -523,15 +519,10 @@ libcomputer = {
 	end,
 	pullSignal = function(timeout)
 		flushDisplay()
-		updateHardware()
-		local deadline = computer_uptime() + (type(timeout) == "number" and timeout or math.huge)
-		repeat
-			local signal = coroutine.yield()
-			updateHardware()
-			if signal then
-				return table.unpack(signal, 1, signal.n)
-			end
-		until computer_uptime() >= deadline
+		local signal = table.pack(coroutine.yield(type(timeout) == "number" and timeout or math.huge))
+		if signal.n > 0 then
+			return table.unpack(signal, 1, signal.n)
+		end
 	end,
 
 	beep = function(freq, delay)
@@ -674,7 +665,6 @@ libcomponent = {
 			error("no such method", 2)
 		end
 
-		updateHardware()
 		if comp.type ~= "gpu" then
 			flushDisplay()
 		end
@@ -1153,10 +1143,12 @@ local ramFsMethods = {
 		self.cursor = self.cursor + self.strtool.len(str)
 		self.file.content = self.file.content .. str
 		return true
+	end,
+	close = function(self)
 	end
 }
 
-local function createFileReader(self, file, unicode)
+local function createRamFile(self, file, unicode)
 	return setmetatable({cursor = 0, file = file, strtool = unicode and libunicode or string, self = self}, {__index = ramFsMethods})
 end
 
@@ -1401,6 +1393,7 @@ regComponent({
 					checkArg(2, mode, "string")
 				end
 				mode = (mode or "r"):lower()
+				local binMode = mode:sub(2, 2) == "b"
 				local appendMode = mode:sub(1, 1) == "a"
 				local writeMode = appendMode or mode:sub(1, 1) == "w"
 
@@ -1432,9 +1425,9 @@ regComponent({
 							dir[filename] = {isFile = true, content = ""}
 							self.ram.used = self.ram.used + baseFileCost
 						end
-						handleBackend.file = createFileWriter(self, dir[filename])
+						handleBackend.file = createRamFile(self, dir[filename], not binMode)
 					elseif dir[filename] then
-						handleBackend.file = createFileReader(self, dir[filename])
+						handleBackend.file = createRamFile(self, dir[filename], not binMode)
 					else
 						return nil, path
 					end
@@ -1840,10 +1833,14 @@ addComponent({maxX = 80, maxY = 25, resX = 50, resY = 16, depth = 1, viewX = 80,
 
 ----------------------------------------------------
 
-local function pullEvent(vm)
-	if #eventList > 0 then
-		return table.remove(eventList, 1)
-	end
+local function pullEvent(vm, wait)
+	local deadline = computer_uptime() + wait
+	repeat
+		updateHardware()
+		if #eventList > 0 then
+			return table.remove(eventList, 1)
+		end
+	until computer_uptime() >= deadline
 end
 
 local function bootstrap()
@@ -1878,8 +1875,8 @@ while true do
 			else
 				return false
 			end
-		else
-			args = table.pack(pullEvent())
+		elseif returnType == "number" then
+			args = pullEvent(result[2])
 		end
 	end
 end
