@@ -29,7 +29,7 @@ local function debugPrint(...)
 end
 
 local function getRealTime()
-	return 0
+	return os.time() * 1000
 end
 
 local function checkArg(n, have, ...)
@@ -1112,7 +1112,7 @@ end
 
 local function delUsed(self, obj)
 	if obj.isFile then
-		self.ram.used = self.ram.used - #obj.context - baseFileCost
+		self.ram.used = self.ram.used - #obj.content - baseFileCost
 	else
 		delUsed(self, obj)
 		self.ram.used = self.ram.used - baseFileCost
@@ -1587,7 +1587,7 @@ regComponent({
 
 filesys.makeDirectory("/storage/tmpfs")
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
-addComponent({ram = {used = 0}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
+addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
 

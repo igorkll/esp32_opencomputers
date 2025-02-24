@@ -10,6 +10,8 @@
 #include <esp_timer.h>
 #include <esp_random.h>
 #include <driver/dac_oneshot.h>
+#include <esp_lcd_io_spi.h>
+#include <esp_lcd_panel_io.h>
 #include <string.h>
 #include <driver/i2c.h>
 #include <math.h>
@@ -23,7 +25,8 @@ const char* HAL_LOG_TAG = "opencomputers";
 // ---------------------------------------------- display
 
 #define BYTES_PER_COLOR 2
-#define MAXSEND (DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR)
+
+esp_lcd_panel_io_handle_t display;
 
 typedef struct {
 	uint8_t cmd;
@@ -34,6 +37,7 @@ typedef struct {
 
 typedef struct {
 	_command list[8];
+	size_t count;
 } _commandList;
 
 static const _command display_enable = {0x29, {0}, 0, 0};
@@ -68,10 +72,16 @@ static const _command display_init[] = {
 	{0x38, {0}, 0, -1},
 };
 
-#define _ROTATION_0 0
-#define _ROTATION_1 (1<<5) | (1<<6) | (1<<2)
-#define _ROTATION_2 (1<<6) | (1<<7) | (1<<2) | (1<<4)
-#define _ROTATION_3 (1<<5) | (1<<7) | (1<<4)
+// X+ Y+
+//#define _ROTATION_0 0
+//#define _ROTATION_1 (1<<5) | (1<<6) | (1<<2)
+//#define _ROTATION_2 (1<<6) | (1<<7) | (1<<2) | (1<<4)
+//#define _ROTATION_3 (1<<5) | (1<<7) | (1<<4)
+// Y+ X+
+#define _ROTATION_0 (1<<5)
+#define _ROTATION_1 (1<<6) | (1<<2)
+#define _ROTATION_2 (1<<5) | (1<<6) | (1<<7) | (1<<2) | (1<<4)
+#define _ROTATION_3 (1<<7) | (1<<4)
 static _command _rotate(uint8_t rotation) {
 	uint8_t regvalue = 0;
 	switch (rotation) {
@@ -109,6 +119,7 @@ static _command _rotate(uint8_t rotation) {
 }
 
 static _commandList _select(uint16_t x, uint16_t y, uint16_t x2, uint16_t y2) {
+	/*
 	return (_commandList) {
 		.list = {
 			{0x2A, {x >> 8, x & 0xff, x2 >> 8, x2 & 0xff}, 4},
@@ -116,37 +127,36 @@ static _commandList _select(uint16_t x, uint16_t y, uint16_t x2, uint16_t y2) {
 			{0x2C, {0}, 0, -1}
 		}
 	};
+	*/
+	return (_commandList) {
+		.count = 3,
+		.list = {
+			{0x2A, {y >> 8, y & 0xff, y2 >> 8, y2 & 0xff}, 4},
+			{0x2B, {x >> 8, x & 0xff, x2 >> 8, x2 & 0xff}, 4},
+			{0x2C, {0}, 0, -1}
+		}
+	};
 }
 
-spi_device_handle_t display;
+static _commandList _selectFrame(uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+	return _select(
+		DISPLAY_OFFSET_X + x,
+		DISPLAY_OFFSET_Y + y,
+		(DISPLAY_OFFSET_X + x + width) - 1,
+		(DISPLAY_OFFSET_Y + y + height) - 1
+	);
+}
 
 static void _sendCommand(const uint8_t cmd) {
-	gpio_set_level(DISPLAY_DC, false);
-
-	spi_transaction_t transaction = {
-		.length = 8,
-		.tx_buffer = &cmd
-	};
-
-	ESP_ERROR_CHECK(spi_device_polling_transmit(display, &transaction));
+	ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(display, cmd, NULL, 0));
 }
 
 static void _sendData(const uint8_t* data, size_t size) {
-	gpio_set_level(DISPLAY_DC, true);
-
-	spi_transaction_t transaction = {
-		.length = size * 8,
-		.tx_buffer = data
-	};
-	
-	ESP_ERROR_CHECK(spi_device_polling_transmit(display, &transaction));
+	ESP_ERROR_CHECK(esp_lcd_panel_io_tx_color(display, -1, data, size));
 }
 
 static bool _doCommand(const _command command) {
-	_sendCommand(command.cmd);
-	if (command.datalen > 0) {
-		_sendData(command.data, command.datalen);
-	}
+	ESP_ERROR_CHECK(esp_lcd_panel_io_tx_param(display, command.cmd, command.data, command.datalen));
 
 	if (command.delay > 0) {
 		vTaskDelay(command.delay / portTICK_PERIOD_MS);
@@ -156,25 +166,19 @@ static bool _doCommand(const _command command) {
 	return false;
 }
 
-static void _doCommands(const _command* list) {
-	uint16_t cmd = 0;
-	while (!_doCommand(list[cmd++]));
+static void _doCommands(const _command* list, size_t count) {
+	for (size_t i = 0; i < count; i++) {
+		_doCommand(list[i]);
+	}
 }
 
-static void _doCommandList(const _commandList list) {
-	uint16_t cmd = 0;
-	while (!_doCommand(list.list[cmd++]));
+static void _doCommandList(const _commandList* list) {
+	_doCommands(list->list, list->count);
 }
 
 static void _sendSelect(uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
-	_doCommandList(
-		_select(
-			DISPLAY_OFFSET_X + x,
-			DISPLAY_OFFSET_Y + y,
-			(DISPLAY_OFFSET_X + x + width) - 1,
-			(DISPLAY_OFFSET_Y + y + height) - 1
-		)
-	);
+	_commandList list = _selectFrame(x, y, width, height);
+	_doCommandList(&list);
 }
 
 static void _sendSelectAll() {
@@ -182,11 +186,9 @@ static void _sendSelectAll() {
 }
 
 static void _spam(size_t size, uint16_t color) {
-	multi_heap_info_t info;
-	heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
-
+	/*
 	size_t bytesCount = size * BYTES_PER_COLOR;
-	size_t part = min(info.largest_free_block / 2, bytesCount);
+	size_t part = min(MAXSEND, bytesCount);
 	size_t offset = 0;
 	uint8_t* floodPart = malloc(part);
 	if (floodPart == NULL) return;
@@ -201,11 +203,14 @@ static void _spam(size_t size, uint16_t color) {
 		}
 	}
 	free(floodPart);
+	*/
 }
 
 static void _clear() {
 	_spam(DISPLAY_WIDTH * DISPLAY_HEIGHT, 0);
 }
+
+// ----------------------------------------------
 
 static void _initDisplay() {
 	// ---- init spi bus
@@ -215,21 +220,21 @@ static void _initDisplay() {
 		.sclk_io_num=DISPLAY_CLK,
 		.quadwp_io_num=-1,
 		.quadhd_io_num=-1,
-		.max_transfer_sz = MAXSEND
+		.max_transfer_sz = DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR
 	};
 	ESP_ERROR_CHECK(spi_bus_initialize(DISPLAY_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
 	// ---- init spi device
-	spi_device_interface_config_t devcfg = {
-		.clock_speed_hz = DISPLAY_FREQ,
-		.mode = 0,
-		.spics_io_num = DISPLAY_CS,
-		.input_delay_ns = 0,
-		.queue_size = 1,
-		.flags = SPI_DEVICE_NO_DUMMY
+	esp_lcd_panel_io_spi_config_t io_config = {
+		.dc_gpio_num = DISPLAY_DC,
+		.cs_gpio_num = DISPLAY_CS,
+		.pclk_hz = DISPLAY_FREQ,
+		.lcd_cmd_bits = 8,
+		.lcd_param_bits = 8,
+		.spi_mode = 0,
+		.trans_queue_depth = 16,
 	};
-
-	ESP_ERROR_CHECK(spi_bus_add_device(DISPLAY_HOST, &devcfg, &display));
+	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(DISPLAY_HOST, &io_config, &display));
 
 	// ---- init display
 
@@ -248,7 +253,7 @@ static void _initDisplay() {
 		hal_delay(100);
 	#endif
 
-	_doCommands(display_init);
+	_doCommands(display_init, sizeof(display_init) / sizeof(*display_init));
 	#ifdef DISPLAY_INVERT
 		_doCommand(display_invert);
 	#endif
@@ -325,8 +330,9 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 		canvas->foregrounds_current = malloc(canvas->size);
 	}
 
-	for (size_t ix = 0; ix < canvas->sizeX; ix++) {
-		for (size_t iy = 0; iy < canvas->sizeY; iy++) {
+	for (size_t iy = 0; iy < canvas->sizeY; iy++) {
+		bool needSelect = true;
+		for (size_t ix = 0; ix < canvas->sizeX; ix++) {
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
 			uint8_t foreground = canvas->foregrounds[index];
@@ -341,7 +347,11 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 				canvas->backgrounds_current[index] = canvas->backgrounds[index];
 				canvas->foregrounds_current[index] = canvas->foregrounds[index];
 
-				_sendSelect(offsetX + (ix * charSizeX), offsetY + (iy * charSizeY), charSizeX, charSizeY);
+				if (needSelect) {
+					int selectX = offsetX + (ix * charSizeX);
+					_sendSelect(selectX, offsetY + (iy * charSizeY), DISPLAY_WIDTH - selectX, charSizeY);
+					needSelect = false;
+				}
 
 				#ifdef DISPLAY_SWAP_ENDIAN
 					uint8_t* _color = (uint8_t*)(&canvas->palette[background]);
@@ -350,11 +360,11 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 					canvas_color backgroundColor = canvas->palette[background];
 				#endif
 
-				if (canvas->chars[index] == ' ') {
+				if (false && canvas->chars[index] == ' ') {
 					_spam(charSizeX * charSizeY, backgroundColor);
 				} else {
 					size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
-					uint8_t charBuffer[bytesPerChar];
+					uint8_t* charBuffer = malloc(bytesPerChar);
 					uint8_t rawCharBuffer[FONT_MAXCHAR];
 					
 
@@ -373,6 +383,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 						canvas_color foregroundColor = canvas->palette[foreground];
 					#endif
 
+					/*
 					if (pixelPerfect) {
 						size_t pixelScale = charSizeX / 8;
 						for (size_t icx = 0; icx < 8; icx++) {
@@ -380,7 +391,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 								canvas_color color = font_readPixel(rawCharBuffer, icx, icy) ? foregroundColor : backgroundColor;
 								for (size_t ibx = 0; ibx < pixelScale; ibx++) {
 									for (size_t iby = 0; iby < pixelScale; iby++) {
-										memcpy(charBuffer + ((ibx + (icx * pixelScale) + (((icy * pixelScale) + iby) * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+										memcpy(charBuffer + ((iby + (icy * pixelScale) + (((icx * pixelScale) + ibx) * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
 									}
 								}
 							}
@@ -389,13 +400,16 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 						for (size_t icx = 0; icx < charSizeX; icx++) {
 							for (size_t icy = 0; icy < charSizeY; icy++) {
 								canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
-								memcpy(charBuffer + ((icx + (icy * charSizeX)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+								memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
 							}
 						}
 					}
+					*/
 					
 					_sendData(charBuffer, bytesPerChar);
 				}
+			} else {
+				needSelect = true;
 			}
 		}
 	}

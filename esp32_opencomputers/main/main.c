@@ -96,7 +96,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
 	lua_pushinteger(lua, hal_random());
-    lua_setglobal(lua, "_defaultRandom");
+	lua_setglobal(lua, "_defaultRandom");
 
 	// ---- defines
 	LUA_PUSH_INT(DISPLAY_WIDTH);
@@ -119,13 +119,13 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 
 	// ---- display
 	lua_pushcfunction(lua, _sendBuffer_bind);
-    lua_setglobal(lua, "hal_display_sendBuffer");
+	lua_setglobal(lua, "hal_display_sendBuffer");
 	LUA_BIND_VOID(hal_display_backlight, (LUA_ARG_BOOL));
 
 	// ---- touchscreen
 	LUA_BIND_RETR(hal_touchscreen_touchCount, (), LUA_RET_INT);
 	lua_pushcfunction(lua, _getPoint_bind);
-    lua_setglobal(lua, "hal_touchscreen_getPoint");
+	lua_setglobal(lua, "hal_touchscreen_getPoint");
 
 	// ---- filesystem
 	LUA_BIND_RETR(hal_filesystem_exists, (LUA_ARG_STR), LUA_RET_BOOL);
@@ -136,7 +136,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_RETR(hal_filesystem_count, (LUA_ARG_STR, LUA_ARG_BOOL, LUA_ARG_BOOL), LUA_RET_INT);
 	LUA_BIND_RETR(hal_filesystem_lastModified, (LUA_ARG_STR), LUA_RET_INT);
 	lua_pushcfunction(lua, _list_bind);
-    lua_setglobal(lua, "hal_filesystem_list");
+	lua_setglobal(lua, "hal_filesystem_list");
 
 	// ---- sound
 	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));
@@ -176,7 +176,8 @@ void _main() {
 		hal_display_sendBuffer(canvas, false);
 	}
 	
-    while (true) {
+	hal_display_backlight(false);
+	while (true) {
 		hal_delay(1000);
-    }
+	}
 }
