@@ -437,8 +437,8 @@ end
 
 local defaultDeviceInfo = {
 	class = "unknown",
-	description = "opencomputers object",
-	product = "esp32_opencomputers",
+	description = "unknown",
+	product = "unknown",
 	vendor = "igorkll"
 }
 
@@ -1088,6 +1088,10 @@ local function formatPath(self, path)
 end
 
 local function spaceUsed(self)
+	if self.ram then
+		return self.ram.used
+	end
+	
 	local size, files, dirs = filesys.size(self.path)
 	return size + ((files + dirs) * baseFileCost)
 end
@@ -1097,6 +1101,63 @@ local function spaceAvailable(self, need)
 	local total = self.size
 	local free = total - used
 	return free >= need + baseFileCost, free
+end
+
+local function delUsed(self, obj)
+	if obj.isFile then
+		self.ram.used = self.ram.used - #obj.context - baseFileCost
+	else
+		delUsed(self, obj)
+		self.ram.used = self.ram.used - baseFileCost
+	end
+end
+
+local function ramFsRead(self, path, getLast)
+	local segments = filesys.segments(path)
+	local last
+	if getLast then
+		last = table.remove(segments, #segments)
+	end
+	local obj = self.ram.fs
+	for _, part in ipairs(segments) do
+		if not obj or obj.isFile then
+			return
+		end
+		obj = obj[part]
+	end
+	return obj, last
+end
+
+local ramFsMethods = {
+	seek = function(self, mode, val)
+		checkArg(1, mode, "string")
+		checkArg(2, val, "number")
+		if mode == "set" then
+			self.cursor = val
+		elseif mode == "cur" then
+			self.cursor = self.cursor + val
+		else
+			error("invalid mode", 2)
+		end
+		self.cursor = math.floor(self.cursor)
+		if self.cursor < 0 then self.cursor = 0 end
+		return self.cursor
+	end,
+	read = function(self, bytes)
+		local str = self.strtool.sub(self.file.content, self.cursor + 1, self.cursor + bytes)
+		self.cursor = self.cursor + bytes
+		return str
+	end,
+	write = function(self, str)
+		self.self.ram.used = self.self.ram.used + #str
+		self.cursor = self.cursor + self.strtool.len(str)
+		self.file.content = self.file.content .. str
+		return true
+	end
+}
+
+local function createFileReader(self, file, unicode)
+	return setmetatable({cursor = 0, file = file, strtool = unicode and libunicode or string, self = self}, {__index = ramFsMethods})
 end
 
 regComponent({
@@ -1119,7 +1180,11 @@ regComponent({
 		},
 		spaceUsed = {
 			callback = function(self)
-				return spaceUsed(self)
+				if self.ram then
+					return self.ram.used or 0
+				else
+					return spaceUsed(self)
+				end
 			end,
 			direct = true,
 			doc = "function():number -- The currently used capacity of the file system, in bytes."
@@ -1132,7 +1197,11 @@ regComponent({
 					error("label is read only", 2)
 				end
 				label = label:sub(1, 24)
-				filesys.writeFile(self.path .. ".lbl", label)
+				if self.ram then
+					self.ram.label = label
+				else
+					filesys.writeFile(self.path .. ".lbl", label)
+				end
 				return label
 			end,
 			direct = false,
@@ -1140,7 +1209,11 @@ regComponent({
 		},
 		getLabel = {
 			callback = function(self)
-				return filesys.readFile(self.path .. ".lbl") or self.label
+				if self.ram then
+					return self.ram.label or self.label
+				else
+					return filesys.readFile(self.path .. ".lbl") or self.label
+				end
 			end,
 			direct = true,
 			doc = "function():string -- Get the current label of the file system."
@@ -1149,9 +1222,17 @@ regComponent({
 		size = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				path = formatPath(self, path)
-				if filesys.isFile(path) then
-					return (filesys.size(path))
+				if self.ram then
+					local file = ramFsRead(self, path)
+					if file and file.isFile then
+						return #file.content
+					end
+					return 0
+				else
+					path = formatPath(self, path)
+					if filesys.isFile(path) then
+						return (filesys.size(path))
+					end
 				end
 			end,
 			direct = false,
@@ -1163,12 +1244,32 @@ regComponent({
 				if self.readonly then
 					return false
 				end
-				path = formatPath(self, path)
-				local oldState = filesys.exists(path)
-				filesys.remove(path)
-				local newState = filesys.exists(path)
-				filesys.makeDirectory(self.path)
-				return oldState and not newState
+				if self.ram then
+					if #filesys.segments(path) == 0 then
+						self.ram.used = 0
+						self.ram.fs = {}
+						return true
+					else
+						local dir, objectName = ramFsRead(self, path, true)
+						if not dir or dir.isFile then
+							return false
+						end
+						local delObj = dir[objectName]
+						if delObj then
+							delUsed(self, delObj)
+							dir[objectName] = nil
+							return true
+						end
+						return false
+					end
+				else
+					path = formatPath(self, path)
+					local oldState = filesys.exists(path)
+					filesys.remove(path)
+					local newState = filesys.exists(path)
+					filesys.makeDirectory(self.path)
+					return oldState and not newState
+				end
 			end,
 			direct = false,
 			doc = "function(string) -- Removes the object at the specified absolute path in the file system."
@@ -1180,7 +1281,28 @@ regComponent({
 				if self.readonly then
 					return false
 				end
-				return filesys.rename(formatPath(self, path), formatPath(self, path2))
+				if self.ram then
+					local dir, objectName = ramFsRead(self, path, true)
+					if not dir or dir.isFile then
+						return false
+					end
+
+					local object = dir[objectName]
+					if not object then
+						return false
+					end
+
+					local dir2, targetObjectName = ramFsRead(self, path2, true)
+					if not dir2 or dir2.isFile then
+						return false
+					end
+
+					dir[objectName] = nil
+					dir2[targetObjectName] = object
+					return true
+				else
+					return filesys.rename(formatPath(self, path), formatPath(self, path2))
+				end
 			end,
 			direct = false,
 			doc = "function(string, string) -- Renames/moves an object from the first specified absolute path in the file system to the second."
@@ -1188,7 +1310,15 @@ regComponent({
 		lastModified = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				return filesys.lastModified(formatPath(self, path))
+				if self.ram then
+					local file = ramFsRead(self, path)
+					if file and file.isFile then
+						return file.lastModified
+					end
+					return 0
+				else
+					return filesys.lastModified(formatPath(self, path))
+				end
 			end,
 			direct = false,
 			doc = "function():number -- Returns the (real world) timestamp of when the object at the specified absolute path in the file system was modified."
@@ -1199,7 +1329,19 @@ regComponent({
 				if self.readonly then
 					return false
 				end
-				return filesys.makeDirectory(formatPath(self, path))
+				if self.ram then
+					local dir, name = ramFsRead(self, path, true)
+					if dir and not dir.isFile then
+						if not dir[name] then
+							self.ram.used = self.ram.used + baseFileCost
+							dir[name] = {}
+							return true
+						end
+					end
+					return false
+				else
+					return filesys.makeDirectory(formatPath(self, path))
+				end
 			end,
 			direct = false,
 			doc = "function(string):boolean -- Creates a directory at the specified absolute path in the file system. Creates parent directories, if necessary."
@@ -1207,7 +1349,11 @@ regComponent({
 		exists = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				return filesys.exists(formatPath(self, path))
+				if self.ram then
+					return not not ramFsRead(self, path)
+				else
+					return filesys.exists(formatPath(self, path))
+				end
 			end,
 			direct = false,
 			doc = "function(string):boolean -- Returns whether an object exists at the specified absolute path in the file system."
@@ -1215,7 +1361,12 @@ regComponent({
 		isDirectory = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				return filesys.isDirectory(formatPath(self, path))
+				if self.ram then
+					local files = ramFsRead(self, path)
+					return files and not files.isFile
+				else
+					return filesys.isDirectory(formatPath(self, path))
+				end
 			end,
 			direct = false,
 			doc = "function(string):boolean -- Returns whether an object exists at the specified absolute path in the file system."
@@ -1223,7 +1374,22 @@ regComponent({
 		list = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				return filesys.list(formatPath(self, path))
+				if self.ram then
+					local files = ramFsRead(self, path)
+					if not files.isFile then
+						local list = {}
+						for name, obj in pairs(files) do
+							if not obj.isFile then
+								table.insert(list, name .. "/")
+							else
+								table.insert(list, name)
+							end
+						end
+						return list
+					end
+				else
+					return filesys.list(formatPath(self, path))
+				end
 			end,
 			direct = false,
 			doc = "function(string):boolean -- Returns a list of names of objects in the directory at the specified absolute path in the file system."
@@ -1234,14 +1400,13 @@ regComponent({
 				if mode ~= nil then
 					checkArg(2, mode, "string")
 				end
-				mode = mode or "r"
+				mode = (mode or "r"):lower()
+				local appendMode = mode:sub(1, 1) == "a"
+				local writeMode = appendMode or mode:sub(1, 1) == "w"
 
-				local file, err = filesys.open(formatPath(self, path), mode)
-				if not file then
-					return nil, tostring(err)
-				end
-				local handleBackend = {file = file}
-				if mode:sub(1, 1) == "w" then
+				local handleBackend = {writeMode = writeMode}
+
+				if writeMode then
 					if self.readonly then
 						return nil, path
 					else
@@ -1251,6 +1416,35 @@ regComponent({
 							return nil, "not enough space"
 						end
 					end
+				end
+
+				if self.ram then
+					local dir, filename = ramFsRead(self, path, true)
+					if not dir or dir.isFile or (dir[filename] and not dir[filename].isFile) then
+						return nil, path
+					end
+
+					if writeMode then
+						if not appendMode or not dir[filename] then
+							if dir[filename] then
+								self.ram.used = self.ram.used - #dir[filename].content - baseFileCost
+							end
+							dir[filename] = {isFile = true, content = ""}
+							self.ram.used = self.ram.used + baseFileCost
+						end
+						handleBackend.file = createFileWriter(self, dir[filename])
+					elseif dir[filename] then
+						handleBackend.file = createFileReader(self, dir[filename])
+					else
+						return nil, path
+					end
+				else
+					local file, err = filesys.open(formatPath(self, path), mode)
+					if not file then
+						return nil, tostring(err)
+					end
+
+					handleBackend.file = file
 				end
 
 				local handle = {}
@@ -1276,10 +1470,14 @@ regComponent({
 			callback = function(self, handle, count)
 				checkArg(2, count, "number")
 				if fileHandles[handle] then
+					local handleBackend = fileHandles[handle]
+					if handleBackend.writeMode then
+						return nil, "bad file descriptor"
+					end
 					if count > maxReadPart then
 						count = maxReadPart
 					end
-					local str = fileHandles[handle].file:read(count)
+					local str = handleBackend.file:read(count)
 					if str and #str > 0 then
 						return str
 					end
@@ -1294,6 +1492,9 @@ regComponent({
 				checkArg(2, content, "string")
 				if fileHandles[handle] then
 					local handleBackend = fileHandles[handle]
+					if not handleBackend.writeMode then
+						return nil, "bad file descriptor"
+					end
 					handleBackend.allowWrite = handleBackend.allowWrite - #content
 					if handleBackend.allowWrite < 0 then
 						return nil, "not enough space"
@@ -1330,7 +1531,7 @@ regComponent({
 
 filesys.makeDirectory("/storage/tmpfs")
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
-addComponent({path = "/storage/tmpfs", readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
+addComponent({ram = {}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
 
