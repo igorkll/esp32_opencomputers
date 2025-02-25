@@ -1,20 +1,3 @@
-do
-	local component_invoke = component.invoke
-
-
-		local screen = component.list("screen")()
-		local gpu = component.list("gpu")()
-		if gpu and screen then
-		  component_invoke(gpu, "bind", screen)
-		end
-
-		component_invoke(gpu, "fill", 4, 4, 16, 16, "█")
-
-	while true do
-		computer.pullSignal()
-	end
-end
-
 local init
 do
   local component_invoke = component.invoke

@@ -162,8 +162,8 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	uchar* old_chars = canvas->chars;
 	uint8_t* old_foregrounds = canvas->foregrounds;
 	uint8_t* old_backgrounds = canvas->backgrounds;
-	canvas_pos old_sizeX = sizeX;
-	canvas_pos old_sizeY = sizeY;
+	canvas_pos old_sizeX = canvas->sizeX;
+	canvas_pos old_sizeY = canvas->sizeY;
 
 	canvas->size = sizeX * sizeY;
 	canvas->sizeX = sizeX;

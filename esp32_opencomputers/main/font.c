@@ -61,8 +61,6 @@ int font_findOffset(uchar uchr) {
 	char* chr = (char*)(&uchr);
 	int len = font_ucharLen(uchr);
 
-	printf("%li %i %i\n", uchr, chr[0], len);
-
 	uint8_t charcode[8];
 
 	if (len == 1) {
@@ -105,7 +103,6 @@ int font_findOffset(uchar uchr) {
 					hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
 				#endif
 
-				printf("offset %i\n", offset);
 				return offset;
 			}
 		}

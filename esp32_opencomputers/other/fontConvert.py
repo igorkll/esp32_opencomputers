@@ -49,12 +49,16 @@ with open("../filesystem/font.bin", 'wb') as file:
 			waitList.append(char)
 
 			file.write(bytearray([2]))
-			file.write(bytearray([0]))
-			file.write(bytearray([0]))
+			file.write(bytearray([1]))
+			file.write(b'\0')
 			file.write(b'\0' * 16)
 		else:
 			print(f"---- {list(char_code)}")
 			rasterizeChar(binchar)
+
+			metadata = 0
+			if charlen >= 32:
+				metadata += 1
 
 			file.write(bytearray([0]))
 			file.write(bytearray([len(char_code)]))
