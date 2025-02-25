@@ -264,6 +264,7 @@ static bool firstFlush = false;
 static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
+static hashmap* cache_rasterized;
 hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
@@ -352,6 +353,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 				uint8_t charBuffer[bytesPerChar];
 				
+				/*
 				if (canvas->chars[index] == ' ') {
 					for (size_t icx = 0; icx < charSizeX; icx++) {
 						for (size_t icy = 0; icy < charSizeY; icy++) {
@@ -369,7 +371,6 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 						memset(rawCharBuffer, 0, FONT_MAXCHAR);
 					}
 
-					/*
 					#ifdef DISPLAY_SWAP_ENDIAN
 						uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
 						canvas_color foregroundColor = (_color[0] << 8) + _color[1];
@@ -397,8 +398,9 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 							}
 						}
 					}
-					*/
 				}
+				*/
+
 				_sendData(charBuffer, bytesPerChar);
 			} else {
 				needSelect = true;

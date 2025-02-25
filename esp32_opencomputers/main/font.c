@@ -5,12 +5,12 @@
 #include <math.h>
 #include <map.h>
 
-FILE* font;
+static FILE* font;
 #ifdef FONT_CACHE_OFFSETS
-	hashmap* cache_offsets;
+	static hashmap* cache_offsets;
 #endif
 #ifdef FONT_CACHE_DATA
-	hashmap* cache_data;
+	static hashmap* cache_data;
 #endif
 
 uint8_t _getMetadata(int offset) {

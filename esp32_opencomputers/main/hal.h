@@ -5,7 +5,7 @@
 
 // ---------------------------------------------- display
 
-#define DISPLAY_FREQ 60000000
+#define DISPLAY_FREQ 80000000
 #define DISPLAY_HOST SPI2_HOST
 #define DISPLAY_MISO 12
 #define DISPLAY_MOSI 13

@@ -1,5 +1,9 @@
 local resolutionX = 80
 local resolutionY = 25
+local maxEepromCodeLen = 4096
+local maxEepromDataLen = 256
+local seconderyTouchTime = 1
+
 
 local debugMode = true
 local pixelPerfect = false
@@ -14,9 +18,6 @@ local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 
 local screenSelf, gpuSelf
 
-local maxEepromCodeLen = 4096
-local maxEepromDataLen = 256
-
 math.randomseed(_defaultRandom)
 package.path = "/storage/?.lua"
 
@@ -30,6 +31,16 @@ end
 
 local function getRealTime()
 	return os.time() * 1000
+end
+
+local bootUptime = hal_uptime()
+
+local function uptime()
+	return hal_uptime() - bootUptime;
+end
+
+local function computer_uptime()
+	return math.floor(uptime() * 10) / 10;
 end
 
 local function checkArg(n, have, ...)
@@ -321,24 +332,17 @@ sandbox._G = sandbox
 ----------------------------------------------------
 
 local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
-
 local displayFlag = false
-local displayValue = 0
 
 local function flushDisplay()
 	if displayFlag then
 		imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
 		displayFlag = false
-		displayValue = 0
 	end
 end
 
 local function updateDisplay()
 	displayFlag = true
-	displayValue = displayValue + 1
-	if displayValue >= 16 then
-		flushDisplay()
-	end
 end
 
 ----------------------------------------------------
@@ -351,14 +355,6 @@ local function computer_pushSignal(eventName, ...)
 		return true
 	end
 	return false
-end
-
-----------------------------------------------------
-
-local bootUptime = hal_uptime()
-
-local function computer_uptime()
-	return math.floor((hal_uptime() - bootUptime) * 10) / 10;
 end
 
 ----------------------------------------------------
@@ -415,9 +411,9 @@ local function convertPos(x, y)
 	return sx, sy
 end
 
-local function pushTouchscreenEvent(eventName, x, y, button, fingerindex)
-	debugPrint(eventName .. " " .. fingerindex .. ": " .. x .. ", " .. y)
-	computer_pushSignal(eventName, screenAddress, x, y, button, "finger" .. fingerindex)
+local function pushTouchscreenEvent(eventName, x, y, button, touchindex)
+	debugPrint(eventName .. " " .. touchindex .. ": " .. x .. ", " .. y .. ", " .. button)
+	computer_pushSignal(eventName, screenAddress, x, y, button, "touch" .. touchindex)
 end
 
 local function updateHardware()
@@ -430,15 +426,28 @@ local function updateHardware()
 		if i <= touchCount then
 			local x, y = hal_touchscreen_getPoint(i - 1)
 			x, y = convertPos(x, y)
+			if tsState and not tsState.f and uptime() - tsState.t >= seconderyTouchTime then
+				tsState.b = 1
+				pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
+				tsState.f = true
+				sound_computer_beep(700, 0.05)
+			end
 			if not tsState then
-				oldTouchscreenStates[i] = {x = x, y = y, b = 0}
-				pushTouchscreenEvent("touch", x, y, 0, i)
+				oldTouchscreenStates[i] = {x = x, y = y, b = 0, t = uptime(), f = false}
 			elseif tsState.x ~= x or tsState.y ~= y then
+				if not tsState.f then
+					pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
+					tsState.f = true
+				end
 				tsState.x = x
 				tsState.y = y
 				pushTouchscreenEvent("drag", x, y, tsState.b, i)
 			end
 		elseif tsState then
+			if not tsState.f then
+				pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
+				tsState.f = true
+			end
 			pushTouchscreenEvent("drop", tsState.x, tsState.y, tsState.b, i)
 			oldTouchscreenStates[i] = nil
 		end
