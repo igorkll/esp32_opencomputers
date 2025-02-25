@@ -17,7 +17,7 @@ def rasterizeChar(binchar):
 	charlen = len(binchar)
 	if charlen >= 32:
 		for i in range(0, charlen, 2):
-			print(format(binchar[i], '08b').replace('1', '#').replace('0', ' ') + format(binchar[i+1], '08b').replace('1', '#').replace('0', ' '))
+			print(format(binchar[i*2], '08b').replace('1', '#').replace('0', ' ') + format(binchar[(i*2)+1], '08b').replace('1', '#').replace('0', ' '))
 	else:
 		for byte in binchar:
 			print(format(byte, '08b').replace('1', '#').replace('0', ' '))
