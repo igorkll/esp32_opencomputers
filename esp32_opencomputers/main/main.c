@@ -187,6 +187,7 @@ void _main() {
 			HAL_LOGI("shutdown: %i\n", reboot);
 			blackscreen(canvas);
 			if (!reboot) {
+				hal_display_backlight(false);
 				lua_close(lua);
 				hal_display_sendBuffer(canvas, false);
 				break;
@@ -196,7 +197,6 @@ void _main() {
 		hal_display_sendBuffer(canvas, false);
 	}
 	
-	hal_display_backlight(false);
 	while (true) {
 		hal_delay(1000);
 	}

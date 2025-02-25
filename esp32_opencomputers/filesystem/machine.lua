@@ -71,7 +71,7 @@ local function numberCheckArg(n, have)
 	if have == math.huge or have == -math.huge or have ~= have then
 		return 0
 	end
-	return math.floor(have)
+	return math.floor(have + 0.5)
 end
 
 local function spcall(...)
@@ -273,6 +273,8 @@ sandbox = {
 	os = {
 		clock = os.clock,
 		date = function(format, time)
+			checkArg(1, format, "string")
+			time = numberCheckArg(2, time)
 			return spcall(os.date, format, time)
 		end,
 		difftime = function(t2, t1)
@@ -601,8 +603,8 @@ libunicode = {
 	end,
 	lower = function(text)
 		local result = {}
-		for i = 1, utf8.len(text) do
-			local char = utf8.sub(text, i, i)
+		for i = 1, libunicode.len(text) do
+			local char = libunicode.sub(text, i, i)
 			result[i] = lower_map[char] or char
 		end
 		return table.concat(result)
@@ -1532,7 +1534,7 @@ regComponent({
 							dir[filename] = {isFile = true, content = ""}
 							self.ram.used = self.ram.used + baseFileCost
 						end
-						dir[filename].lastModified = getRealTime()
+						dir[filename].lastModified = math.floor(getRealTime() + 0.5)
 						handleBackend.file = createRamFile(self, dir[filename], not binMode)
 					elseif dir[filename] then
 						handleBackend.file = createRamFile(self, dir[filename], not binMode)
