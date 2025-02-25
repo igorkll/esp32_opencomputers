@@ -618,7 +618,7 @@ libunicode = {
 	end,
 	sub = function(text, i, j)
 		local start_index = utf8.offset(text, i) or 1
-		local stop_index = utf8.offset(text, j + 1) or #text + 1
+		local stop_index = j and utf8.offset(text, j + 1) or #text + 1
 		return string.sub(text, start_index, stop_index - 1)
 	end,
 	upper = function(text)

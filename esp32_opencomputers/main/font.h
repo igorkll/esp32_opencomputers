@@ -6,7 +6,7 @@
 #define FONT_CACHE_OFFSETS
 #define FONT_CACHE_DATA
 
-typedef uint16_t uchar;
+typedef uint32_t uchar;
 #define UCHAR_SPACE ((uchar)(' '))
 
 void font_init();

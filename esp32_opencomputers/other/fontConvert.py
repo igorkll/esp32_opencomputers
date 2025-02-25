@@ -1,4 +1,19 @@
-alphabet = ''.join(chr(i) for i in range(256)) + "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ"
+alphabet = ''.join(chr(i) for i in range(256)) + "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ" + "█"
+
+"""
+alphabet = ""
+with open("font.hex", 'r', encoding='utf-8') as file:
+	for line in file:
+		unicode_code, _ = line.split(":", 1)
+
+		try:
+			byte_sequence = bytes.fromhex(unicode_code)
+
+			if len(byte_sequence) == 2:
+				alphabet = alphabet + byte_sequence.decode('utf-8')
+		except ValueError:
+			pass
+"""
 
 def findChar(char):
 	prefix = format(ord(char), '04X') + ":"
@@ -16,7 +31,7 @@ def convertChar(hex_string):
 def rasterizeChar(binchar):
 	charlen = len(binchar)
 	if charlen >= 32:
-		for i in range(0, charlen, 2):
+		for i in range(16):
 			print(format(binchar[i*2], '08b').replace('1', '#').replace('0', ' ') + format(binchar[(i*2)+1], '08b').replace('1', '#').replace('0', ' '))
 	else:
 		for byte in binchar:
@@ -38,7 +53,7 @@ with open("../filesystem/font.bin", 'wb') as file:
 			file.write(bytearray([0]))
 			file.write(b'\0' * 16)
 		else:
-			print(f"---- {char} / {list(char_code)}")
+			print(f"---- {list(char_code)}")
 			rasterizeChar(binchar)
 
 			file.write(bytearray([0]))
@@ -53,7 +68,7 @@ with open("../filesystem/font.bin", 'wb') as file:
 		binchar = convertChar(findChar(char))
 		charlen = len(binchar)
 
-		print(f"---- {char} / {list(char_code)}")
+		print(f"---- {list(char_code)}")
 		rasterizeChar(binchar)
 
 		metadata = 0

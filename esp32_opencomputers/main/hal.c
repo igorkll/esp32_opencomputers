@@ -265,7 +265,7 @@ static bool firstFlush = false;
 static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
-static hashmap* cache_rasterized;
+static hashmap* cache_rasterized = NULL;
 
 typedef struct {
 	uchar chr;
@@ -335,7 +335,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 	bool force = !canvas->palette_current;
 	if (force) {
 		canvas->palette_current = malloc(256 * BYTES_PER_COLOR);
-		canvas->chars_current = malloc(canvas->size);
+		canvas->chars_current = malloc(canvas->size * sizeof(uchar));
 		canvas->backgrounds_current = malloc(canvas->size);
 		canvas->foregrounds_current = malloc(canvas->size);
 	}

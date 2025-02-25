@@ -33,35 +33,35 @@ void font_init() {
 }
 
 uchar font_toUChar(char* chr, size_t len) {
-	uchar uchr = 0;
-    if (len == 1) {
-        uchr = (uint8_t)chr[0];
-    } else if (len == 2) {
-        uchr = ((uint8_t)chr[0] & 0x1F) << 6;
-        uchr |= ((uint8_t)chr[1] & 0x3F);
-    }
-	return uchr;
+	uchar out = 0;
+	for (size_t i = 0; i < len; i++) {
+		out += chr[i] << (i * 8);
+	}
+	return out;
 }
 
 int font_ucharLen(uchar uchr) {
-	uint8_t byte = (uint8_t)uchr;
+	uint8_t* arr = (uint8_t*)(&uchr);
+	uint8_t byte1 = (uint8_t)arr[0];
 
-    if ((byte & 0x80) == 0) {
+    if (byte1 <= 0x7F) {
         return 1;
-    } else if ((byte & 0xE0) == 0xC0) {
+    } else if ((byte1 >= 0xC2) && (byte1 <= 0xDF)) {
         return 2;
-    } else if ((byte & 0xF0) == 0xE0) {
-        return 3;
-    } else if ((byte & 0xF8) == 0xF0) {
-        return 4;
-    } else {
-        return -1;
+    } else if ((byte1 >= 0xE0) && (byte1 <= 0xEF)) {
+		return 3;
+    } else if ((byte1 >= 0xF0) && (byte1 <= 0xF7)) {
+		return 4;
     }
+
+	return 0;
 }
 
 int font_findOffset(uchar uchr) {
 	char* chr = (char*)(&uchr);
-	size_t len = font_ucharLen(uchr);
+	int len = font_ucharLen(uchr);
+
+	printf("%li %i %i\n", uchr, chr[0], len);
 
 	uint8_t charcode[8];
 
@@ -84,7 +84,7 @@ int font_findOffset(uchar uchr) {
 		}
 	#endif
 
-	int offset = -1;
+	int offset = 0;
 	do {
 		fseek(font, offset, SEEK_SET);
 
@@ -97,7 +97,16 @@ int font_findOffset(uchar uchr) {
 		if (metadata != 2 && charlen == len) {
 			fread(charcode, 1, charlen, font);
 			if (memcmp(charcode, chr, len) == 0) {
-				break;
+				#ifdef FONT_CACHE_OFFSETS
+					char* cpy_chr = malloc(len);
+					int* cpy_val = malloc(sizeof(int));
+					memcpy(cpy_chr, chr, len);
+					memcpy(cpy_val, &offset, sizeof(int));
+					hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
+				#endif
+
+				printf("offset %i\n", offset);
+				return offset;
 			}
 		}
 
@@ -105,15 +114,7 @@ int font_findOffset(uchar uchr) {
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
 
-	#ifdef FONT_CACHE_OFFSETS
-		char* cpy_chr = malloc(len);
-		int* cpy_val = malloc(sizeof(int));
-		memcpy(cpy_chr, chr, len);
-		memcpy(cpy_val, &offset, sizeof(int));
-		hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
-	#endif
-
-	return offset;
+	return -1;
 }
 
 uint8_t font_charWidth(int offset) {

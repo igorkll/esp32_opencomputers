@@ -173,12 +173,6 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
-	for (size_t i = 0; i < canvas->size; i++) {
-		canvas->chars[i] = UCHAR_SPACE;
-	}
-	memset(canvas->foregrounds, canvas->foreground, canvas->size);
-	memset(canvas->backgrounds, canvas->background, canvas->size);
-
 	for (size_t ix = 0; ix < sizeX; ix++) {
 		for (size_t iy = 0; iy < sizeY; iy++) {
 			size_t index = ix + (iy * sizeX);
