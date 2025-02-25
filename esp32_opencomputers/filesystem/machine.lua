@@ -1813,6 +1813,7 @@ regComponent({
 				self.resX = sizeX
 				self.resY = sizeY
 				updateDisplay()
+				flushDisplay()
 				return sizeX ~= oldX or sizeY ~= oldY
 			end,
 			direct = false,
@@ -1828,6 +1829,8 @@ regComponent({
 				local oldX, oldY = self.viewX, self.viewY
 				self.viewX = sizeX
 				self.viewY = sizeY
+				updateDisplay()
+				flushDisplay()
 				return sizeX ~= oldX or sizeY ~= oldY
 			end,
 			direct = false,
@@ -1875,7 +1878,11 @@ regComponent({
 					error("invalid palette index", 2)
 				end
 				local oldColor = canvas_getPaletteColor(canvas, index)
+				if color == oldColor then
+					return oldColor
+				end
 				canvas_setPaletteColor(canvas, index, color)
+				updateDisplay()
 				return oldColor
 			end,
 			direct = false,

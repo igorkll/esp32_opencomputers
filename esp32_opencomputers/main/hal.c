@@ -185,12 +185,11 @@ static void _sendSelectAll() {
 	_sendSelect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 }
 
+static uint8_t clear_buffer[1024] = {0};
 static void _clear() {
 	_sendSelectAll();
-	uint8_t buffer[1024];
-	memset(buffer, 0, sizeof(buffer));
-	for (size_t i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR) / sizeof(buffer); i++) {
-		_sendData(buffer, sizeof(buffer));
+	for (size_t i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR) / sizeof(clear_buffer); i++) {
+		_sendData(clear_buffer, sizeof(clear_buffer));
 	}
 }
 
@@ -352,13 +351,13 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 
 				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 				uint8_t charBuffer[bytesPerChar];
+				
 				if (canvas->chars[index] == ' ') {
 					for (size_t icx = 0; icx < charSizeX; icx++) {
 						for (size_t icy = 0; icy < charSizeY; icy++) {
 							memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);
 						}
 					}
-					_sendData(charBuffer, bytesPerChar);
 				} else {
 					uint8_t rawCharBuffer[FONT_MAXCHAR];
 
@@ -370,6 +369,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 						memset(rawCharBuffer, 0, FONT_MAXCHAR);
 					}
 
+					/*
 					#ifdef DISPLAY_SWAP_ENDIAN
 						uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
 						canvas_color foregroundColor = (_color[0] << 8) + _color[1];
@@ -397,9 +397,9 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 							}
 						}
 					}
-					
-					_sendData(charBuffer, bytesPerChar);
+					*/
 				}
+				_sendData(charBuffer, bytesPerChar);
 			} else {
 				needSelect = true;
 			}

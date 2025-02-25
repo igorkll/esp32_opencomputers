@@ -12,7 +12,7 @@
 #define DISPLAY_CLK  14
 #define DISPLAY_DC   21
 #define DISPLAY_CS   22
-#define DISPLAY_RST  33
+#define DISPLAY_RST  33 //comment if you connected this pin to the microcontroller RST
 #define DISPLAY_BL   4
 
 #define DISPLAY_WIDTH  480
