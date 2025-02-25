@@ -92,6 +92,21 @@ static int _sendBuffer_bind(lua_State* lua) {
 	return 4;
 }
 
+static int _canvasGet_bind(lua_State* lua) {
+	canvas_t* canvas = lua_touserdata(lua, 1);
+	int x = luaL_checknumber(lua, 2);
+	int y = luaL_checknumber(lua, 3);
+	canvas_get_result pixelInfo = canvas_get(canvas, x, y);
+	lua_pushinteger(lua, pixelInfo.chr);
+	lua_pushinteger(lua, pixelInfo.foreground);
+	lua_pushinteger(lua, pixelInfo.background);
+	lua_pushinteger(lua, pixelInfo.foregroundIndex);
+	lua_pushinteger(lua, pixelInfo.backgroundIndex);
+	lua_pushboolean(lua, pixelInfo.foreground_isPal);
+	lua_pushboolean(lua, pixelInfo.background_isPal);
+	return 4;
+}
+
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
@@ -114,8 +129,8 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(canvas_copy, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT, LUA_ARG_INT));
 	LUA_BIND_VOID(canvas_setPaletteColor, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT));
 	LUA_BIND_RETR(canvas_getPaletteColor, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_INT);
-	
-	//LUA_BIND_RETR(canvas_get, (LUA_ARG_USR, LUA_ARG_INT), LUA_RET_BOOL);
+	lua_pushcfunction(lua, _canvasGet_bind);
+	lua_setglobal(lua, "canvas_get");
 
 	// ---- display
 	lua_pushcfunction(lua, _sendBuffer_bind);

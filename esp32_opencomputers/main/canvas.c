@@ -142,7 +142,9 @@ canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
-	memset(canvas->chars, ' ', canvas->size);
+	for (size_t i = 0; i < canvas->size; i++) {
+		canvas->chars[i] = UCHAR_SPACE;
+	}
 	memset(canvas->foregrounds, canvas->foreground, canvas->size);
 	memset(canvas->backgrounds, canvas->background, canvas->size);
 
@@ -157,7 +159,7 @@ canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
 }
 
 void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) {
-	char* old_chars = canvas->chars;
+	uchar* old_chars = canvas->chars;
 	uint8_t* old_foregrounds = canvas->foregrounds;
 	uint8_t* old_backgrounds = canvas->backgrounds;
 	canvas_pos old_sizeX = sizeX;
@@ -171,7 +173,9 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
-	memset(canvas->chars, ' ', canvas->size);
+	for (size_t i = 0; i < canvas->size; i++) {
+		canvas->chars[i] = UCHAR_SPACE;
+	}
 	memset(canvas->foregrounds, canvas->foreground, canvas->size);
 	memset(canvas->backgrounds, canvas->background, canvas->size);
 
@@ -184,7 +188,7 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 				canvas->foregrounds[index] = old_foregrounds[_index];
 				canvas->backgrounds[index] = old_backgrounds[_index];
 			} else {
-				canvas->chars[index] = ' ';
+				canvas->chars[index] = UCHAR_SPACE;
 				canvas->foregrounds[index] = canvas->foreground;
 				canvas->backgrounds[index] = canvas->background;
 			}
@@ -246,7 +250,7 @@ canvas_fullColor canvas_getForeground(canvas_t* canvas) {
 	return canvas->palette[canvas->foreground];
 }
 
-void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, char chr) {
+void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, uchar chr) {
 	if (x > canvas->sizeX || y > canvas->sizeY) return;
 
 	x--;
@@ -347,7 +351,7 @@ void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 						canvas->foregrounds[targetIndex] = canvas->foregrounds[fromIndex];
 						canvas->backgrounds[targetIndex] = canvas->backgrounds[fromIndex];
 					} else {
-						canvas->chars[targetIndex] = ' ';
+						canvas->chars[targetIndex] = UCHAR_SPACE;
 						canvas->foregrounds[targetIndex] = canvas->foreground;
 						canvas->backgrounds[targetIndex] = canvas->background;
 					}
@@ -358,7 +362,7 @@ void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 }
 
 canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
-	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return (canvas_get_result) {.chr = ' '};
+	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return (canvas_get_result) {.chr = UCHAR_SPACE};
 
 	x--;
 	y--;

@@ -7,8 +7,10 @@
 #define FONT_CACHE_DATA
 
 typedef uint16_t uchar;
+#define UCHAR_SPACE ((uchar)(' '))
 
 void font_init();
+uchar font_toUChar(char* chr, size_t len);
 int font_findOffset(char* chr, size_t len);
 uint8_t font_charWidth(int offset);
 bool font_isWide(int offset);

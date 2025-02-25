@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "font.h"
 
 typedef int16_t canvas_pos;
 
@@ -23,7 +24,7 @@ typedef struct {
 	bool foreground_isPal;
 	bool background_isPal;
 
-    char* chars;
+    uchar* chars;
 	canvas_paletteIndex* foregrounds;
 	canvas_paletteIndex* backgrounds;
 
@@ -31,13 +32,13 @@ typedef struct {
 	canvas_pos sizeX_current;
 	canvas_pos sizeY_current;
 	canvas_color* palette_current;
-	char* chars_current;
+	uchar* chars_current;
 	canvas_paletteIndex* foregrounds_current;
 	canvas_paletteIndex* backgrounds_current;
 } canvas_t;
 
 typedef struct {
-	char chr;
+	uchar chr;
 
 	canvas_fullColor foreground;
 	canvas_fullColor background;
@@ -61,7 +62,7 @@ void canvas_setForeground(canvas_t* canvas, canvas_fullColor color, bool isPal);
 canvas_fullColor canvas_getBackground(canvas_t* canvas);
 canvas_fullColor canvas_getForeground(canvas_t* canvas);
 
-void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, char chr);
+void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, uchar chr);
 void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len, bool vertical);
 void canvas_copy(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX, canvas_pos sizeY, canvas_pos offsetX, canvas_pos offsetY);
 canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y);

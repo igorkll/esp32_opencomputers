@@ -268,7 +268,7 @@ static bool old_pixelPerfect;
 static hashmap* cache_rasterized;
 
 typedef struct {
-	char chr;
+	uchar chr;
 	canvas_color fg;
 	canvas_color bg;
 } CharCacheData;
@@ -376,18 +376,18 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 
 				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 				uint8_t* charBuffer;
-				char chr = canvas->chars[index];
+				uchar chr = canvas->chars[index];
 
 				CharCacheData finding = {
 					.chr = chr,
-					.fg = foreground,
+					.fg = chr == UCHAR_SPACE ? 0 : foreground,
 					.bg = background
 				};
 
 				if (hashmap_get(cache_rasterized, &finding, sizeof(CharCacheData), &charBuffer) == 0) {
 					charBuffer = malloc(bytesPerChar);
 					
-					if (chr == ' ') {
+					if (chr == UCHAR_SPACE) {
 						for (size_t icx = 0; icx < charSizeX; icx++) {
 							for (size_t icy = 0; icy < charSizeY; icy++) {
 								memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);

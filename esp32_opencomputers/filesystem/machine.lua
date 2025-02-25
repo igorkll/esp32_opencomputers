@@ -577,34 +577,70 @@ sandbox.computer = libcomputer
 
 ---------------------------------------------------- unicode library
 
+local lower_map = {
+    ["А"] = "а", ["Б"] = "б", ["В"] = "в", ["Г"] = "г", ["Д"] = "д",
+    ["Е"] = "е", ["Ё"] = "ё", ["Ж"] = "ж", ["З"] = "з", ["И"] = "и",
+    ["Й"] = "й", ["К"] = "к", ["Л"] = "л", ["М"] = "м", ["Н"] = "н",
+    ["О"] = "о", ["П"] = "п", ["Р"] = "р", ["С"] = "с", ["Т"] = "т",
+    ["У"] = "у", ["Ф"] = "ф", ["Х"] = "х", ["Ц"] = "ц", ["Ч"] = "ч",
+    ["Ш"] = "ш", ["Щ"] = "щ", ["Ъ"] = "ъ", ["Ы"] = "ы", ["Ь"] = "ь",
+    ["Э"] = "э", ["Ю"] = "ю", ["Я"] = "я"
+}
+
+local upper_map = {}
+for k, v in pairs(lower_map) do
+    upper_map[v] = k
+end
+
 libunicode = {
 	char = function(value)
-		if value > 255 then return "*" end
-		return string.char(value)
+		return utf8.char(value)
 	end,
 	len = function(text)
-		return string.len(text)
+		return utf8.len(text)
 	end,
 	lower = function(text)
-		return string.lower(text)
+		local result = {}
+		for i = 1, utf8.len(text) do
+			local char = utf8.sub(text, i, i)
+			result[i] = lower_map[char] or char
+		end
+		return table.concat(result)
 	end,
 	reverse = function(text)
-		return string.reverse(text)
+		local reversed = {}
+		local len = libunicode.len(text)
+		for i = len, 1, -1 do
+			local char = libunicode.sub(text, i, i)
+			table.insert(reversed, char)
+		end
+		return table.concat(reversed)
 	end,
 	sub = function(text, i, j)
-		return string.sub(text, i, j)
+		local start_index = utf8.offset(text, i) or 1
+		local stop_index = utf8.offset(text, j + 1) or #text + 1
+		return string.sub(text, start_index, stop_index - 1)
 	end,
 	upper = function(text)
-		return string.upper(text)
+		local result = {}
+		for i = 1, libunicode.len(text) do
+			local char = libunicode.sub(text, i, i)
+			result[i] = upper_map[char] or char
+		end
+		return table.concat(result)
 	end,
 	isWide = function(char)
-		return false
+		return font_isWide(font_findOffset(font_toUChar(char, #char)))
 	end,
 	charWidth = function(char)
-		return 1
+		return libunicode.isWide(char) and 2 or 1
 	end,
 	wlen = function(text)
-		return string.len(text)
+		local wlen = 0
+		for i = 1, libunicode.len(text) do
+			wlen = wlen + libunicode.charWidth(libunicode.sub(text, i, i))
+		end
+		return wlen
 	end,
 	wtrunc = function(text, len)
 		local strlen = libunicode.len(text)
@@ -614,7 +650,11 @@ libunicode = {
 		return libunicode.sub(text, 1, len - 1)
 	end
 }
-sandbox.unicode = libunicode
+
+sandbox.unicode = {}
+for k, v in pairs(libunicode) do
+	sandbox.unicode[k] = v
+end
 
 ---------------------------------------------------- component library
 
@@ -1705,7 +1745,10 @@ regComponent({
 			callback = function(self, x, y)
 				x = numberCheckArg(1, x)
 				y = numberCheckArg(2, y)
-				return " ", 0, 0, 0, 0
+				local char, fg, bg, fgi, bgi, fga, bga = canvas_get(x, y)
+				if not fga then fgi = nil end
+				if not bga then bgi = nil end
+				return libunicode.char(char), fg, bg, fgi, bgi
 			end,
 			direct = false,
 			doc = "function(number, number): string, number, number, number or nil, number or nil -- Gets the character currently being displayed at the specified coordinates. The second and third returned values are the fore- and background color, as hexvalues. If the colors are from the palette, the fourth and fifth values specify the palette index of the color, otherwise they are nil."
@@ -1732,7 +1775,10 @@ regComponent({
 				sizeX = numberCheckArg(3, sizeX)
 				sizeY = numberCheckArg(4, sizeY)
 				checkArg(5, char, "string")
-				canvas_fill(canvas, x, y, sizeX, sizeY, string.byte(char))
+				if libunicode.len(char) ~= 1 then
+					return nil, "invalid fill value"
+				end
+				canvas_fill(canvas, x, y, sizeX, sizeY, font_toUChar(char, #char))
 				updateDisplay()
 				return true
 			end,
