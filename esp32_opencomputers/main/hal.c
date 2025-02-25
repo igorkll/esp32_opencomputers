@@ -755,12 +755,10 @@ static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_eve
 					localValue += sound_noise[tickChange % SOUND_ARRAY_SIZE];
 					break;
 			}
-			value += (localValue * channel->volume) / 255;
+			value += (localValue * channel->volume * SOUND_MASTER_VOLUME) / 255 / 255;
 		}
 	}
-	uint8_t output = value;
-	if (value > 255) output = 255;
-	dac_oneshot_output_voltage(sound_output, (output * SOUND_MASTER_VOLUME) / 255);
+	dac_oneshot_output_voltage(sound_output, value > 255 ? 255 : value);
 	sound_tick++;
 	return false;
 }

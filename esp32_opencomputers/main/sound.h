@@ -8,3 +8,9 @@
 
 void sound_computer_beep(uint16_t freq, float time);
 void sound_computer_beepString(const char* text, size_t len);
+
+// ---------------------------------------------- beep card
+
+void sound_beep_addBeep(uint16_t freq, float time);
+void sound_beep_beep();
+int sound_beep_getBeepCount();
