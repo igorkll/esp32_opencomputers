@@ -186,6 +186,12 @@ static void _sendSelectAll() {
 }
 
 static void _clear() {
+	_sendSelectAll();
+	uint8_t buffer[1024];
+	memset(buffer, 0, sizeof(buffer));
+	for (size_t i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT * BYTES_PER_COLOR) / sizeof(buffer); i++) {
+		_sendData(buffer, sizeof(buffer));
+	}
 }
 
 // ----------------------------------------------
@@ -214,7 +220,7 @@ static void _initDisplay() {
 		.lcd_cmd_bits = 8,
 		.lcd_param_bits = 8,
 		.spi_mode = 0,
-		.trans_queue_depth = 64,
+		.trans_queue_depth = 128,
 	};
 	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(DISPLAY_HOST, &io_config, &display));
 
@@ -244,7 +250,6 @@ static void _initDisplay() {
 		_doCommand(display_invert);
 	#endif
 	_doCommand(_rotate(DISPLAY_ROTATION));
-	_sendSelectAll();
 	_clear();
 	_doCommand(display_enable);
 	_sendSelectAll();
@@ -294,7 +299,6 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 	if (!firstFlush) {
 		firstFlush = true;
 	} else if (canvas->sizeX != old_sizeX || canvas->sizeY != old_sizeY || pixelPerfect != old_pixelPerfect) {
-		_sendSelectAll();
 		_clear();
 	}
 
@@ -373,7 +377,6 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 						canvas_color foregroundColor = canvas->palette[foreground];
 					#endif
 
-					/*
 					if (pixelPerfect) {
 						size_t pixelScale = charSizeX / 8;
 						for (size_t icx = 0; icx < 8; icx++) {
@@ -394,7 +397,6 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 							}
 						}
 					}
-					*/
 					
 					_sendData(charBuffer, bytesPerChar);
 				}
