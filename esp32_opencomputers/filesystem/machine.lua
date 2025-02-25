@@ -1745,7 +1745,7 @@ regComponent({
 			callback = function(self, x, y)
 				x = numberCheckArg(1, x)
 				y = numberCheckArg(2, y)
-				local char, fg, bg, fgi, bgi, fga, bga = canvas_get(x, y)
+				local char, fg, bg, fgi, bgi, fga, bga = canvas_get(canvas, x, y)
 				if not fga then fgi = nil end
 				if not bga then bgi = nil end
 				return libunicode.char(char), fg, bg, fgi, bgi
