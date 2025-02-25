@@ -282,30 +282,47 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 	y--;
 
 	if (len == 0) len = strlen(text);
+	len = font_len(text, len);
 
+	canvas_pos size;
+	canvas_pos pos;
 	if (vertical) {
-		size_t maxlen = canvas->sizeY - y;
-		if (len > maxlen) len = maxlen;
-		if (len <= 0) return;
-
-		for (size_t i = 0; i < len; i++) {
-			size_t index = x + ((i + y) * canvas->sizeX);
-			canvas->chars[index] = text[i];
-			canvas->foregrounds[index] = canvas->foreground;
-			canvas->backgrounds[index] = canvas->background;
-		}
+		size = canvas->sizeY;
+		pos = y;
 	} else {
-		size_t maxlen = canvas->sizeX - x;
-		if (len > maxlen) len = maxlen;
-		if (len <= 0) return;
-
-		for (size_t i = 0; i < len; i++) {
-			size_t index = i + x + (y * canvas->sizeX);
-			canvas->chars[index] = text[i];
-			canvas->foregrounds[index] = canvas->foreground;
-			canvas->backgrounds[index] = canvas->background;
-		}
+		size = canvas->sizeX;
+		pos = x;
 	}
+
+	canvas_pos maxlen = size - pos;
+	if (len > maxlen) len = maxlen;
+	if (len <= 0) return;
+
+	size_t i = 0;
+	while (len) {
+		size_t index;
+		if (vertical) {
+			index = x + ((i + y) * canvas->sizeX);
+		} else {
+			index = i + x + (y * canvas->sizeX);
+		}
+		uint8_t llen;
+        if ((*text >= 0xC2) && (*text <= 0xDF)) {
+            llen = 2;
+        } else if ((*text >= 0xE0) && (*text <= 0xEF)) {
+            llen = 3;
+        } else if ((*text >= 0xF0) && (*text <= 0xF7)) {
+            llen = 4;
+        } else {
+            llen = 1;
+        }
+		canvas->chars[index] = font_toUChar(text, llen);
+		canvas->foregrounds[index] = canvas->foreground;
+		canvas->backgrounds[index] = canvas->background;
+		text += llen;
+		i++;
+        len--;
+    }
 }
 
 #include <stdio.h>

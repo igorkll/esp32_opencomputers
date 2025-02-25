@@ -12,6 +12,7 @@ typedef uint32_t uchar;
 void font_init();
 uchar font_toUChar(char* chr, size_t len);
 int font_ucharLen(uchar uchr);
+int font_len(char* text, int len);
 int font_findOffset(uchar uchr);
 uint8_t font_charWidth(int offset);
 bool font_isWide(int offset);

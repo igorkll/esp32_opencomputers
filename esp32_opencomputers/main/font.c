@@ -57,6 +57,29 @@ int font_ucharLen(uchar uchr) {
 	return 0;
 }
 
+int font_len(char* text, int len) {
+	int length = 0;
+
+    while (*text || len > 0) {
+        if ((*text >= 0xC2) && (*text <= 0xDF)) {
+            text += 2;
+			len -= 2;
+        } else if ((*text >= 0xE0) && (*text <= 0xEF)) {
+            text += 3;
+			len -= 3;
+        } else if ((*text >= 0xF0) && (*text <= 0xF7)) {
+            text += 4;
+			len -= 4;
+        } else {
+            text += 1;
+			len -= 1;
+        }
+        length++;
+    }
+
+    return length;
+}
+
 int font_findOffset(uchar uchr) {
 	char* chr = (char*)(&uchr);
 	int len = font_ucharLen(uchr);
