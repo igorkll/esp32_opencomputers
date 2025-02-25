@@ -396,7 +396,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 					} else {
 						uint8_t rawCharBuffer[FONT_MAXCHAR];
 
-						int charOffset = font_findOffset(&chr, 1);
+						int charOffset = font_findOffset(chr);
 						if (charOffset >= 0) {
 							font_readData(rawCharBuffer, charOffset);
 						} else {

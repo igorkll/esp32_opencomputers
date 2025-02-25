@@ -32,7 +32,37 @@ void font_init() {
 	#endif
 }
 
-int font_findOffset(char* chr, size_t len) {
+uchar font_toUChar(char* chr, size_t len) {
+	uchar uchr = 0;
+    if (len == 1) {
+        uchr = (uint8_t)chr[0];
+    } else if (len == 2) {
+        uchr = ((uint8_t)chr[0] & 0x1F) << 6;
+        uchr |= ((uint8_t)chr[1] & 0x3F);
+    }
+	return uchr;
+}
+
+int font_ucharLen(uchar uchr) {
+	uint8_t byte = (uint8_t)uchr;
+
+    if ((byte & 0x80) == 0) {
+        return 1;
+    } else if ((byte & 0xE0) == 0xC0) {
+        return 2;
+    } else if ((byte & 0xF0) == 0xE0) {
+        return 3;
+    } else if ((byte & 0xF8) == 0xF0) {
+        return 4;
+    } else {
+        return -1;
+    }
+}
+
+int font_findOffset(uchar uchr) {
+	char* chr = (char*)(&uchr);
+	size_t len = font_ucharLen(uchr);
+
 	uint8_t charcode[8];
 
 	if (len == 1) {
