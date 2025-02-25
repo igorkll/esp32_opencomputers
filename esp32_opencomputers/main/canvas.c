@@ -138,7 +138,7 @@ canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
 	canvas_setBackground(canvas, 0x000000, false);
 	canvas_setForeground(canvas, 0xffffff, false);
 
-	canvas->chars = malloc(canvas->size);
+	canvas->chars = malloc(canvas->size * sizeof(uchar));
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
@@ -169,7 +169,7 @@ void canvas_setResolution(canvas_t* canvas, canvas_pos sizeX, canvas_pos sizeY) 
 	canvas->sizeX = sizeX;
 	canvas->sizeY = sizeY;
 
-	canvas->chars = malloc(canvas->size);
+	canvas->chars = malloc(canvas->size * sizeof(uchar));
 	canvas->foregrounds = malloc(canvas->size);
 	canvas->backgrounds = malloc(canvas->size);
 
