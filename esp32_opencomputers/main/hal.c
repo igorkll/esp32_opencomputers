@@ -15,6 +15,7 @@
 #include <string.h>
 #include <driver/i2c.h>
 #include <math.h>
+#include <map.h>
 #include "hal.h"
 #include "main.h"
 #include "font.h"
@@ -265,6 +266,20 @@ static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
 static hashmap* cache_rasterized;
+
+typedef struct {
+	char chr;
+	canvas_color fg;
+	canvas_color bg;
+} CharCacheData;
+
+static int _hashmap_free(const void *key, size_t ksize, uintptr_t value, void *usr) {
+	void* chardata = value;
+	free(key);
+	free(chardata);
+	return 0;
+}
+
 hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
@@ -306,7 +321,12 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 	old_sizeY = canvas->sizeY;
 	old_pixelPerfect = pixelPerfect;
 
-	if (canvas->sizeX != canvas->sizeX_current || canvas->sizeY != canvas->sizeY_current) {
+	if (!cache_rasterized || canvas->sizeX != canvas->sizeX_current || canvas->sizeY != canvas->sizeY_current) {
+		if (cache_rasterized) {
+			//hashmap_iterate(cache_rasterized, _hashmap_free, NULL);
+			hashmap_free(cache_rasterized);
+		}
+		cache_rasterized = hashmap_create();
 		canvas_freeCache(canvas);
 		canvas->sizeX_current = canvas->sizeX;
 		canvas->sizeY_current = canvas->sizeY;
@@ -346,60 +366,69 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 				#ifdef DISPLAY_SWAP_ENDIAN
 					uint8_t* _color = (uint8_t*)(&canvas->palette[background]);
 					canvas_color backgroundColor = (_color[0] << 8) + _color[1];
+
+					_color = (uint8_t*)(&canvas->palette[foreground]);
+					canvas_color foregroundColor = (_color[0] << 8) + _color[1];
 				#else
 					canvas_color backgroundColor = canvas->palette[background];
+					canvas_color foregroundColor = canvas->palette[foreground];
 				#endif
 
 				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
-				uint8_t charBuffer[bytesPerChar];
-				
-				/*
-				if (canvas->chars[index] == ' ') {
-					for (size_t icx = 0; icx < charSizeX; icx++) {
-						for (size_t icy = 0; icy < charSizeY; icy++) {
-							memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);
+				uint8_t* charBuffer;
+				char chr = canvas->chars[index];
+
+				CharCacheData finding = {
+					.chr = chr,
+					.fg = foreground,
+					.bg = background
+				};
+
+				if (hashmap_get(cache_rasterized, &finding, sizeof(CharCacheData), &charBuffer) == 0) {
+					charBuffer = malloc(bytesPerChar);
+					
+					if (chr == ' ') {
+						for (size_t icx = 0; icx < charSizeX; icx++) {
+							for (size_t icy = 0; icy < charSizeY; icy++) {
+								memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);
+							}
 						}
-					}
-				} else {
-					uint8_t rawCharBuffer[FONT_MAXCHAR];
-
-					int charOffset = font_findOffset(&canvas->chars[index], 1);
-					bool isWide;
-					if (charOffset >= 0) {
-						font_readData(rawCharBuffer, charOffset);
 					} else {
-						memset(rawCharBuffer, 0, FONT_MAXCHAR);
-					}
+						uint8_t rawCharBuffer[FONT_MAXCHAR];
 
-					#ifdef DISPLAY_SWAP_ENDIAN
-						uint8_t* _color = (uint8_t*)(&canvas->palette[foreground]);
-						canvas_color foregroundColor = (_color[0] << 8) + _color[1];
-					#else
-						canvas_color foregroundColor = canvas->palette[foreground];
-					#endif
+						int charOffset = font_findOffset(&chr, 1);
+						if (charOffset >= 0) {
+							font_readData(rawCharBuffer, charOffset);
+						} else {
+							memset(rawCharBuffer, 0, FONT_MAXCHAR);
+						}
 
-					if (pixelPerfect) {
-						size_t pixelScale = charSizeX / 8;
-						for (size_t icx = 0; icx < 8; icx++) {
-							for (size_t icy = 0; icy < 16; icy++) {
-								canvas_color color = font_readPixel(rawCharBuffer, icx, icy) ? foregroundColor : backgroundColor;
-								for (size_t ibx = 0; ibx < pixelScale; ibx++) {
-									for (size_t iby = 0; iby < pixelScale; iby++) {
-										memcpy(charBuffer + ((iby + (icy * pixelScale) + (((icx * pixelScale) + ibx) * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+						if (pixelPerfect) {
+							size_t pixelScale = charSizeX / 8;
+							for (size_t icx = 0; icx < 8; icx++) {
+								for (size_t icy = 0; icy < 16; icy++) {
+									canvas_color color = font_readPixel(rawCharBuffer, icx, icy) ? foregroundColor : backgroundColor;
+									for (size_t ibx = 0; ibx < pixelScale; ibx++) {
+										for (size_t iby = 0; iby < pixelScale; iby++) {
+											memcpy(charBuffer + ((iby + (icy * pixelScale) + (((icx * pixelScale) + ibx) * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+										}
 									}
 								}
 							}
-						}
-					} else {
-						for (size_t icx = 0; icx < charSizeX; icx++) {
-							for (size_t icy = 0; icy < charSizeY; icy++) {
-								canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
-								memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+						} else {
+							for (size_t icx = 0; icx < charSizeX; icx++) {
+								for (size_t icy = 0; icy < charSizeY; icy++) {
+									canvas_color color = font_readPixel(rawCharBuffer, rmap(icx, 0, charSizeX - 1, 0, 7), rmap(icy, 0, charSizeY - 1, 0, 15)) ? foregroundColor : backgroundColor;
+									memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &color, BYTES_PER_COLOR);
+								}
 							}
 						}
 					}
+
+					CharCacheData* cacheKey = malloc(sizeof(CharCacheData));
+					memcpy(cacheKey, &finding, sizeof(CharCacheData));
+					hashmap_set(cache_rasterized, cacheKey, sizeof(CharCacheData), charBuffer);
 				}
-				*/
 
 				_sendData(charBuffer, bytesPerChar);
 			} else {

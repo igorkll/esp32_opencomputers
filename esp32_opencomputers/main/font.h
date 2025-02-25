@@ -6,6 +6,8 @@
 #define FONT_CACHE_OFFSETS
 #define FONT_CACHE_DATA
 
+typedef uint16_t uchar;
+
 void font_init();
 int font_findOffset(char* chr, size_t len);
 uint8_t font_charWidth(int offset);
