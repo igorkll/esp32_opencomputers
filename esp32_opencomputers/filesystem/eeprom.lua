@@ -102,7 +102,7 @@ local function boot()
 	local file = component.invoke(bootDisk, "open", "/init.lua")
 	local data = ""
 	while true do
-		local ldata = component.invoke(bootDisk, "read", math.huge)
+		local ldata = component.invoke(bootDisk, "read", file, math.huge)
 		if not ldata then
 			break
 		end
