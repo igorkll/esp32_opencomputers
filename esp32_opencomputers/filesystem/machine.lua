@@ -623,7 +623,8 @@ libunicode = {
 		return table.concat(reversed)
 	end,
 	sub = function(text, i, j)
-		local start_index = utf8.offset(text, i) or 1
+		local start_index = utf8.offset(text, i)
+		if not start_index then return "" end
 		local stop_index = j and utf8.offset(text, j + 1) or #text + 1
 		return string.sub(text, start_index, stop_index - 1)
 	end,
