@@ -1,9 +1,8 @@
 local resolutionX = 80
 local resolutionY = 25
-local maxEepromCodeLen = 4096
+local maxEepromCodeLen = 1024 * 32
 local maxEepromDataLen = 256
 local seconderyTouchTime = 1
-
 
 local debugMode = true
 local pixelPerfect = false
@@ -2044,7 +2043,7 @@ while true do
 	local result = table.pack(coroutine.resume(thread, table.unpack(args, 1, args.n)))
 	args = nil
 	if not result[1] then
-		error(tostring(result[2]), 0)
+		error(tostring(result[2]) .. "\n" .. debug.traceback(thread), 0)
 	elseif coroutine.status(thread) == "dead" then
 		error("computer halted", 0)
 	else

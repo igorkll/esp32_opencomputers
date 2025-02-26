@@ -6,6 +6,8 @@
 * screen.getAspectRatio returns the actual aspect ratio of the display
 * all work with esp-idf is done in the "hal.h" and "hal.c" files so that the code can be easily adapted to different platforms and peripherals
 * supports unicode
+* the EEPROM size is 32 kilobytes
+* to simulate the right mouse button, use a long press at one point of the screen
 
 ## warnings
 * the project can only be compiled by the GCC compiler
