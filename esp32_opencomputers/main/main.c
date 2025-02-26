@@ -16,6 +16,7 @@
 #include "canvas.h"
 #include "sound.h"
 #include "lua_binder.h"
+#include "config.h"
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
@@ -83,8 +84,7 @@ static int _getPoint_bind(lua_State* lua) {
 
 static int _sendBuffer_bind(lua_State* lua) {
 	canvas_t* canvas = lua_touserdata(lua, 1);
-	bool pixelPerfect = lua_toboolean(lua, 2);
-	hal_display_sendInfo sendInfo = hal_display_sendBuffer(canvas, pixelPerfect);
+	hal_display_sendInfo sendInfo = hal_display_sendBuffer(canvas);
 	lua_pushinteger(lua, sendInfo.startX);
 	lua_pushinteger(lua, sendInfo.startY);
 	lua_pushinteger(lua, sendInfo.charSizeX);
@@ -111,11 +111,13 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
 	lua_pushinteger(lua, hal_random());
-	lua_setglobal(lua, "_defaultRandom");
+	lua_setglobal(lua, "_defaultRandomSeed");
 
 	// ---- defines
 	LUA_PUSH_INT(DISPLAY_WIDTH);
 	LUA_PUSH_INT(DISPLAY_HEIGHT);
+	LUA_PUSH_INT(RENDER_RESOLUTION_X);
+	LUA_PUSH_INT(RENDER_RESOLUTION_Y);
 
 	// ---- canvas
 	LUA_BIND_VOID(canvas_setResolution, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT));
@@ -185,7 +187,7 @@ void _main() {
 			HAL_LOGE("lua crashed: %s\n", err);
 			bsod(canvas, err);
 			lua_close(lua);
-			hal_display_sendBuffer(canvas, false);
+			hal_display_sendBuffer(canvas);
 			break;
 		} else {
 			bool reboot = lua_toboolean(lua, -1);
@@ -194,12 +196,12 @@ void _main() {
 			if (!reboot) {
 				hal_display_backlight(false);
 				lua_close(lua);
-				hal_display_sendBuffer(canvas, false);
+				hal_display_sendBuffer(canvas);
 				break;
 			}
 		}
 		lua_close(lua);
-		hal_display_sendBuffer(canvas, false);
+		hal_display_sendBuffer(canvas);
 	}
 	
 	while (true) {

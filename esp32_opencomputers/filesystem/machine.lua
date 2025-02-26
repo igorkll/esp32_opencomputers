@@ -1,11 +1,10 @@
-local resolutionX = 80
-local resolutionY = 25
+local resolutionX = RENDER_RESOLUTION_X
+local resolutionY = RENDER_RESOLUTION_Y
 local maxEepromCodeLen = 1024 * 32
 local maxEepromDataLen = 256
 local seconderyTouchTime = 1
 
 local debugMode = true
-local pixelPerfect = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
@@ -18,7 +17,7 @@ local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
 
 local screenSelf, gpuSelf
 
-math.randomseed(_defaultRandom)
+math.randomseed(_defaultRandomSeed)
 package.path = "/storage/?.lua"
 
 local filesys = require("filesys")
@@ -333,13 +332,13 @@ sandbox._G = sandbox
 
 ----------------------------------------------------
 
-local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
+local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas)
 local displayFlag = false
 local oldFlushUptime = uptime()
 
 local function flushDisplay()
 	if displayFlag then
-		imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
+		imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas)
 		displayFlag = false
 		oldFlushUptime = uptime()
 	end

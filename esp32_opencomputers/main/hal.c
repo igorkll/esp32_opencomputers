@@ -9,11 +9,9 @@
 #include <driver/gptimer.h>
 #include <esp_timer.h>
 #include <esp_random.h>
-#include <driver/dac_oneshot.h>
 #include <esp_lcd_io_spi.h>
 #include <esp_lcd_panel_io.h>
 #include <string.h>
-#include <driver/i2c.h>
 #include <math.h>
 #include <map.h>
 #include "hal.h"
@@ -266,6 +264,7 @@ static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
 static hashmap* cache_rasterized = NULL;
+static bool pixelPerfect = ;
 
 typedef struct {
 	uchar chr;
@@ -280,7 +279,7 @@ static int _hashmap_free(const void *key, size_t ksize, uintptr_t value, void *u
 	return 0;
 }
 
-hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect) {
+hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas) {
 	canvas_pos charSizeX = DISPLAY_WIDTH / canvas->sizeX;
 	canvas_pos charSizeY = DISPLAY_HEIGHT / canvas->sizeY;
 	if (charSizeY % 2 != 0) charSizeY--;
@@ -453,6 +452,8 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 // ---------------------------------------------- touchscreen
 
 #ifdef TOUCHSCREEN_FT6336U
+#include <driver/i2c.h>
+
 static uint8_t i2c_readReg(uint8_t addr) {
     uint8_t val = 0;
     i2c_master_write_read_device(TOUCHSCREEN_HOST, TOUCHSCREEN_ADDR, &addr, 1, &val, 1, 100 / portTICK_PERIOD_MS);
@@ -707,6 +708,9 @@ size_t hal_filesystem_lastModified(const char* path) {
 
 // ---------------------------------------------- sound
 
+#ifdef SOUND_DAC
+#include <driver/dac_oneshot.h>
+
 static hal_sound_channel sound_channels[SOUND_CHANNELS];
 static gptimer_handle_t sound_timer;
 static dac_oneshot_handle_t sound_output;
@@ -806,6 +810,13 @@ static void _initSound() {
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
 	sound_channels[index] = settings;
 }
+#else
+static void _initSound() {
+}
+
+void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
+}
+#endif
 
 // ---------------------------------------------- other
 
