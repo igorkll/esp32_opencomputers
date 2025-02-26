@@ -68,6 +68,24 @@ extern const char* HAL_LOG_TAG;
 #define HAL_LOGE(...) ESP_LOGE(HAL_LOG_TAG, __VA_ARGS__)
 #define HAL_LOGW(...) ESP_LOGW(HAL_LOG_TAG, __VA_ARGS__)
 
+// ---------------------------------------------- leds
+
+#define HAL_LEDC_TIMER LEDC_TIMER_0
+#define HAL_LEDC_MODE LEDC_HIGH_SPEED_MODE
+
+typedef struct {
+	bool empty;
+    ledc_channel_t channel;
+} hal_led;
+
+hal_led* hal_led_new(gpio_num_t pin, bool invert);
+hal_led* hal_led_stub();
+void hal_led_blink(hal_led* led);
+void hal_led_set(hal_led* led, uint8_t value);
+void hal_led_enable(hal_led* led);
+void hal_led_disable(hal_led* led);
+void hal_led_free(hal_led* led);
+
 // ---------------------------------------------- other
 
 void hal_task(void(*func)(void* arg), void* arg);

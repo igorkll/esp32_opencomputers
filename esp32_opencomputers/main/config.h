@@ -11,6 +11,17 @@
 #define SOUND_FREQ 40000 //how often will the hardware timer responsible for sound generation work
 #define SOUND_OUTPUT 0 //DAC CHANNEL
 
+// ---------------------------------------------- hardware settings (all parameters are optional, remove the define that you don't need)
+
+#define HARDWARE_LED_POWER_PIN 18
+#define HARDWARE_LED_POWER_INVERT false
+
+#define HARDWARE_LED_ERROR_PIN 18
+#define HARDWARE_LED_ERROR_INVERT false
+
+#define HARDWARE_LED_HDD_PIN 19
+#define HARDWARE_LED_HDD_INVERT false
+
 // ---------------------------------------------- hardware display settings
 
 #define DISPLAY_FREQ 80000000

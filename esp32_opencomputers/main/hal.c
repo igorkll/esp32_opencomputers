@@ -9,6 +9,7 @@
 #include <driver/gptimer.h>
 #include <esp_timer.h>
 #include <esp_random.h>
+#include <driver/ledc.h>
 #include <esp_lcd_io_spi.h>
 #include <esp_lcd_panel_io.h>
 #include <string.h>
@@ -862,6 +863,79 @@ size_t hal_totalMemory() {
 	return totalMemory;
 }
 
+// ---------------------------------------------- leds
+
+static ledc_channel_t channel = 0;
+
+hal_led* hal_led_new(gpio_num_t pin, bool invert) {
+	hal_led* led = malloc(sizeof(hal_led));
+	
+	channel = channel + 1;
+	if (channel >= LEDC_CHANNEL_MAX) {
+		channel = LEDC_CHANNEL_MAX - 1;
+	}
+
+	ledc_channel_config_t ledc_channel = {
+        .speed_mode = HAL_LEDC_MODE,
+        .channel = channel,
+        .gpio_num = pin,
+        .duty = 0,
+        .hpoint = 0,
+        .flags.output_invert = invert,
+        .timer_sel = HAL_LEDC_TIMER
+    };
+    ledc_channel_config(&ledc_channel);
+
+	led->empty = false;
+	led->channel = channel;
+	return led;
+}
+
+hal_led* hal_led_stub() {
+	hal_led* led = malloc(sizeof(hal_led));
+	led->empty = true;
+	return led;
+}
+
+void hal_led_blink(hal_led* led) {
+	if (led->empty) return;
+	ledc_set_fade_with_time(HAL_LEDC_MODE, led->channel, 255, 1000);
+	ledc_fade_start(HAL_LEDC_MODE, led->channel, LEDC_FADE_NO_WAIT);
+}
+
+void hal_led_set(hal_led* led, uint8_t value) {
+	if (led->empty) return;
+	//ledc_fade_stop(HAL_LEDC_MODE, led->channel);
+	ledc_set_duty(HAL_LEDC_MODE, led->channel, value);
+	ledc_update_duty(HAL_LEDC_MODE, led->channel);
+}
+
+void hal_led_enable(hal_led* led) {
+	hal_led_set(led, 255);
+}
+
+void hal_led_disable(hal_led* led) {
+	hal_led_set(led, 0);
+}
+
+void hal_led_free(hal_led* led) {
+	hal_led_disable(led);
+	free(led);
+}
+
+static void _ledInit() {
+	ledc_timer_config_t ledc_timer = {
+        .speed_mode = HAL_LEDC_MODE,
+        .timer_num = HAL_LEDC_TIMER,
+        .duty_resolution = LEDC_TIMER_8_BIT,
+        .freq_hz = 1000,
+        .clk_cfg = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&ledc_timer);
+
+	ledc_fade_func_install(0);
+}
+
 // ----------------------------------------------
 
 void app_main() {
@@ -877,6 +951,7 @@ void app_main() {
 	_initTouchscreen();
 	_initFilesystem();
 	_initSound();
+	_ledInit();
 	font_init();
 	_main();
 }

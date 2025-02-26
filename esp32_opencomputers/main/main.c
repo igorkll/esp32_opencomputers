@@ -18,6 +18,10 @@
 #include "lua_binder.h"
 #include "config.h"
 
+static hal_led* led_power;
+static hal_led* led_error;
+static hal_led* led_hdd;
+
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
 	canvas_setResolution(canvas, 50, 16);
@@ -175,36 +179,62 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 }
 
 void _main() {
-	sound_init();
+	#ifdef HARDWARE_LED_POWER_PIN
+		led_power = hal_led_new(HARDWARE_LED_POWER_PIN, HARDWARE_LED_POWER_INVERT);
+	#else
+		led_power = hal_led_stub();
+	#endif
 
+	#ifdef HARDWARE_LED_ERROR_PIN
+		led_error = hal_led_new(HARDWARE_LED_ERROR_PIN, HARDWARE_LED_ERROR_INVERT);
+	#else
+		led_error = hal_led_stub();
+	#endif
+
+	#ifdef HARDWARE_LED_HDD_PIN
+		led_hdd = hal_led_new(HARDWARE_LED_HDD_PIN, HARDWARE_LED_HDD_INVERT);
+	#else
+		led_hdd = hal_led_stub();
+	#endif
+
+	sound_init();
 	canvas_t* canvas = canvas_create(50, 16, 1);
-	hal_display_backlight(true);
+
 	while (true) {
-		lua_State* lua = luaL_newstate();
-		rawSandbox(lua, canvas);
-		if (luaL_dofile(lua, "/storage/machine.lua")) {
-			char* err = lua_tostring(lua, -1);
-			HAL_LOGE("lua crashed: %s\n", err);
-			bsod(canvas, err);
-			lua_close(lua);
-			hal_display_sendBuffer(canvas);
-			break;
-		} else {
-			bool reboot = lua_toboolean(lua, -1);
-			HAL_LOGI("shutdown: %i\n", reboot);
-			blackscreen(canvas);
-			if (!reboot) {
-				hal_display_backlight(false);
+		hal_led_enable(led_power);
+		hal_led_disable(led_error);
+		hal_display_backlight(true);
+
+		while (true) {
+			lua_State* lua = luaL_newstate();
+			rawSandbox(lua, canvas);
+			if (luaL_dofile(lua, "/storage/machine.lua")) {
+				char* err = lua_tostring(lua, -1);
+				HAL_LOGE("lua crashed: %s\n", err);
+				bsod(canvas, err);
+				hal_led_disable(led_power);
+				hal_led_blink(led_error);
 				lua_close(lua);
 				hal_display_sendBuffer(canvas);
 				break;
+			} else {
+				bool reboot = lua_toboolean(lua, -1);
+				HAL_LOGI("shutdown: %i\n", reboot);
+				blackscreen(canvas);
+				if (!reboot) {
+					hal_led_disable(led_power);
+					hal_display_backlight(false);
+					lua_close(lua);
+					hal_display_sendBuffer(canvas);
+					break;
+				}
 			}
+			lua_close(lua);
+			hal_display_sendBuffer(canvas);
 		}
-		lua_close(lua);
-		hal_display_sendBuffer(canvas);
-	}
-	
-	while (true) {
-		hal_delay(1000);
+		
+		while (true) {
+			hal_delay(1000);
+		}
 	}
 }

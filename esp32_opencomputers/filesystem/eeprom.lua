@@ -180,4 +180,10 @@ local function gui_menu(title, points, images, funcs)
 	end
 end
 
-gui_menu("MENU", {"boot", "wifi", "modem"}, {image_boot, image_wifi, nil}, {boot})
+gui_menu("MENU", {"boot", "wifi", "crash", "reboot", "shutdown"}, {image_boot, image_wifi, nil}, {boot, nil, function ()
+	error("crash")
+end, function ()
+	computer.shutdown(true)
+end, function ()
+	computer.shutdown()
+end})
