@@ -719,7 +719,7 @@ static uint8_t sound_noise[SOUND_ARRAY_SIZE];
 #define SOUND_FREQ_MD (SOUND_FREQ_M / 2)
 
 static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
-	uint16_t value = 0;
+	uint32_t value = 0;
 	for (size_t i = 0; i < SOUND_CHANNELS; i++) {
 		hal_sound_channel* channel = &sound_channels[i];
 		if (channel->enabled) {
@@ -801,9 +801,7 @@ static void _initSound() {
 }
 
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
-	gptimer_stop(sound_timer);
 	sound_channels[index] = settings;
-	gptimer_start(sound_timer);
 }
 
 // ---------------------------------------------- other

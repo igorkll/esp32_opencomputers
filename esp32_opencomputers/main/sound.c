@@ -85,12 +85,13 @@ bool sound_beep_addBeep(uint16_t freq, float time) {
 
 void sound_beep_beep() {
 	currentBeeps_lock = true;
-	for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
+	hal_delay(100);
+	for (int8_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 		sound_beep* beep = &beeps[i];
 		if (!beep->enabled) continue;
 		beep->deadline += hal_uptime();
 
-		for (size_t i2 = SOUND_BEEPCARD_CHANNELS - 1; i2 >= 0; i2--) {
+		for (int8_t i2 = SOUND_BEEPCARD_CHANNELS - 1; i2 >= 0; i2--) {
 			if (!currentBeeps[i2].enabled) {
 				hal_sound_updateChannel(i2, (hal_sound_channel) {
 					.enabled = true,
@@ -99,12 +100,13 @@ void sound_beep_beep() {
 					.wave = hal_sound_square
 				});
 				currentBeeps[i2] = *beep;
+				break;
 			}
 		}
 	}
 	currentBeeps_lock = false;
 
-	for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
+	for (int8_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 		beeps[i] = (sound_beep) {.enabled=false};
 	}
 	beep_index = 0;
@@ -112,7 +114,7 @@ void sound_beep_beep() {
 
 uint8_t sound_beep_getBeepCount() {
 	uint8_t beepCount = 0;
-	for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
+	for (int8_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 		if (currentBeeps[i].enabled) {
 			beepCount++;
 		}
@@ -124,7 +126,7 @@ static void _beep_init(void* arg) {
 	while (true) {
 		if (!currentBeeps_lock) {
 			double uptime = hal_uptime();
-			for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
+			for (int8_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 				sound_beep* beep = &currentBeeps[i]; 
 				if (beep->enabled && uptime >= beep->deadline) {
 					beep->enabled = false;
