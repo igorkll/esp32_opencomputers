@@ -117,7 +117,10 @@ local function gui_menu(title, points, images, funcs)
 
 	local function redraw()
 		gpu.setBackground(backgroundColor)
+		gpu.setForeground(pointColor)
 		gpu.fill(1, 1, rx, ry, " ")
+		centerSet(ry - 1, points[current], icon1X, 16)
+		centerSet(ry - 1, points[current+1], icon2X, 16)
 
 		gpu.setForeground(titleColor)
 		centerSet(2, title)
@@ -134,17 +137,10 @@ local function gui_menu(title, points, images, funcs)
 
 		drawImage(icon1X, iconY, images[current])
 		drawImage(icon2X, iconY, images[current+1])
-
-		gpu.setForeground(pointColor)
-		centerSet(ry - 1, points[current], icon1X, 16)
-		centerSet(ry - 1, points[current+1], icon2X, 16)
 	end
 	redraw()
 
-	local current = 1
 	while true do
-		gpu.setForeground(math.random(0, 0xffffff))
-		gpu.set(5, 5, " ")
 		local eventData = {computer.pullSignal()}
 
 		if eventData[1] == "touch" then
