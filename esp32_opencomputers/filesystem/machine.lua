@@ -5,6 +5,7 @@ local maxEepromDataLen = 256
 local seconderyTouchTime = 1
 
 local debugMode = true
+local debugMode_traceback = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
 local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
@@ -650,7 +651,7 @@ libunicode = {
 	wtrunc = function(text, len)
 		local strlen = libunicode.len(text)
 		if len > strlen then
-			error("Index " .. (len - 1) .. " out of bounds for lenght " .. strlen)
+			error("String index out of range: " .. len, 2)
 		end
 		return libunicode.sub(text, 1, len - 1)
 	end
@@ -752,6 +753,9 @@ libcomponent = {
 				end
 			end
 			debugPrint("component.invoke: " .. comp.type .. " | " .. address:sub(1, 3) .. " | " .. method .. "(" .. table.concat(args, ", ") .. ")")
+			if debugMode_traceback then
+				debugPrint(debug.traceback())
+			end
 		end
 
 		return spcall(comp.api[method].callback, comp.self, ...)
