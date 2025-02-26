@@ -21,7 +21,7 @@
 1. open esp32_opencomputers/main/config.h - set up the display, touchscreen and other project settings (do not change your SPI pins if you do not know what you are doing!!)
 2. you may need to change the code in open esp32_opencomputers/main/hal.c to work with your hardware (for example, a display with a different touchscreen or a different controller)
 3. place the files of the desired operating system in the "esp32_opencomputers/filesystem/system" folder (you can take one to choose from from the "operating_systems" folder)
-4. flash the code into the microcontroller and connect all the peripherals according to the settings in esp32_opencomputers/main/hal.h
+4. flash the code into the microcontroller and connect all the peripherals according to the settings in esp32_opencomputers/main/config.h
 
 ## available components
 * eeprom
