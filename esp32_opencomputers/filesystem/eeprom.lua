@@ -38,11 +38,11 @@ local image_boot = {
 	"                ",
 	"                ",
 	"                ",
-	"      A         ",
-	"       A        ",
-	"        A       ",
-	"                ",
-	"                "
+	"  AB      W     ",
+	"  CD       W    ",
+	" AAAAAAAAAAAAD  ",
+	" AAAAAAAAAAAAAA ",
+	"  WW        WW  "
 }
 
 local image_wifi = {
@@ -68,7 +68,9 @@ end
 local imageColors = {
 	["A"] = 0xff4444,
 	["B"] = 0x44ff44,
-	["C"] = 0x4444ff
+	["C"] = 0x4444ff,
+	["D"] = 0xffff44,
+	["W"] = 0xffffff,
 }
 
 local function drawImage(x, y, img)
@@ -93,7 +95,7 @@ end
 
 local function centerSet(y, text, frameX, frameSX)
 	if not text then return end
-	frameX = frameX and (frameX + 1) or 0
+	frameX = frameX and (frameX - 1) or 0
 	frameSX = frameSX or rx
 	gpu.set(frameX + math.floor(((frameSX / 2) - (unicode.len(text) / 2)) + 0.5) + 1, y, text)
 end

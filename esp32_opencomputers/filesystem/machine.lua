@@ -4,7 +4,7 @@ local maxEepromCodeLen = 1024 * 32
 local maxEepromDataLen = 256
 local seconderyTouchTime = 1
 
-local debugMode = true
+local debugMode = false
 local pixelPerfect = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"

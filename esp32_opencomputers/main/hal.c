@@ -346,12 +346,16 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 			size_t index = ix + (iy * canvas->sizeX);
 			uint8_t background = canvas->backgrounds[index];
 			uint8_t foreground = canvas->foregrounds[index];
+			uchar chr = canvas->chars[index];
+			bool isSpace = chr == UCHAR_SPACE;
+			bool foregroundVisible = !isSpace;
+			bool backgroundVisible = true;
 			if (force ||
-				canvas->palette[background] != canvas->palette_current[background] ||
-				canvas->palette[foreground] != canvas->palette_current[foreground] ||
+				(backgroundVisible && canvas->palette[background] != canvas->palette_current[background]) ||
+				(foregroundVisible && canvas->palette[foreground] != canvas->palette_current[foreground]) ||
 				canvas->chars[index] != canvas->chars_current[index] ||
-				canvas->backgrounds[index] != canvas->backgrounds_current[index] ||
-				canvas->foregrounds[index] != canvas->foregrounds_current[index]) {
+				(backgroundVisible && canvas->backgrounds[index] != canvas->backgrounds_current[index]) ||
+				(foregroundVisible && canvas->foregrounds[index] != canvas->foregrounds_current[index])) {
 				
 				canvas->chars_current[index] = canvas->chars[index];
 				canvas->backgrounds_current[index] = canvas->backgrounds[index];
@@ -376,18 +380,17 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas, bool pixelPerfect)
 
 				size_t bytesPerChar = charSizeX * charSizeY * BYTES_PER_COLOR;
 				uint8_t* charBuffer;
-				uchar chr = canvas->chars[index];
 
 				CharCacheData finding = {
 					.chr = chr,
-					.fg = chr == UCHAR_SPACE ? 0 : foreground,
-					.bg = background
+					.fg = foregroundVisible ? foregroundColor : 0,
+					.bg = backgroundVisible ? backgroundColor : 0
 				};
 
 				if (hashmap_get(cache_rasterized, &finding, sizeof(CharCacheData), &charBuffer) == 0) {
 					charBuffer = malloc(bytesPerChar);
 					
-					if (chr == UCHAR_SPACE) {
+					if (isSpace) {
 						for (size_t icx = 0; icx < charSizeX; icx++) {
 							for (size_t icy = 0; icy < charSizeY; icy++) {
 								memcpy(charBuffer + ((icy + (icx * charSizeY)) * BYTES_PER_COLOR), &backgroundColor, BYTES_PER_COLOR);
