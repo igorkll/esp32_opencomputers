@@ -4,7 +4,7 @@ local maxEepromCodeLen = 1024 * 32
 local maxEepromDataLen = 256
 local seconderyTouchTime = 1
 
-local debugMode = false
+local debugMode = true
 local pixelPerfect = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
@@ -335,16 +335,21 @@ sandbox._G = sandbox
 
 local imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
 local displayFlag = false
+local oldFlushUptime = uptime()
 
 local function flushDisplay()
 	if displayFlag then
 		imageStartX, imageStartY, imageCharSizeX, imageCharSizeY = hal_display_sendBuffer(canvas, pixelPerfect)
 		displayFlag = false
+		oldFlushUptime = uptime()
 	end
 end
 
 local function updateDisplay()
 	displayFlag = true
+	if uptime() - oldFlushUptime > 2 then
+		flushDisplay()
+	end
 end
 
 ----------------------------------------------------
@@ -461,7 +466,7 @@ local defaultDeviceInfo = {
 	class = "unknown",
 	description = "unknown",
 	product = "unknown",
-	vendor = "opencomputers emulator"
+	vendor = "unknown"
 }
 
 local additionalDeviceInfo = {}

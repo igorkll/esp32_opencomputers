@@ -12,6 +12,8 @@ gpu.setResolution(rx, ry)
 
 ----------------------------------------------------------
 
+local computer_shutdown = computer.shutdown
+
 local bootDisk = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
 local iconY = 5
 local offset = 6
@@ -101,6 +103,8 @@ local function centerSet(y, text, frameX, frameSX)
 end
 
 local function boot()
+	gpu.setBackground(0x000000)
+	gpu.fill(1, 1, rx, ry, " ")
 	local file = component.invoke(bootDisk, "open", "/init.lua")
 	local data = ""
 	while true do
@@ -112,6 +116,7 @@ local function boot()
 	end
 	component.invoke(bootDisk, "close", file)
 	assert(load(data, "=init", nil, _G))()
+	computer_shutdown()
 end
 
 local function gui_menu(title, points, images, funcs)

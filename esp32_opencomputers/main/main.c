@@ -104,7 +104,7 @@ static int _canvasGet_bind(lua_State* lua) {
 	lua_pushinteger(lua, pixelInfo.backgroundIndex);
 	lua_pushboolean(lua, pixelInfo.foreground_isPal);
 	lua_pushboolean(lua, pixelInfo.background_isPal);
-	return 4;
+	return 7;
 }
 
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
