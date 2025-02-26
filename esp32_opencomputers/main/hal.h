@@ -116,7 +116,7 @@ extern const char* HAL_LOG_TAG;
 
 void hal_task(void(*func)(void* arg), void* arg);
 void hal_delay(uint32_t milliseconds);
-float hal_uptime();
+double hal_uptime();
 uint32_t hal_random();
 size_t hal_freeMemory();
 size_t hal_totalMemory();

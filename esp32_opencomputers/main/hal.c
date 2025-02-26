@@ -833,7 +833,7 @@ void hal_delay(uint32_t milliseconds) {
 	vTaskDelay(ticks);
 }
 
-float hal_uptime() {
+double hal_uptime() {
 	return esp_timer_get_time() / 1000.0 / 1000.0;
 }
 

@@ -15,6 +15,7 @@ local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
 local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
 local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
 local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
+local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
 
 local screenSelf, gpuSelf
 
@@ -1965,6 +1966,12 @@ gpuSelf = {
 }
 
 addComponent(gpuSelf, "gpu", gpuAddress)
+
+---------------------------------------------------- beep component
+
+addComponent({
+	
+}, "beep", beepAddress)
 
 ----------------------------------------------------
 

@@ -161,6 +161,9 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	// ---- sound
 	LUA_BIND_VOID(sound_computer_beep, (LUA_ARG_INT, LUA_ARG_NUM));
 	LUA_BIND_VOID(sound_computer_beepString, (LUA_ARG_STR, LUA_ARG_INT));
+	LUA_BIND_RETR(sound_beep_addBeep, (LUA_ARG_INT, LUA_ARG_NUM), LUA_RET_BOOL);
+	LUA_BIND_VOID(sound_beep_beep, ());
+	LUA_BIND_VOID(sound_beep_getBeepCount, (), LUA_RET_INT);
 
 	// ---- hal
 	LUA_BIND_RETR(hal_uptime, (), LUA_RET_NUM);
@@ -170,6 +173,8 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 }
 
 void _main() {
+	sound_init();
+
 	canvas_t* canvas = canvas_create(50, 16, 1);
 	hal_display_backlight(true);
 	while (true) {
