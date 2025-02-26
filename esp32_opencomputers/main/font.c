@@ -32,6 +32,23 @@ void font_init() {
 	#endif
 }
 
+char* font_ptrOffset(char* text, size_t offset) {
+	while (offset > 0) {
+        if ((*text >= 0xC2) && (*text <= 0xDF)) {
+            text += 2;
+        } else if ((*text >= 0xE0) && (*text <= 0xEF)) {
+            text += 3;
+        } else if ((*text >= 0xF0) && (*text <= 0xF7)) {
+            text += 4;
+        } else {
+            text += 1;
+        }
+		offset--;
+    }
+
+	return text;
+}
+
 uchar font_toUChar(char* chr, size_t len) {
 	uchar out = 0;
 	for (size_t i = 0; i < len; i++) {

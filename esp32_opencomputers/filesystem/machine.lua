@@ -462,7 +462,7 @@ local defaultDeviceInfo = {
 	class = "unknown",
 	description = "unknown",
 	product = "unknown",
-	vendor = "igorkll"
+	vendor = "opencomputers emulator"
 }
 
 local additionalDeviceInfo = {}
@@ -1648,6 +1648,8 @@ regComponent({
 	api = {
 		bind = {
 			callback = function(self, address, reset)
+				checkArg(1, address, "string")
+
 				if not componentList[address] then
 					return nil, "invalid address"
 				end
@@ -1658,7 +1660,7 @@ regComponent({
 				if reset == nil then
 					reset = true
 				end
-				checkArg(1, reset, "boolean")
+				checkArg(2, reset, "boolean")
 
 				if reset then
 					self.resX, self.resY = self.maxX, self.maxY
@@ -1763,7 +1765,7 @@ regComponent({
 				if vertical ~= nil then
 					checkArg(4, vertical, "boolean")
 				end
-				canvas_set(canvas, x, y, text, #text)
+				canvas_set(canvas, x, y, text, #text, vertical)
 				updateDisplay()
 				return true
 			end,

@@ -10,6 +10,7 @@ typedef uint32_t uchar;
 #define UCHAR_SPACE ((uchar)(' '))
 
 void font_init();
+char* font_ptrOffset(char* text, size_t offset);
 uchar font_toUChar(char* chr, size_t len);
 int font_ucharLen(uchar uchr);
 int font_len(char* text, int len);

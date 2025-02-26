@@ -84,7 +84,7 @@ void hal_filesystem_list(const char *path, void (*callback)(void* arg, const cha
 #define SOUND_MASTER_VOLUME 16
 #define SOUND_CHANNELS ((8 * 3) + 2)
 #define SOUND_FREQ 40000
-#define SOUND_OUTPUT 0
+#define SOUND_OUTPUT 0 //DAC CHANNEL
 
 typedef enum {
     hal_sound_square,

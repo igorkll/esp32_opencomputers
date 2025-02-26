@@ -276,7 +276,21 @@ void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 }
 
 void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len, bool vertical) {
-	if (x < 1 || y < 1 || x > canvas->sizeX || y > canvas->sizeY) return;
+	if (x > canvas->sizeX || y > canvas->sizeY) return;
+
+	if (vertical) {
+		if (x < 1) return;
+		if (y < 1) {
+			text = font_ptrOffset(text, -y + 1);
+			y = 1;
+		}
+	} else {
+		if (y < 1) return;
+		if (x < 1) {
+			text = font_ptrOffset(text, -x + 1);
+			x = 1;
+		}
+	}
 
 	x--;
 	y--;

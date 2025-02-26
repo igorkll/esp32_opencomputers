@@ -1,4 +1,4 @@
-# ESP32 - opencomputer emulator
+# ESP32 - opencomputers emulator
 * emulates opencomputers on esp32
 * the original opencomputers font
 * sound is supported
