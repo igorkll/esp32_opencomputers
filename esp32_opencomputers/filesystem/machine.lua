@@ -433,7 +433,6 @@ local function updateHardware()
 				tsState.b = 1
 				pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
 				tsState.f = true
-				sound_computer_beep(700, 0.05)
 			end
 			if not tsState then
 				oldTouchscreenStates[i] = {x = x, y = y, b = 0, t = uptime(), f = false}
