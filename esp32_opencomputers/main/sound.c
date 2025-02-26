@@ -61,8 +61,8 @@ void sound_computer_beepString(const char* text, size_t len) {
 // ---------------------------------------------- beep card
 
 typedef struct {
-	bool enable;
-	uint16_t freq
+	bool enabled;
+	uint16_t freq;
 	double deadline;
 } sound_beep;
 
@@ -87,11 +87,11 @@ void sound_beep_beep() {
 	currentBeeps_lock = true;
 	for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 		sound_beep* beep = &beeps[i];
-		if (!beep->enable) continue;
+		if (!beep->enabled) continue;
 		beep->deadline += hal_uptime();
 
 		for (size_t i2 = SOUND_BEEPCARD_CHANNELS - 1; i2 >= 0; i2--) {
-			if (!currentBeeps[i2].enable) {
+			if (!currentBeeps[i2].enabled) {
 				hal_sound_updateChannel(i2, (hal_sound_channel) {
 					.enabled = true,
 					.freq = beep->freq,
@@ -113,7 +113,7 @@ void sound_beep_beep() {
 uint8_t sound_beep_getBeepCount() {
 	uint8_t beepCount = 0;
 	for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
-		if (currentBeeps[i].enable) {
+		if (currentBeeps[i].enabled) {
 			beepCount++;
 		}
 	}
@@ -126,8 +126,8 @@ static void _beep_init(void* arg) {
 			double uptime = hal_uptime();
 			for (size_t i = 0; i < SOUND_BEEPCARD_CHANNELS; i++) {
 				sound_beep* beep = &currentBeeps[i]; 
-				if (beep->enable && uptime >= beep->deadline) {
-					beep->enable = false;
+				if (beep->enabled && uptime >= beep->deadline) {
+					beep->enabled = false;
 					hal_sound_updateChannel(i, (hal_sound_channel) {.enabled=false});
 				}
 			}

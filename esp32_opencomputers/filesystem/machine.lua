@@ -1969,9 +1969,45 @@ addComponent(gpuSelf, "gpu", gpuAddress)
 
 ---------------------------------------------------- beep component
 
-addComponent({
-	
-}, "beep", beepAddress)
+regComponent({
+	type = "beep",
+	slot = -1,
+	api = {
+		getBeepCount = {
+			callback = function(self)
+				return sound_beep_getBeepCount()
+			end,
+			direct = false,
+			doc = "function():number; returns the amount of beeps currently being played"
+		},
+		beep = {
+			callback = function(self, frequencyDurationTable)
+				for frequency, duration in pairs(frequencyDurationTable) do
+					if frequency < 20 or frequency > 2000 then
+						error("invalid frequency, must be in [20, 2000]", 2)
+					end
+				end
+
+				local failed = false
+				for frequency, duration in pairs(frequencyDurationTable) do
+					if not sound_beep_addBeep(math.floor(frequency + 0.5), duration) then
+						failed = true
+					end
+				end
+				sound_beep_beep()
+
+				if failed then
+					return false, "already too many sounds playing, maximum is 8"
+				end
+				return true
+			end,
+			direct = false,
+			doc = "function(frequencyDurationTable:table):boolean"
+		}
+	}
+})
+
+addComponent({}, "beep", beepAddress)
 
 ----------------------------------------------------
 

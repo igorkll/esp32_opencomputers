@@ -1,3 +1,6 @@
+#include <stdbool.h>
+#include <stdint.h>
+
 #define SOUND_CHANNEL_BEEP 0
 #define SOUND_CHANNEL_TAPE 1
 #define SOUND_CHANNEL_BEEPCARD 2

@@ -571,7 +571,7 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 static void _initFilesystem() {
 	static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 	esp_vfs_fat_mount_config_t storage_mount_config = {
-		.max_files = 4,
+		.max_files = 8,
 		.format_if_mount_failed = false,
 		.allocation_unit_size = CONFIG_WL_SECTOR_SIZE
 	};
