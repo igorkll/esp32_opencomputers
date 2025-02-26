@@ -264,7 +264,7 @@ static canvas_pos old_sizeX;
 static canvas_pos old_sizeY;
 static bool old_pixelPerfect;
 static hashmap* cache_rasterized = NULL;
-static bool pixelPerfect = ;
+static bool pixelPerfect = RENDER_PIXEL_PERFECT;
 
 typedef struct {
 	uchar chr;
@@ -300,7 +300,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas) {
 			charSizeY = 16;
 		}
 		if (charSizeX * canvas->sizeX > DISPLAY_WIDTH || charSizeY * canvas->sizeY > DISPLAY_HEIGHT) {
-			return hal_display_sendBuffer(canvas, false);
+			return hal_display_sendBuffer(canvas);
 		}
 	} else {
 		if (charSizeX < 1) charSizeX = 1;
