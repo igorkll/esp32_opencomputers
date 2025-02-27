@@ -320,16 +320,7 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 		} else {
 			index = i + x + (y * canvas->sizeX);
 		}
-		uint8_t llen;
-        if ((*text >= 0xC2) && (*text <= 0xDF)) {
-            llen = 2;
-        } else if ((*text >= 0xE0) && (*text <= 0xEF)) {
-            llen = 3;
-        } else if ((*text >= 0xF0) && (*text <= 0xF7)) {
-            llen = 4;
-        } else {
-            llen = 1;
-        }
+		uint8_t llen = font_charLen(*text);
 		canvas->chars[index] = font_toUChar(text, llen);
 		canvas->foregrounds[index] = canvas->foreground;
 		canvas->backgrounds[index] = canvas->background;

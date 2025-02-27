@@ -57,21 +57,23 @@ uchar font_toUChar(char* chr, size_t len) {
 	return out;
 }
 
-int font_ucharLen(uchar uchr) {
-	uint8_t* arr = (uint8_t*)(&uchr);
-	uint8_t byte1 = (uint8_t)arr[0];
-
-    if (byte1 <= 0x7F) {
+uint8_t font_charLen(char chr) {
+    if (chr <= 0x7F) {
         return 1;
-    } else if ((byte1 >= 0xC2) && (byte1 <= 0xDF)) {
+    } else if ((chr >= 0xC2) && (chr <= 0xDF)) {
         return 2;
-    } else if ((byte1 >= 0xE0) && (byte1 <= 0xEF)) {
+    } else if ((chr >= 0xE0) && (chr <= 0xEF)) {
 		return 3;
-    } else if ((byte1 >= 0xF0) && (byte1 <= 0xF7)) {
+    } else if ((chr >= 0xF0) && (chr <= 0xF7)) {
 		return 4;
     }
 
 	return 0;
+}
+
+uint8_t font_ucharLen(uchar uchr) {
+	char* arr = (char*)(&uchr);
+	return font_charLen(arr[0]);
 }
 
 int font_len(char* text, int len) {
