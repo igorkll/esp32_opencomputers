@@ -28,9 +28,9 @@ static hal_button* button_reboot;
 
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
-	canvas_setResolution(canvas, 50, 16);
-	canvas_setBackground(canvas, 0x0000ff, false);
-	canvas_setForeground(canvas, 0xffffff, false);
+	canvas_setResolution(canvas, BSOD_RESOLUTION_X, BSOD_RESOLUTION_Y);
+	canvas_setBackground(canvas, BSOD_COLOR_BG, false);
+	canvas_setForeground(canvas, BSOD_COLOR_TEXT, false);
 	canvas_fill(canvas, 1, 1, canvas->sizeX, canvas->sizeY, ' ');
 
 	size_t len = strlen(text);
@@ -45,8 +45,8 @@ static void bsod(canvas_t* canvas, const char* text) {
 		}
 	}
 
-	canvas_setBackground(canvas, 0xffffff, false);
-	canvas_setForeground(canvas, 0x0000ff, false);
+	canvas_setBackground(canvas, BSOD_COLOR_TITLE_BG, false);
+	canvas_setForeground(canvas, BSOD_COLOR_TITLE, false);
 	canvas_set(canvas, 1, 1, "Unrecoverable Error", 0, false);
 
 	sound_computer_beepString("--", 2);
@@ -187,6 +187,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_RETR(hal_uptimeM, (), LUA_RET_NUM);
 	LUA_BIND_RETR(hal_uptime, (), LUA_RET_NUM);
 	LUA_BIND_VOID(hal_delay, (LUA_ARG_INT));
+	LUA_BIND_VOID(hal_yield, ());
 	LUA_BIND_RETR(hal_freeMemory, (), LUA_RET_INT);
 	LUA_BIND_RETR(hal_totalMemory, (), LUA_RET_INT);
 
@@ -205,6 +206,7 @@ void _bg_task(void* arg) {
 }
 
 void _main() {
+	// ---- leds
 	#ifdef LEDS_POWER_PIN
 		led_power = hal_led_new(LEDS_POWER_PIN, LEDS_POWER_INVERT);
 	#else
@@ -225,6 +227,7 @@ void _main() {
 		led_hdd = hal_led_stub();
 	#endif
 
+	// ---- buttons
 	#ifdef BUTTON_WAKEUP_PIN
 		button_wakeup = hal_button_new(BUTTON_WAKEUP_PIN, BUTTON_WAKEUP_INVERT, BUTTON_WAKEUP_NEEDHOLD, BUTTON_WAKEUP_PULL);
 	#else
@@ -245,6 +248,7 @@ void _main() {
 		button_reboot = hal_button_stub();
 	#endif
 
+	// ---- init
 	hal_task(_bg_task, NULL);
 	sound_init();
 	canvas_t* canvas = canvas_create(50, 16, 1);
@@ -266,6 +270,7 @@ void _main() {
 		hal_powerlock_lock();
 		hal_led_disable(led_error);
 		hal_led_enable(led_power);
+		blackscreen(canvas);
 		hal_display_backlight(true);
 
 		while (true) {

@@ -4,7 +4,7 @@ local maxEepromCodeLen = 1024 * 32
 local maxEepromDataLen = 256
 local seconderyTouchTime = 1
 
-local debugMode = true
+local debugMode = false
 local debugMode_traceback = false
 
 local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
@@ -2041,6 +2041,7 @@ local function pullEvent(wait)
 		if #eventList > 0 then
 			return table.remove(eventList, 1)
 		end
+		hal_yield()
 	until computer_uptime() >= deadline
 	return {}
 end

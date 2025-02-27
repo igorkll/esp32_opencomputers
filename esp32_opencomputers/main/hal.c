@@ -929,7 +929,7 @@ void hal_led_blink(hal_led* led) {
 		vTaskDelete(led->task);
 		led->task = NULL;
 	}
-	xTaskCreate(_led_blink_task, NULL, 1024, led, tskIDLE_PRIORITY, led->task);
+	xTaskCreate(_led_blink_task, NULL, 1024, led, tskIDLE_PRIORITY, &led->task);
 }
 
 void hal_led_set(hal_led* led, uint8_t value) {
@@ -1022,7 +1022,7 @@ void hal_button_update(hal_button* button) {
 }
 
 bool hal_button_hasTriggered(hal_button* button) {
-	if (button->pin == -1) return;
+	if (button->pin == -1) return false;
 	hal_button_update(button);
 	
 	bool triggered = button->triggered;

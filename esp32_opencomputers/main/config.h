@@ -4,6 +4,15 @@
 #define RENDER_RESOLUTION_Y 25
 #define RENDER_PIXEL_PERFECT false
 
+// ---------------------------------------------- bsod settings
+
+#define BSOD_RESOLUTION_X 50
+#define BSOD_RESOLUTION_Y 16
+#define BSOD_COLOR_BG       0x0000ff
+#define BSOD_COLOR_TEXT     0xffffff
+#define BSOD_COLOR_TITLE_BG 0xffffff
+#define BSOD_COLOR_TITLE    0x0000ff
+
 // ---------------------------------------------- sound settings
 
 #define SOUND_DAC //it says that we are going to use DAC for audio output. please comment if you don't need audio output
