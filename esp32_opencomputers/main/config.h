@@ -24,14 +24,36 @@
 #define LEDS_LED_HDD_PIN 19 //optional
 #define LEDS_HDD_INVERT false
 
-// ---------------------------------------------- hardware settings
+// ---------------------------------------------- power settings
 
 //implements power self-locking. you can make a non-locking button that turns on the device and add a relay or transistor that supplies power and is opened by a control signal from the microcontroller. in this case, when calling computer.shutdown the power supply is physically cut off.
-#define HARDWARE_POWERLOCK 32 //optional
+#define POWER_POWERLOCK 32 //optional
 //select the operating modes of the self-locking power. what will be the value for a specific trigger condition. VOID (pin is hanging in the air) HIGH or LOW
 //if you have implemented the self-locking of the power supply in a different way (for example, using a relay), you can set other states for the locked and unlocked power supply
-#define HARDWARE_POWERLOCK_LOCKED_MODE   PL_MODE_LOW  //when turned on, the pin will be connected to the ground
-#define HARDWARE_POWERLOCK_UNLOCKED_MODE PL_MODE_VOID //when the power is turned off, the pin will hang in the air.
+#define POWER_POWERLOCK_LOCKED_MODE   PL_MODE_LOW  //when turned on, the pin will be connected to the ground
+#define POWER_POWERLOCK_UNLOCKED_MODE PL_MODE_VOID //when the power is turned off, the pin will hang in the air.
+
+//if this option is enabled, then when power is applied to the microcontroller, the emulated computer will be in the off state
+//this can be useful if your device does not have a self-locking power supply, but has a physical power switch and a power button
+//this option should not be used with a self-locking power supply, because when the emulated computer is turned off, the self-locking power supplies are in the UNLOCKED state
+#define POWER_DEFAULT_DISABLED true
+
+// ---------------------------------------------- button settings (you can assign multiple buttons to one pin if you want to combine them. for example, the wakeup and shutdown buttons)
+
+//starts the emulated computer if it was turned off, shutdown with an error, or has not yet been turned on (the POWER_DEFAULT_DISABLED option is enabled)
+#define BUTTON_WAKEUP_PIN 34
+#define BUTTON_WAKEUP_INVERT true
+#define BUTTON_WAKEUP_NEEDHOLD false
+
+//it turns off the computer when triggered
+#define BUTTON_SHUTDOWN_PIN 34
+#define BUTTON_SHUTDOWN_INVERT true
+#define BUTTON_SHUTDOWN_NEEDHOLD false
+
+//when triggered, it restarts the computer. it works when the computer is turned on or off with an error
+#define BUTTON_REBOOT_PIN 35
+#define BUTTON_REBOOT_INVERT true
+#define BUTTON_REBOOT_NEEDHOLD false
 
 // ---------------------------------------------- display settings
 

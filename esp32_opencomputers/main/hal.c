@@ -961,10 +961,10 @@ static void _ledInit() {
 // ---------------------------------------------- powerlock
 
 void _powerlock_setState(uint8_t value) {
-	#ifdef HARDWARE_POWERLOCK
+	#ifdef POWER_POWERLOCK
 		static bool hasOutput = false;
 		gpio_config_t io_conf = {};
-		io_conf.pin_bit_mask |= 1ULL << HARDWARE_POWERLOCK;
+		io_conf.pin_bit_mask |= 1ULL << POWER_POWERLOCK;
 		switch (value) {
 			case PL_MODE_LOW:
 				if (!hasOutput) {
@@ -972,7 +972,7 @@ void _powerlock_setState(uint8_t value) {
 					io_conf.mode = GPIO_MODE_OUTPUT;
 					gpio_config(&io_conf);
 				}
-				gpio_set_level(HARDWARE_POWERLOCK, false);
+				gpio_set_level(POWER_POWERLOCK, false);
 				break;
 
 			case PL_MODE_HIGH:
@@ -981,7 +981,7 @@ void _powerlock_setState(uint8_t value) {
 					io_conf.mode = GPIO_MODE_OUTPUT;
 					gpio_config(&io_conf);
 				}
-				gpio_set_level(HARDWARE_POWERLOCK, true);
+				gpio_set_level(POWER_POWERLOCK, true);
 				break;
 			
 			default:
@@ -997,14 +997,14 @@ void _powerlock_setState(uint8_t value) {
 } 
 
 void hal_powerlock_lock() {
-	#ifdef HARDWARE_POWERLOCK_LOCKED_MODE
-		_powerlock_setState(HARDWARE_POWERLOCK_LOCKED_MODE);
+	#ifdef POWER_POWERLOCK_LOCKED_MODE
+		_powerlock_setState(POWER_POWERLOCK_LOCKED_MODE);
 	#endif
 }
 
 void hal_powerlock_unlock() {
-	#ifdef HARDWARE_POWERLOCK_UNLOCKED_MODE
-		_powerlock_setState(HARDWARE_POWERLOCK_UNLOCKED_MODE);
+	#ifdef POWER_POWERLOCK_UNLOCKED_MODE
+		_powerlock_setState(POWER_POWERLOCK_UNLOCKED_MODE);
 	#endif
 }
 

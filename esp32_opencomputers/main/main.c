@@ -224,7 +224,16 @@ void _main() {
 	sound_init();
 	canvas_t* canvas = canvas_create(50, 16, 1);
 
+	bool disabled = POWER_DEFAULT_DISABLED;
+	if (disabled) {
+		hal_powerlock_unlock();
+	}
+
 	while (true) {
+		while (disabled) {
+			hal_delay(1000);
+		}
+
 		hal_powerlock_lock();
 		hal_led_disable(led_error);
 		hal_led_enable(led_power);
@@ -262,9 +271,7 @@ void _main() {
 			lua_close(lua);
 			hal_display_sendBuffer(canvas);
 		}
-		
-		while (true) {
-			hal_delay(1000);
-		}
+
+		disabled = true;
 	}
 }
