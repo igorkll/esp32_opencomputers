@@ -963,24 +963,34 @@ static void _ledInit() {
 
 void _powerlock_setState(uint8_t value) {
 	#ifdef HARDWARE_POWERLOCK
+		static bool hasOutput = false;
 		gpio_config_t io_conf = {};
 		io_conf.pin_bit_mask |= 1ULL << HARDWARE_POWERLOCK;
 		switch (value) {
 			case PL_MODE_LOW:
-				io_conf.mode = GPIO_MODE_OUTPUT;
-				gpio_config(&io_conf);
+				if (!hasOutput) {
+					hasOutput = true;
+					io_conf.mode = GPIO_MODE_OUTPUT;
+					gpio_config(&io_conf);
+				}
 				gpio_set_level(HARDWARE_POWERLOCK, false);
 				break;
 
 			case PL_MODE_HIGH:
-				io_conf.mode = GPIO_MODE_OUTPUT;
-				gpio_config(&io_conf);
+				if (!hasOutput) {
+					hasOutput = true;
+					io_conf.mode = GPIO_MODE_OUTPUT;
+					gpio_config(&io_conf);
+				}
 				gpio_set_level(HARDWARE_POWERLOCK, true);
 				break;
 			
 			default:
-				io_conf.mode = GPIO_MODE_DISABLE;
-				gpio_config(&io_conf);
+				if (hasOutput) {
+					hasOutput = false;
+					io_conf.mode = GPIO_MODE_DISABLE;
+					gpio_config(&io_conf);
+				}
 				break;
 		}
 		
