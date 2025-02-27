@@ -82,9 +82,11 @@ typedef struct {
 	bool empty;
     ledc_channel_t channel;
 	TaskHandle_t task;
+	uint8_t enableLight;
+	uint8_t disableLight;
 } hal_led;
 
-hal_led* hal_led_new(gpio_num_t pin, bool invert);
+hal_led* hal_led_new(gpio_num_t pin, bool invert, uint8_t enableLight, uint8_t disableLight);
 hal_led* hal_led_stub();
 void hal_led_blink(hal_led* led);
 void hal_led_set(hal_led* led, uint8_t value);

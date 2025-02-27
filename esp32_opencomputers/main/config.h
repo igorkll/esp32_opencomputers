@@ -35,14 +35,20 @@
 
 #define LEDS_POWER_PIN 18 //optional
 #define LEDS_POWER_INVERT false
+#define LEDS_POWER_LIGHT_ON  100 //0-255
+#define LEDS_POWER_LIGHT_OFF 0   //0-255
 
 #define LEDS_ERROR_ALIAS_POWER //the error LED can be assigned to the same physical LED as the power
 //#define LEDS_ERROR_PIN 17 //optional
 //#define LEDS_ERROR_INVERT false
 //#define LEDS_ERROR_NO_BLINK //uncomment if your LED is blinking on its own
+//#define LEDS_ERROR_LIGHT_ON  200 //0-255
+//#define LEDS_ERROR_LIGHT_OFF 0   //0-255
 
 #define LEDS_HDD_PIN 19 //optional
 #define LEDS_HDD_INVERT false
+#define LEDS_HDD_LIGHT_ON  24  //0-255
+#define LEDS_HDD_LIGHT_OFF 0   //0-255
 
 // ---------------------------------------------- power settings
 

@@ -118,7 +118,7 @@ static int _canvasGet_bind(lua_State* lua) {
 static bool hddled_needDisable = false;
 static double hddled_deadline = 0;
 static void _hdd_blink() {
-	hddled_deadline = hal_uptimeM() + 100;
+	hddled_deadline = hal_uptimeM() + 50;
 	hal_led_enable(led_hdd);
 	hddled_needDisable = true;
 }
@@ -236,7 +236,7 @@ static void shutdownAction(canvas_t* canvas, lua_State* lua, bool reboot) {
 void _main() {
 	// ---- leds
 	#ifdef LEDS_POWER_PIN
-		led_power = hal_led_new(LEDS_POWER_PIN, LEDS_POWER_INVERT);
+		led_power = hal_led_new(LEDS_POWER_PIN, LEDS_POWER_INVERT, LEDS_POWER_LIGHT_ON, LEDS_POWER_LIGHT_OFF);
 	#else
 		led_power = hal_led_stub();
 	#endif
@@ -244,13 +244,13 @@ void _main() {
 	#ifdef LEDS_ERROR_ALIAS_POWER
 		led_error = led_power;
 	#elif LEDS_ERROR_PIN
-		led_error = hal_led_new(LEDS_ERROR_PIN, LEDS_ERROR_INVERT);
+		led_error = hal_led_new(LEDS_ERROR_PIN, LEDS_ERROR_INVERT, LEDS_ERROR_LIGHT_ON, LEDS_ERROR_LIGHT_OFF);
 	#else
 		led_error = hal_led_stub();
 	#endif
 
 	#ifdef LEDS_HDD_PIN
-		led_hdd = hal_led_new(LEDS_HDD_PIN, LEDS_HDD_INVERT);
+		led_hdd = hal_led_new(LEDS_HDD_PIN, LEDS_HDD_INVERT, LEDS_HDD_LIGHT_ON, LEDS_HDD_LIGHT_OFF);
 	#else
 		led_hdd = hal_led_stub();
 	#endif

@@ -879,7 +879,7 @@ size_t hal_totalMemory() {
 
 static ledc_channel_t channel = 0;
 
-hal_led* hal_led_new(gpio_num_t pin, bool invert) {
+hal_led* hal_led_new(gpio_num_t pin, bool invert, uint8_t enableLight, uint8_t disableLight) {
 	hal_led* led = malloc(sizeof(hal_led));
 	
 	channel = channel + 1;
@@ -901,6 +901,8 @@ hal_led* hal_led_new(gpio_num_t pin, bool invert) {
 	led->empty = false;
 	led->channel = channel;
 	led->task = NULL;
+	led->enableLight = enableLight;
+	led->disableLight = disableLight;
 	return led;
 }
 
@@ -913,11 +915,11 @@ hal_led* hal_led_stub() {
 static void _led_blink_task(void* arg) {
 	hal_led* led = arg;
 	while (true) {
-		ledc_set_duty(HAL_LEDC_MODE, led->channel, 255);
+		ledc_set_duty(HAL_LEDC_MODE, led->channel, led->enableLight);
 		ledc_update_duty(HAL_LEDC_MODE, led->channel);
 		hal_delay(1000);
 
-		ledc_set_duty(HAL_LEDC_MODE, led->channel, 0);
+		ledc_set_duty(HAL_LEDC_MODE, led->channel, led->disableLight);
 		ledc_update_duty(HAL_LEDC_MODE, led->channel);
 		hal_delay(1000);
 	}
@@ -943,11 +945,11 @@ void hal_led_set(hal_led* led, uint8_t value) {
 }
 
 void hal_led_enable(hal_led* led) {
-	hal_led_set(led, 255);
+	hal_led_set(led, led->enableLight);
 }
 
 void hal_led_disable(hal_led* led) {
-	hal_led_set(led, 0);
+	hal_led_set(led, led->disableLight);
 }
 
 void hal_led_free(hal_led* led) {
