@@ -41,7 +41,7 @@
 //#define LEDS_ERROR_INVERT false
 //#define LEDS_ERROR_NO_BLINK //uncomment if your LED is blinking on its own
 
-#define LEDS_LED_HDD_PIN 19 //optional
+#define LEDS_HDD_PIN 19 //optional
 #define LEDS_HDD_INVERT false
 
 // ---------------------------------------------- power settings
