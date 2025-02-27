@@ -29,6 +29,7 @@
 //implements power self-locking. you can make a non-locking button that turns on the device and add a relay or transistor that supplies power and is opened by a control signal from the microcontroller. in this case, when calling computer.shutdown the power supply is physically cut off.
 #define HARDWARE_POWERLOCK 32 //optional
 //select the operating modes of the self-locking power. what will be the value for a specific trigger condition. VOID (pin is hanging in the air) HIGH or LOW
+//if you have implemented the self-locking of the power supply in a different way (for example, using a relay), you can set other states for the locked and unlocked power supply
 #define HARDWARE_POWERLOCK_LOCKED_MODE   PL_MODE_LOW  //when turned on, the pin will be connected to the ground
 #define HARDWARE_POWERLOCK_UNLOCKED_MODE PL_MODE_VOID //when the power is turned off, the pin will hang in the air.
 
@@ -71,8 +72,8 @@
 #define TOUCHSCREEN_WIDTH   320 //required parameters. the width and height of the touchscreen in pixels
 #define TOUCHSCREEN_HEIGHT  480
 
-#define TOUCHSCREEN_MUL_X 0 // if 0, it is counted as 1
-#define TOUCHSCREEN_MUL_Y 0
+#define TOUCHSCREEN_MUL_X 1
+#define TOUCHSCREEN_MUL_Y 1
 
 #define TOUCHSCREEN_FLIP_X    false
 #define TOUCHSCREEN_FLIP_Y    false

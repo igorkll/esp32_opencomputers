@@ -526,9 +526,8 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
         y = t;
     }
 
-    if (TOUCHSCREEN_MUL_X != 0) x *= TOUCHSCREEN_MUL_X;
-    if (TOUCHSCREEN_MUL_Y != 0) y *= TOUCHSCREEN_MUL_Y;
-
+    x *= TOUCHSCREEN_MUL_X;
+    y *= TOUCHSCREEN_MUL_Y;
     x += TOUCHSCREEN_OFFSET_X;
     y += TOUCHSCREEN_OFFSET_Y;
 
