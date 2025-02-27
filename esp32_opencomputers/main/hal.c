@@ -1011,13 +1011,15 @@ void hal_button_update(hal_button* button) {
 	if (button->state != button->oldState) {
 		button->changedTime = uptime;
 		button->oldState = button->state;
+		button->holdTriggered = false;
 		if (!button->needhold && button->state) {
 			button->triggered = true;
 		}
 	}
 	
-	if (button->needhold && uptime - button->changedTime > 1) {
+	if (!button->holdTriggered && button->needhold && button->state && uptime - button->changedTime > BUTTON_HOLDTIME) {
 		button->triggered = true;
+		button->holdTriggered = true;
 	}
 }
 

@@ -304,7 +304,7 @@ void _main() {
 
 		while (true) {
 			lua_State* lua = luaL_newstate();
-		    lua_sethook(lua, _lua_hook, LUA_MASKRET | LUA_MASKCOUNT, 100);
+		    lua_sethook(lua, _lua_hook, LUA_MASKCOUNT, 16);
 			rawSandbox(lua, canvas);
 			if (luaL_dofile(lua, "/storage/machine.lua")) {
 				char* err = lua_tostring(lua, -1);
@@ -314,7 +314,7 @@ void _main() {
 				} else if (strcmp(err, reboot_error) == 0) {
 					shutdownAction(canvas, lua, true);
 				} else {
-					HAL_LOGE("lua crashed: %s\n", err);
+					HAL_LOGE("%s\n", err);
 					bsod(canvas, err);
 					hal_led_disable(led_power);
 					#ifdef LEDS_ERROR_NO_BLINK

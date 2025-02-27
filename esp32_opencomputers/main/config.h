@@ -61,6 +61,7 @@
 // ---------------------------------------------- button settings (all buttons are optional, comment the define that you don't need)
 
 #define BUTTON_DEBOUNCE 100
+#define BUTTON_HOLDTIME 1000
 
 //starts the emulated computer if it was turned off, shutdown with an error, or has not yet been turned on (the POWER_DEFAULT_DISABLED option is enabled)
 //if you are using a self-locking power supply, then assemble the circuit so that this button also activates a transistor or relay to supply power to the microcontroller
@@ -79,7 +80,7 @@
 //when triggered, it restarts the computer. it works when the computer is turned on or off with an error
 #define BUTTON_REBOOT_PIN 35
 #define BUTTON_REBOOT_INVERT true
-#define BUTTON_REBOOT_NEEDHOLD false
+#define BUTTON_REBOOT_NEEDHOLD true
 #define BUTTON_REBOOT_PULL PULL_NONE
 
 // ---------------------------------------------- display settings

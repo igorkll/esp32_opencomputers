@@ -115,7 +115,7 @@ local function customPCall(_call, ...)
 	local err = tbl[2]
 	if type(err) == "string" then
 		for _, lerr in ipairs(tunnelErrors) do
-			if err:find(escapePattern(lerr)) then
+			if err:find(lerr) then
 				error(lerr, 0)
 			end
 		end
@@ -2102,9 +2102,12 @@ while true do
 	args = nil
 	if not result[1] then
 		local err = result[2]
-		if err:find(escapePattern(shutdownTrigger)) then
+		print(err)
+		if err:find(shutdownTrigger) then
+			print("S")
 			return false
-		elseif err:find(escapePattern(rebootTrigger)) then
+		elseif err:find(rebootTrigger) then
+			print("R")
 			return true
 		end
 		error(tostring(err) .. "\n" .. debug.traceback(thread), 0)
