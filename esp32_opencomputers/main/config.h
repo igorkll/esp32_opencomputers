@@ -16,8 +16,10 @@
 #define HARDWARE_LED_POWER_PIN 18
 #define HARDWARE_LED_POWER_INVERT false
 
-#define HARDWARE_LED_ERROR_PIN 18
-#define HARDWARE_LED_ERROR_INVERT false
+#define HARDWARE_LED_ERROR_ALIAS_POWER //the error LED can be assigned to the same physical LED as the power
+//#define HARDWARE_LED_ERROR_PIN 17
+//#define HARDWARE_LED_ERROR_INVERT false
+//#define HARDWARE_LED_ERROR_NO_BLINK //uncomment if your LED is blinking on its own
 
 #define HARDWARE_LED_HDD_PIN 19
 #define HARDWARE_LED_HDD_INVERT false

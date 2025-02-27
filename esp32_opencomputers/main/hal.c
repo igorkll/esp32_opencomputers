@@ -1,15 +1,10 @@
 #include <driver/spi_master.h>
 #include <esp_heap_caps.h>
-#include <driver/gpio.h>
 #include <esp_vfs.h>
 #include <esp_vfs_fat.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/event_groups.h>
 #include <driver/gptimer.h>
 #include <esp_timer.h>
 #include <esp_random.h>
-#include <driver/ledc.h>
 #include <esp_lcd_io_spi.h>
 #include <esp_lcd_panel_io.h>
 #include <string.h>
@@ -888,6 +883,7 @@ hal_led* hal_led_new(gpio_num_t pin, bool invert) {
 
 	led->empty = false;
 	led->channel = channel;
+	led->task = NULL;
 	return led;
 }
 
@@ -897,15 +893,34 @@ hal_led* hal_led_stub() {
 	return led;
 }
 
+static void _led_blink_task(void* arg) {
+	hal_led* led = arg;
+	while (true) {
+		ledc_set_duty(HAL_LEDC_MODE, led->channel, 255);
+		ledc_update_duty(HAL_LEDC_MODE, led->channel);
+		hal_delay(1000);
+
+		ledc_set_duty(HAL_LEDC_MODE, led->channel, 0);
+		ledc_update_duty(HAL_LEDC_MODE, led->channel);
+		hal_delay(1000);
+	}
+}
+
 void hal_led_blink(hal_led* led) {
 	if (led->empty) return;
-	ledc_set_fade_with_time(HAL_LEDC_MODE, led->channel, 255, 1000);
-	ledc_fade_start(HAL_LEDC_MODE, led->channel, LEDC_FADE_NO_WAIT);
+	if (led->task) {
+		vTaskDelete(led->task);
+		led->task = NULL;
+	}
+	xTaskCreate(_led_blink_task, NULL, 1024, led, tskIDLE_PRIORITY, led->task);
 }
 
 void hal_led_set(hal_led* led, uint8_t value) {
 	if (led->empty) return;
-	//ledc_fade_stop(HAL_LEDC_MODE, led->channel);
+	if (led->task) {
+		vTaskDelete(led->task);
+		led->task = NULL;
+	}
 	ledc_set_duty(HAL_LEDC_MODE, led->channel, value);
 	ledc_update_duty(HAL_LEDC_MODE, led->channel);
 }
@@ -932,8 +947,6 @@ static void _ledInit() {
         .clk_cfg = LEDC_AUTO_CLK
     };
     ledc_timer_config(&ledc_timer);
-
-	ledc_fade_func_install(0);
 }
 
 // ----------------------------------------------

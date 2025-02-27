@@ -1,6 +1,11 @@
 #pragma once
 #include <stdint.h>
 #include <esp_log.h>
+#include <driver/ledc.h>
+#include <driver/gpio.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/event_groups.h>
 #include "canvas.h"
 #include "config.h"
 
@@ -71,11 +76,12 @@ extern const char* HAL_LOG_TAG;
 // ---------------------------------------------- leds
 
 #define HAL_LEDC_TIMER LEDC_TIMER_0
-#define HAL_LEDC_MODE LEDC_HIGH_SPEED_MODE
+#define HAL_LEDC_MODE LEDC_LOW_SPEED_MODE
 
 typedef struct {
 	bool empty;
     ledc_channel_t channel;
+	TaskHandle_t task;
 } hal_led;
 
 hal_led* hal_led_new(gpio_num_t pin, bool invert);

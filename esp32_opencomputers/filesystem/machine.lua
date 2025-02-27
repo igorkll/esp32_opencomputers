@@ -1331,6 +1331,7 @@ regComponent({
 		size = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.ram then
 					local file = ramFsRead(self, path)
 					if file and file.isFile then
@@ -1350,6 +1351,7 @@ regComponent({
 		remove = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.readonly then
 					return false
 				end
@@ -1387,6 +1389,7 @@ regComponent({
 			callback = function(self, path, path2)
 				checkArg(1, path, "string")
 				checkArg(2, path2, "string")
+				led()
 				if self.readonly then
 					return false
 				end
@@ -1419,6 +1422,7 @@ regComponent({
 		lastModified = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				--led()
 				if self.ram then
 					local file = ramFsRead(self, path)
 					if file and file.isFile then
@@ -1435,6 +1439,7 @@ regComponent({
 		makeDirectory = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.readonly then
 					return false
 				end
@@ -1458,6 +1463,7 @@ regComponent({
 		exists = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.ram then
 					return not not ramFsRead(self, path)
 				else
@@ -1470,6 +1476,7 @@ regComponent({
 		isDirectory = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.ram then
 					local files = ramFsRead(self, path)
 					return files and not files.isFile
@@ -1483,6 +1490,7 @@ regComponent({
 		list = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
+				led()
 				if self.ram then
 					local files = ramFsRead(self, path)
 					if not files.isFile then
@@ -1509,6 +1517,8 @@ regComponent({
 				if mode ~= nil then
 					checkArg(2, mode, "string")
 				end
+				led()
+
 				mode = (mode or "r"):lower()
 				local binMode = mode:sub(2, 2) == "b"
 				local appendMode = mode:sub(1, 1) == "a"
@@ -1572,6 +1582,7 @@ regComponent({
 		close = {
 			callback = function(self, handle)
 				if fileHandles[handle] then
+					led()
 					fileHandles[handle].file:close()
 					fileHandles[handle] = nil
 					return true
@@ -1585,6 +1596,7 @@ regComponent({
 			callback = function(self, handle, count)
 				checkArg(2, count, "number")
 				if fileHandles[handle] then
+					led()
 					local handleBackend = fileHandles[handle]
 					if handleBackend.writeMode then
 						return nil, "bad file descriptor"
@@ -1606,6 +1618,7 @@ regComponent({
 			callback = function(self, handle, content)
 				checkArg(2, content, "string")
 				if fileHandles[handle] then
+					led()
 					local handleBackend = fileHandles[handle]
 					if not handleBackend.writeMode then
 						return nil, "bad file descriptor"
@@ -1627,6 +1640,7 @@ regComponent({
 				checkArg(2, whence, "string")
 				checkArg(3, offset, "number")
 				if fileHandles[handle] then
+					led()
 					return fileHandles[handle].file:seek(whence, offset)
 				end
 			end,
@@ -1645,8 +1659,8 @@ regComponent({
 })
 
 filesys.makeDirectory("/storage/tmpfs")
-addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024}, "filesystem", diskAddress)
-addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024}, "filesystem", tmpAddress)
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
+addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
 

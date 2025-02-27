@@ -111,6 +111,14 @@ static int _canvasGet_bind(lua_State* lua) {
 	return 7;
 }
 
+static bool hddled_needDisable = false;
+static double hddled_deadline = 0;
+static void _hdd_blink() {
+	hddled_deadline = hal_uptime() + 100;
+	hal_led_enable(led_hdd);
+	hddled_needDisable = true;
+}
+
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
@@ -176,6 +184,19 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(hal_delay, (LUA_ARG_INT));
 	LUA_BIND_RETR(hal_freeMemory, (), LUA_RET_INT);
 	LUA_BIND_RETR(hal_totalMemory, (), LUA_RET_INT);
+
+	// ---- other
+	LUA_BIND_VOID(_hdd_blink, ());
+}
+
+void _bg_task(void* arg) {
+	while (true) {
+		if (hddled_needDisable && hal_uptime() >= hddled_deadline) {
+			hal_led_disable(led_hdd);
+			hddled_needDisable = false;
+		}
+		hal_delay(50);
+	}
 }
 
 void _main() {
@@ -185,7 +206,9 @@ void _main() {
 		led_power = hal_led_stub();
 	#endif
 
-	#ifdef HARDWARE_LED_ERROR_PIN
+	#ifdef HARDWARE_LED_ERROR_ALIAS_POWER
+		led_error = led_power;
+	#elif HARDWARE_LED_ERROR_PIN
 		led_error = hal_led_new(HARDWARE_LED_ERROR_PIN, HARDWARE_LED_ERROR_INVERT);
 	#else
 		led_error = hal_led_stub();
@@ -197,12 +220,13 @@ void _main() {
 		led_hdd = hal_led_stub();
 	#endif
 
+	hal_task(_bg_task, NULL);
 	sound_init();
 	canvas_t* canvas = canvas_create(50, 16, 1);
 
 	while (true) {
-		hal_led_enable(led_power);
 		hal_led_disable(led_error);
+		hal_led_enable(led_power);
 		hal_display_backlight(true);
 
 		while (true) {
@@ -213,7 +237,11 @@ void _main() {
 				HAL_LOGE("lua crashed: %s\n", err);
 				bsod(canvas, err);
 				hal_led_disable(led_power);
-				hal_led_blink(led_error);
+				#ifdef HARDWARE_LED_ERROR_NO_BLINK
+					hal_led_enable(led_error);
+				#else
+					hal_led_blink(led_error);
+				#endif
 				lua_close(lua);
 				hal_display_sendBuffer(canvas);
 				break;

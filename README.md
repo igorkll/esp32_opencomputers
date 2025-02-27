@@ -8,6 +8,7 @@
 * supports unicode
 * the EEPROM size is 32 kilobytes
 * to simulate the right mouse button, use a long press at one point of the screen
+* computer case LEDs are supported
 
 ## warnings
 * the project can only be compiled by the GCC compiler
