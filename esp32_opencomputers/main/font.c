@@ -68,7 +68,7 @@ uint8_t font_charLen(char chr) {
 		return 4;
     }
 
-	return 0;
+	return 1;
 }
 
 uint8_t font_ucharLen(uchar uchr) {
@@ -80,19 +80,9 @@ int font_len(char* text, int len) {
 	int length = 0;
 
     while (*text || len > 0) {
-        if ((*text >= 0xC2) && (*text <= 0xDF)) {
-            text += 2;
-			len -= 2;
-        } else if ((*text >= 0xE0) && (*text <= 0xEF)) {
-            text += 3;
-			len -= 3;
-        } else if ((*text >= 0xF0) && (*text <= 0xF7)) {
-            text += 4;
-			len -= 4;
-        } else {
-            text += 1;
-			len -= 1;
-        }
+		uint8_t llen = font_charLen(*text);
+		text += llen;
+		len -= llen;
         length++;
     }
 
@@ -103,7 +93,7 @@ int font_findOffset(uchar uchr) {
 	char* chr = (char*)(&uchr);
 	int len = font_ucharLen(uchr);
 
-	uint8_t charcode[8];
+	uint8_t charcode[sizeof(uchar)];
 
 	if (len == 1) {
 		int offset = chr[0] * 19;
