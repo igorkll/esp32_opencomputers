@@ -108,6 +108,7 @@ typedef struct {
 
 	bool triggered;
 	bool holdTriggered;
+	bool unlocked;
 } hal_button;
 
 #define PULL_NONE 0

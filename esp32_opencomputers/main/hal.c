@@ -974,6 +974,13 @@ hal_button* hal_button_new(gpio_num_t pin, bool invert, bool needhold, uint8_t p
 	button->invert = invert;
 	button->needhold = needhold;
 	button->changedTime = hal_uptimeM();
+	button->rawChangedTime = button->changedTime;
+	button->unlocked = false;
+	button->triggered = false;
+	button->holdTriggered = false;
+	button->rawstate = false;
+	button->state = false;
+	button->oldState = false;
 
 	gpio_config_t io_conf = {};
 	io_conf.pin_bit_mask |= 1ULL << pin;
@@ -1004,8 +1011,13 @@ void hal_button_update(hal_button* button) {
 	}
 
 	if (uptime - button->rawChangedTime > BUTTON_DEBOUNCE) {
+		if (!rawstate) {
+			button->unlocked = true;
+		}
 		button->rawChangedTime = uptime;
-		button->state = button->rawstate;
+		if (button->unlocked) {
+			button->state = button->rawstate;
+		}
 	}
 
 	if (button->state != button->oldState) {

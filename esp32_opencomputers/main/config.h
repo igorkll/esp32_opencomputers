@@ -56,7 +56,7 @@
 //if this option is enabled, then when power is applied to the microcontroller, the emulated computer will be in the off state
 //this can be useful if your device does not have a self-locking power supply, but has a physical power switch and a power button
 //this option should not be used with a self-locking power supply, because when the emulated computer is turned off, the self-locking power supplies are in the UNLOCKED state
-#define POWER_DEFAULT_DISABLED true
+#define POWER_DEFAULT_DISABLED false
 
 // ---------------------------------------------- button settings (all buttons are optional, comment the define that you don't need)
 
