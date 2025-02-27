@@ -959,6 +959,46 @@ static void _ledInit() {
     ledc_timer_config(&ledc_timer);
 }
 
+// ---------------------------------------------- powerlock
+
+void _powerlock_setState(uint8_t value) {
+	#ifdef HARDWARE_POWERLOCK
+		gpio_config_t io_conf = {};
+		io_conf.pin_bit_mask |= 1ULL << HARDWARE_POWERLOCK;
+		switch (value) {
+			case PL_MODE_LOW:
+				io_conf.mode = GPIO_MODE_OUTPUT;
+				gpio_config(&io_conf);
+				gpio_set_level(HARDWARE_POWERLOCK, false);
+				break;
+
+			case PL_MODE_HIGH:
+				io_conf.mode = GPIO_MODE_OUTPUT;
+				gpio_config(&io_conf);
+				gpio_set_level(HARDWARE_POWERLOCK, true);
+				break;
+			
+			default:
+				io_conf.mode = GPIO_MODE_DISABLE;
+				gpio_config(&io_conf);
+				break;
+		}
+		
+	#endif
+} 
+
+void hal_powerlock_lock() {
+	#ifdef HARDWARE_POWERLOCK_LOCKED_MODE
+		_powerlock_setState(HARDWARE_POWERLOCK_LOCKED_MODE);
+	#endif
+}
+
+void hal_powerlock_unlock() {
+	#ifdef HARDWARE_POWERLOCK_UNLOCKED_MODE
+		_powerlock_setState(HARDWARE_POWERLOCK_UNLOCKED_MODE);
+	#endif
+}
+
 // ----------------------------------------------
 
 void app_main() {

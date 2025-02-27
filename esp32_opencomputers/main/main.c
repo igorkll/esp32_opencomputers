@@ -200,22 +200,22 @@ void _bg_task(void* arg) {
 }
 
 void _main() {
-	#ifdef HARDWARE_LED_POWER_PIN
-		led_power = hal_led_new(HARDWARE_LED_POWER_PIN, HARDWARE_LED_POWER_INVERT);
+	#ifdef LEDS_POWER_PIN
+		led_power = hal_led_new(LEDS_POWER_PIN, LEDS_POWER_INVERT);
 	#else
 		led_power = hal_led_stub();
 	#endif
 
-	#ifdef HARDWARE_LED_ERROR_ALIAS_POWER
+	#ifdef LEDS_ERROR_ALIAS_POWER
 		led_error = led_power;
-	#elif HARDWARE_LED_ERROR_PIN
-		led_error = hal_led_new(HARDWARE_LED_ERROR_PIN, HARDWARE_LED_ERROR_INVERT);
+	#elif LEDS_ERROR_PIN
+		led_error = hal_led_new(LEDS_ERROR_PIN, LEDS_ERROR_INVERT);
 	#else
 		led_error = hal_led_stub();
 	#endif
 
-	#ifdef HARDWARE_LED_HDD_PIN
-		led_hdd = hal_led_new(HARDWARE_LED_HDD_PIN, HARDWARE_LED_HDD_INVERT);
+	#ifdef LEDS_HDD_PIN
+		led_hdd = hal_led_new(LEDS_HDD_PIN, LEDS_HDD_INVERT);
 	#else
 		led_hdd = hal_led_stub();
 	#endif
@@ -225,6 +225,7 @@ void _main() {
 	canvas_t* canvas = canvas_create(50, 16, 1);
 
 	while (true) {
+		hal_powerlock_lock();
 		hal_led_disable(led_error);
 		hal_led_enable(led_power);
 		hal_display_backlight(true);
@@ -237,7 +238,7 @@ void _main() {
 				HAL_LOGE("lua crashed: %s\n", err);
 				bsod(canvas, err);
 				hal_led_disable(led_power);
-				#ifdef HARDWARE_LED_ERROR_NO_BLINK
+				#ifdef LEDS_ERROR_NO_BLINK
 					hal_led_enable(led_error);
 				#else
 					hal_led_blink(led_error);
@@ -254,6 +255,7 @@ void _main() {
 					hal_display_backlight(false);
 					lua_close(lua);
 					hal_display_sendBuffer(canvas);
+					hal_powerlock_unlock();
 					break;
 				}
 			}

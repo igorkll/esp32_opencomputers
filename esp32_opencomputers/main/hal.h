@@ -9,6 +9,10 @@
 #include "canvas.h"
 #include "config.h"
 
+#define PL_MODE_LOW  0
+#define PL_MODE_HIGH 1
+#define PL_MODE_VOID 2
+
 // ---------------------------------------------- display
 
 typedef struct {
@@ -91,6 +95,11 @@ void hal_led_set(hal_led* led, uint8_t value);
 void hal_led_enable(hal_led* led);
 void hal_led_disable(hal_led* led);
 void hal_led_free(hal_led* led);
+
+// ---------------------------------------------- powerlock
+
+void hal_powerlock_lock();
+void hal_powerlock_unlock();
 
 // ---------------------------------------------- other
 

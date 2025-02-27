@@ -11,20 +11,28 @@
 #define SOUND_FREQ 40000 //how often will the hardware timer responsible for sound generation work
 #define SOUND_OUTPUT 0 //DAC CHANNEL
 
-// ---------------------------------------------- hardware leds settings (all parameters are optional, remove the define that you don't need)
+// ---------------------------------------------- leds settings (all leds are optional, comment the define that you don't need)
 
-#define HARDWARE_LED_POWER_PIN 18
-#define HARDWARE_LED_POWER_INVERT false
+#define LEDS_POWER_PIN 18 //optional
+#define LEDS_POWER_INVERT false
 
-#define HARDWARE_LED_ERROR_ALIAS_POWER //the error LED can be assigned to the same physical LED as the power
-//#define HARDWARE_LED_ERROR_PIN 17
-//#define HARDWARE_LED_ERROR_INVERT false
-//#define HARDWARE_LED_ERROR_NO_BLINK //uncomment if your LED is blinking on its own
+#define LEDS_ERROR_ALIAS_POWER //the error LED can be assigned to the same physical LED as the power
+//#define LEDS_ERROR_PIN 17 //optional
+//#define LEDS_ERROR_INVERT false
+//#define LEDS_ERROR_NO_BLINK //uncomment if your LED is blinking on its own
 
-#define HARDWARE_LED_HDD_PIN 19
-#define HARDWARE_LED_HDD_INVERT false
+#define LEDS_LED_HDD_PIN 19 //optional
+#define LEDS_HDD_INVERT false
 
-// ---------------------------------------------- hardware display settings
+// ---------------------------------------------- hardware settings
+
+//implements power self-locking. you can make a non-locking button that turns on the device and add a relay or transistor that supplies power and is opened by a control signal from the microcontroller. in this case, when calling computer.shutdown the power supply is physically cut off.
+#define HARDWARE_POWERLOCK 32 //optional
+//select the operating modes of the self-locking power. what will be the value for a specific trigger condition. VOID (pin is hanging in the air) HIGH or LOW
+#define HARDWARE_POWERLOCK_LOCKED_MODE   PL_MODE_LOW  //when turned on, the pin will be connected to the ground
+#define HARDWARE_POWERLOCK_UNLOCKED_MODE PL_MODE_VOID //when the power is turned off, the pin will hang in the air.
+
+// ---------------------------------------------- display settings
 
 #define DISPLAY_FREQ 80000000
 #define DISPLAY_HOST SPI2_HOST
@@ -51,7 +59,7 @@
 #define DISPLAY_OFFSET_X  0
 #define DISPLAY_OFFSET_Y  0
 
-// ---------------------------------------------- hardware touchscreen settings
+// ---------------------------------------------- touchscreen settings
 
 #define TOUCHSCREEN_FT6336U
 #define TOUCHSCREEN_SDA   5
