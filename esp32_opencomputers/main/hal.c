@@ -850,8 +850,16 @@ void hal_delay(uint32_t milliseconds) {
 	vTaskDelay(ticks);
 }
 
+void hal_yield() {
+	vTaskDelay(1);
+}
+
+double hal_uptimeM() {
+	return esp_timer_get_time() / 1000.0;
+}
+
 double hal_uptime() {
-	return esp_timer_get_time() / 1000.0 / 1000.0;
+	return hal_uptimeM() / 1000.0;
 }
 
 uint32_t hal_random() {
@@ -956,6 +964,74 @@ static void _ledInit() {
         .clk_cfg = LEDC_AUTO_CLK
     };
     ledc_timer_config(&ledc_timer);
+}
+
+// ---------------------------------------------- buttons
+
+hal_button* hal_button_new(gpio_num_t pin, bool invert, bool needhold, uint8_t pull) {
+	hal_button* button = malloc(sizeof(hal_button));
+	button->pin = pin;
+	button->invert = invert;
+	button->needhold = needhold;
+	button->changedTime = hal_uptimeM();
+
+	gpio_config_t io_conf = {};
+	io_conf.pin_bit_mask |= 1ULL << pin;
+	io_conf.mode = GPIO_MODE_INPUT;
+	io_conf.pull_down_en = pull == PULL_DOWN ? GPIO_PULLDOWN_ENABLE : GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = pull == PULL_UP ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE;
+	gpio_config(&io_conf);
+
+	return button;
+}
+
+hal_button* hal_button_stub() {
+	hal_button* button = malloc(sizeof(hal_button));
+	button->pin = -1;
+	return button;
+}
+
+void hal_button_update(hal_button* button) {
+	if (button->pin == -1) return;
+
+	bool rawstate = gpio_get_level(button->pin);
+	if (button->invert) rawstate = !rawstate;
+
+	double uptime = hal_uptimeM();
+	if (rawstate != button->rawstate) {
+		button->rawChangedTime = uptime;
+		button->rawstate = rawstate;
+	}
+
+	if (uptime - button->rawChangedTime > BUTTON_DEBOUNCE) {
+		button->rawChangedTime = uptime;
+		button->state = button->rawstate;
+	}
+
+	if (button->state != button->oldState) {
+		button->changedTime = uptime;
+		button->oldState = button->state;
+		if (!button->needhold && button->state) {
+			button->triggered = true;
+		}
+	}
+	
+	if (button->needhold && uptime - button->changedTime > 1) {
+		button->triggered = true;
+	}
+}
+
+bool hal_button_hasTriggered(hal_button* button) {
+	if (button->pin == -1) return;
+	hal_button_update(button);
+	
+	bool triggered = button->triggered;
+	button->triggered = false;
+	return triggered;
+}
+
+void hal_button_free(hal_button* button) {
+	free(button);
 }
 
 // ---------------------------------------------- powerlock

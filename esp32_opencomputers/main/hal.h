@@ -9,10 +9,6 @@
 #include "canvas.h"
 #include "config.h"
 
-#define PL_MODE_LOW  0
-#define PL_MODE_HIGH 1
-#define PL_MODE_VOID 2
-
 // ---------------------------------------------- display
 
 typedef struct {
@@ -96,7 +92,36 @@ void hal_led_enable(hal_led* led);
 void hal_led_disable(hal_led* led);
 void hal_led_free(hal_led* led);
 
+// ---------------------------------------------- buttons
+
+typedef struct {
+	gpio_num_t pin;
+	bool invert;
+	bool needhold;
+	
+	double rawChangedTime;
+	bool rawstate;
+
+	double changedTime;
+	bool state;
+	bool oldState;
+} hal_button;
+
+#define PULL_NONE 0
+#define PULL_UP   1
+#define PULL_DOWN 2
+
+hal_button* hal_button_new(gpio_num_t pin, bool invert, bool needhold, uint8_t pull);
+hal_button* hal_button_stub();
+void hal_button_update(hal_button* button);
+bool hal_button_hasTriggered(hal_button* button);
+void hal_button_free(hal_button* button);
+
 // ---------------------------------------------- powerlock
+
+#define PL_MODE_LOW  0
+#define PL_MODE_HIGH 1
+#define PL_MODE_VOID 2
 
 void hal_powerlock_lock();
 void hal_powerlock_unlock();
@@ -105,6 +130,8 @@ void hal_powerlock_unlock();
 
 void hal_task(void(*func)(void* arg), void* arg);
 void hal_delay(uint32_t milliseconds);
+void hal_yield();
+double hal_uptimeM();
 double hal_uptime();
 uint32_t hal_random();
 size_t hal_freeMemory();

@@ -38,22 +38,29 @@
 //this option should not be used with a self-locking power supply, because when the emulated computer is turned off, the self-locking power supplies are in the UNLOCKED state
 #define POWER_DEFAULT_DISABLED true
 
-// ---------------------------------------------- button settings (you can assign multiple buttons to one pin if you want to combine them. for example, the wakeup and shutdown buttons)
+// ---------------------------------------------- button settings
+
+#define BUTTON_DEBOUNCE 100
 
 //starts the emulated computer if it was turned off, shutdown with an error, or has not yet been turned on (the POWER_DEFAULT_DISABLED option is enabled)
+//if you are using a self-locking power supply, then assemble the circuit so that this button also activates a transistor or relay to supply power to the microcontroller
 #define BUTTON_WAKEUP_PIN 34
 #define BUTTON_WAKEUP_INVERT true
 #define BUTTON_WAKEUP_NEEDHOLD false
+#define BUTTON_WAKEUP_PULL PULL_NONE
 
 //it turns off the computer when triggered
-#define BUTTON_SHUTDOWN_PIN 34
-#define BUTTON_SHUTDOWN_INVERT true
-#define BUTTON_SHUTDOWN_NEEDHOLD false
+#define BUTTON_SHUTDOWN_ALIAS_WAKEUP
+//#define BUTTON_SHUTDOWN_PIN 34
+//#define BUTTON_SHUTDOWN_INVERT true
+//#define BUTTON_SHUTDOWN_NEEDHOLD false
+//#define BUTTON_SHUTDOWN_PULL PULL_NONE
 
 //when triggered, it restarts the computer. it works when the computer is turned on or off with an error
 #define BUTTON_REBOOT_PIN 35
 #define BUTTON_REBOOT_INVERT true
 #define BUTTON_REBOOT_NEEDHOLD false
+#define BUTTON_REBOOT_PULL PULL_NONE
 
 // ---------------------------------------------- display settings
 

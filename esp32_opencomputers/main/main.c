@@ -22,6 +22,10 @@ static hal_led* led_power;
 static hal_led* led_error;
 static hal_led* led_hdd;
 
+static hal_button* button_wakeup;
+static hal_button* button_shutdown;
+static hal_button* button_reboot;
+
 static void bsod(canvas_t* canvas, const char* text) {
 	canvas_setDepth(canvas, 8);
 	canvas_setResolution(canvas, 50, 16);
@@ -114,7 +118,7 @@ static int _canvasGet_bind(lua_State* lua) {
 static bool hddled_needDisable = false;
 static double hddled_deadline = 0;
 static void _hdd_blink() {
-	hddled_deadline = hal_uptime() + 0.05;
+	hddled_deadline = hal_uptimeM() + 100;
 	hal_led_enable(led_hdd);
 	hddled_needDisable = true;
 }
@@ -180,6 +184,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_RETR(sound_beep_getBeepCount, (), LUA_RET_INT);
 
 	// ---- hal
+	LUA_BIND_RETR(hal_uptimeM, (), LUA_RET_NUM);
 	LUA_BIND_RETR(hal_uptime, (), LUA_RET_NUM);
 	LUA_BIND_VOID(hal_delay, (LUA_ARG_INT));
 	LUA_BIND_RETR(hal_freeMemory, (), LUA_RET_INT);
@@ -191,11 +196,11 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 
 void _bg_task(void* arg) {
 	while (true) {
-		if (hddled_needDisable && hal_uptime() >= hddled_deadline) {
+		if (hddled_needDisable && hal_uptimeM() >= hddled_deadline) {
 			hal_led_disable(led_hdd);
 			hddled_needDisable = false;
 		}
-		hal_delay(50);
+		hal_yield();
 	}
 }
 
@@ -220,20 +225,44 @@ void _main() {
 		led_hdd = hal_led_stub();
 	#endif
 
+	#ifdef BUTTON_WAKEUP_PIN
+		button_wakeup = hal_button_new(BUTTON_WAKEUP_PIN, BUTTON_WAKEUP_INVERT, BUTTON_WAKEUP_NEEDHOLD, BUTTON_WAKEUP_PULL);
+	#else
+		button_wakeup = hal_button_stub();
+	#endif
+
+	#ifdef BUTTON_SHUTDOWN_ALIAS_WAKEUP
+		button_shutdown = button_wakeup;
+	#elif BUTTON_SHUTDOWN_PIN
+		button_shutdown = hal_button_new(BUTTON_SHUTDOWN_PIN, BUTTON_SHUTDOWN_INVERT, BUTTON_SHUTDOWN_NEEDHOLD, BUTTON_SHUTDOWN_PULL);
+	#else
+		button_shutdown = hal_button_stub();
+	#endif
+
+	#ifdef BUTTON_REBOOT_PIN
+		button_reboot = hal_button_new(BUTTON_REBOOT_PIN, BUTTON_REBOOT_INVERT, BUTTON_REBOOT_NEEDHOLD, BUTTON_REBOOT_PULL);
+	#else
+		button_reboot = hal_button_stub();
+	#endif
+
 	hal_task(_bg_task, NULL);
 	sound_init();
 	canvas_t* canvas = canvas_create(50, 16, 1);
 
 	bool disabled = POWER_DEFAULT_DISABLED;
+	bool crashed = false;
 	if (disabled) {
 		hal_powerlock_unlock();
 	}
 
 	while (true) {
 		while (disabled) {
-			hal_delay(1000);
+			if (hal_button_hasTriggered(button_wakeup)) break;
+			if (crashed && hal_button_hasTriggered(button_reboot)) break;
+			hal_yield();
 		}
 
+		crashed = false;
 		hal_powerlock_lock();
 		hal_led_disable(led_error);
 		hal_led_enable(led_power);
@@ -254,6 +283,7 @@ void _main() {
 				#endif
 				lua_close(lua);
 				hal_display_sendBuffer(canvas);
+				crashed = true;
 				break;
 			} else {
 				bool reboot = lua_toboolean(lua, -1);
