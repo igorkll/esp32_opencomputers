@@ -1331,7 +1331,7 @@ regComponent({
 		size = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.ram then
 					local file = ramFsRead(self, path)
 					if file and file.isFile then
@@ -1351,7 +1351,7 @@ regComponent({
 		remove = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.readonly then
 					return false
 				end
@@ -1389,7 +1389,7 @@ regComponent({
 			callback = function(self, path, path2)
 				checkArg(1, path, "string")
 				checkArg(2, path2, "string")
-				led()
+				self.led()
 				if self.readonly then
 					return false
 				end
@@ -1422,7 +1422,7 @@ regComponent({
 		lastModified = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				--led()
+				--self.led()
 				if self.ram then
 					local file = ramFsRead(self, path)
 					if file and file.isFile then
@@ -1439,7 +1439,7 @@ regComponent({
 		makeDirectory = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.readonly then
 					return false
 				end
@@ -1463,7 +1463,7 @@ regComponent({
 		exists = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.ram then
 					return not not ramFsRead(self, path)
 				else
@@ -1476,7 +1476,7 @@ regComponent({
 		isDirectory = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.ram then
 					local files = ramFsRead(self, path)
 					return files and not files.isFile
@@ -1490,7 +1490,7 @@ regComponent({
 		list = {
 			callback = function(self, path)
 				checkArg(1, path, "string")
-				led()
+				self.led()
 				if self.ram then
 					local files = ramFsRead(self, path)
 					if not files.isFile then
@@ -1517,7 +1517,7 @@ regComponent({
 				if mode ~= nil then
 					checkArg(2, mode, "string")
 				end
-				led()
+				self.led()
 
 				mode = (mode or "r"):lower()
 				local binMode = mode:sub(2, 2) == "b"
@@ -1582,7 +1582,7 @@ regComponent({
 		close = {
 			callback = function(self, handle)
 				if fileHandles[handle] then
-					led()
+					self.led()
 					fileHandles[handle].file:close()
 					fileHandles[handle] = nil
 					return true
@@ -1596,7 +1596,7 @@ regComponent({
 			callback = function(self, handle, count)
 				checkArg(2, count, "number")
 				if fileHandles[handle] then
-					led()
+					self.led()
 					local handleBackend = fileHandles[handle]
 					if handleBackend.writeMode then
 						return nil, "bad file descriptor"
@@ -1618,7 +1618,7 @@ regComponent({
 			callback = function(self, handle, content)
 				checkArg(2, content, "string")
 				if fileHandles[handle] then
-					led()
+					self.led()
 					local handleBackend = fileHandles[handle]
 					if not handleBackend.writeMode then
 						return nil, "bad file descriptor"
@@ -1640,7 +1640,7 @@ regComponent({
 				checkArg(2, whence, "string")
 				checkArg(3, offset, "number")
 				if fileHandles[handle] then
-					led()
+					self.led()
 					return fileHandles[handle].file:seek(whence, offset)
 				end
 			end,

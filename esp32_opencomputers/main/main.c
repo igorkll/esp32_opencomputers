@@ -114,7 +114,7 @@ static int _canvasGet_bind(lua_State* lua) {
 static bool hddled_needDisable = false;
 static double hddled_deadline = 0;
 static void _hdd_blink() {
-	hddled_deadline = hal_uptime() + 100;
+	hddled_deadline = hal_uptime() + 0.05;
 	hal_led_enable(led_hdd);
 	hddled_needDisable = true;
 }
