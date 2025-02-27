@@ -209,8 +209,8 @@ static void _bg_task(void* arg) {
 	}
 }
 
-static char* shutdown_error = "7dcb1fb3-dc81-4b32-9f63-cb58536c7bd4";
-static char* reboot_error = "9bb7973d-b421-46b1-b656-cc51d32f0b85";
+static char* shutdown_error = "7dcb1fb3";
+static char* reboot_error = "9bb7973d";
 static void _lua_hook(lua_State *L) {
 	if (hal_button_hasTriggered(button_shutdown)) {
 		lua_pushstring(L, shutdown_error);

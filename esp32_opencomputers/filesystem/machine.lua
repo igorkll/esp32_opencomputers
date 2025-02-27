@@ -18,8 +18,8 @@ local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
 
 local screenSelf, gpuSelf
 
-local shutdownTrigger = "7dcb1fb3-dc81-4b32-9f63-cb58536c7bd4"
-local rebootTrigger = "9bb7973d-b421-46b1-b656-cc51d32f0b85"
+local shutdownTrigger = "7dcb1fb3"
+local rebootTrigger = "9bb7973d"
 local tunnelErrors = {
 	shutdownTrigger,
 	rebootTrigger
@@ -2102,13 +2102,12 @@ while true do
 	args = nil
 	if not result[1] then
 		local err = result[2]
-		print(err)
-		if err:find(shutdownTrigger) then
-			print("S")
-			return false
-		elseif err:find(rebootTrigger) then
-			print("R")
-			return true
+		if type(err) == "string" then
+			if err:find(shutdownTrigger) then
+				return false
+			elseif err:find(rebootTrigger) then
+				return true
+			end
 		end
 		error(tostring(err) .. "\n" .. debug.traceback(thread), 0)
 	elseif coroutine.status(thread) == "dead" then
