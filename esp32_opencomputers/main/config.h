@@ -4,6 +4,17 @@
 #define RENDER_RESOLUTION_Y 25
 #define RENDER_PIXEL_PERFECT false
 
+// ---------------------------------------------- control settings
+
+//allows you to simulate right-click when long-pressing on the touchscreen
+#define CONTROL_SECONDARY_PRESS_ON_LONG_TOUCH_TIME 1 //optional
+
+// ---------------------------------------------- environment settings
+
+#define ENV_EEPROM_SIZE     32 * 1024
+#define ENV_EEPROM_DATASIZE 4 * 1024
+#define ENV_EEPROM_READONLY true
+
 // ---------------------------------------------- bsod settings
 
 #define BSOD_RESOLUTION_X 50
@@ -47,7 +58,7 @@
 //this option should not be used with a self-locking power supply, because when the emulated computer is turned off, the self-locking power supplies are in the UNLOCKED state
 #define POWER_DEFAULT_DISABLED true
 
-// ---------------------------------------------- button settings
+// ---------------------------------------------- button settings (all buttons are optional, comment the define that you don't need)
 
 #define BUTTON_DEBOUNCE 100
 

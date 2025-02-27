@@ -1,8 +1,8 @@
 local resolutionX = RENDER_RESOLUTION_X
 local resolutionY = RENDER_RESOLUTION_Y
-local maxEepromCodeLen = 1024 * 32
-local maxEepromDataLen = 256
-local seconderyTouchTime = 1
+local maxEepromCodeLen = ENV_EEPROM_SIZE
+local maxEepromDataLen = ENV_EEPROM_DATASIZE
+local secondaryTouchTime = CONTROL_SECONDARY_PRESS_ON_LONG_TOUCH_TIME
 
 local debugMode = false
 local debugMode_traceback = false
@@ -17,6 +17,13 @@ local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
 
 local screenSelf, gpuSelf
+
+local shutdownTrigger = "7dcb1fb3-dc81-4b32-9f63-cb58536c7bd4"
+local rebootTrigger = "9bb7973d-b421-46b1-b656-cc51d32f0b85"
+local tunnelErrors = {
+	shutdownTrigger,
+	rebootTrigger
+}
 
 math.randomseed(_defaultRandomSeed)
 package.path = "/storage/?.lua"
@@ -103,6 +110,19 @@ local function simplifyFraction(numerator, denominator)
     return numerator / divisor, denominator / divisor
 end
 
+local function customPCall(_call, ...)
+	local tbl = {_call(...)}
+	local err = tbl[2]
+	if type(err) == "string" then
+		for _, lerr in ipairs(tunnelErrors) do
+			if err:find(escapePattern(lerr)) then
+				error(lerr, 0)
+			end
+		end
+	end
+	return table.unpack(tbl)
+end
+
 local sandbox, libcomputer, libunicode, libcomponent
 sandbox = {
 	_VERSION = _VERSION,
@@ -124,8 +144,12 @@ sandbox = {
 	end,
 	next = next,
 	pairs = pairs,
-	pcall = pcall,
-	xpcall = xpcall,
+	pcall = function(...)
+		return customPCall(pcall, ...)
+	end,
+	xpcall = function(...)
+		return customPCall(xpcall, ...)
+	end,
 	rawequal = rawequal,
 	rawget = rawget,
 	rawlen = rawlen,
@@ -433,13 +457,17 @@ local function updateHardware()
 		if i <= touchCount then
 			local x, y = hal_touchscreen_getPoint(i - 1)
 			x, y = convertPos(x, y)
-			if tsState and not tsState.f and uptime() - tsState.t >= seconderyTouchTime then
+			if secondaryTouchTime and tsState and not tsState.f and uptime() - tsState.t >= secondaryTouchTime then
 				tsState.b = 1
 				pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
 				tsState.f = true
 			end
 			if not tsState then
-				oldTouchscreenStates[i] = {x = x, y = y, b = 0, t = uptime(), f = false}
+				tsState = {x = x, y = y, b = 0, t = uptime(), f = not secondaryTouchTime}
+				oldTouchscreenStates[i] = tsState
+				if tsState.f then
+					pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
+				end
 			elseif tsState.x ~= x or tsState.y ~= y then
 				if not tsState.f then
 					pushTouchscreenEvent("touch", tsState.x, tsState.y, tsState.b, i)
@@ -875,6 +903,9 @@ regComponent({
 		},
 		set = {
 			callback = function(self, code)
+				if ENV_EEPROM_READONLY then
+					return nil, "storage is readonly"
+				end
 				code = code or ""
 				checkArg(1, code, "string")
 				if #code > maxEepromCodeLen then
@@ -915,6 +946,9 @@ regComponent({
 		},
 		setLabel = {
 			callback = function(self, label)
+				if ENV_EEPROM_READONLY then
+					return nil, "storage is readonly"
+				end
 				label = label or "EEPROM"
 				checkArg(1, label, "string")
 				label = label:sub(1, 24)
@@ -957,11 +991,11 @@ regComponent({
 		}
 	},
 	deviceinfo = {
-		capacity = "4096",
+		capacity = tostring(maxEepromCodeLen),
 		class = "memory",
 		description = "EEPROM",
 		product = "EEPROM",
-		size = "4096"
+		size = tostring(maxEepromCodeLen)
 	}
 })
 
@@ -2067,17 +2101,19 @@ while true do
 	local result = table.pack(coroutine.resume(thread, table.unpack(args, 1, args.n)))
 	args = nil
 	if not result[1] then
-		error(tostring(result[2]) .. "\n" .. debug.traceback(thread), 0)
+		local err = result[2]
+		if err:find(escapePattern(shutdownTrigger)) then
+			return false
+		elseif err:find(escapePattern(rebootTrigger)) then
+			return true
+		end
+		error(tostring(err) .. "\n" .. debug.traceback(thread), 0)
 	elseif coroutine.status(thread) == "dead" then
 		error("computer halted", 0)
 	else
 		local returnType = type(result[2])
 		if returnType == "boolean" then
-			if result[2] then
-				return true
-			else
-				return false
-			end
+			return not not result[2]
 		end
 	end
 	args = pullEvent(result[2])

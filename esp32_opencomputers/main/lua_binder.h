@@ -44,6 +44,11 @@ static uint8_t _increment(uint8_t* v) {
     lua_setglobal(lua, #val); \
 }
 
+#define LUA_PUSH_BOOL(val) { \
+    lua_pushboolean(lua, val); \
+    lua_setglobal(lua, #val); \
+}
+
 #define LUA_PUSH_USR(val) { \
     lua_pushlightuserdata(lua, val); \
     lua_setglobal(lua, #val); \

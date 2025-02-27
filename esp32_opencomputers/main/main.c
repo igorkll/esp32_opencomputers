@@ -134,6 +134,10 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_PUSH_INT(DISPLAY_HEIGHT);
 	LUA_PUSH_INT(RENDER_RESOLUTION_X);
 	LUA_PUSH_INT(RENDER_RESOLUTION_Y);
+	LUA_PUSH_INT(CONTROL_SECONDARY_PRESS_ON_LONG_TOUCH_TIME);
+	LUA_PUSH_INT(ENV_EEPROM_SIZE);
+	LUA_PUSH_INT(ENV_EEPROM_DATASIZE);
+	LUA_PUSH_BOOL(ENV_EEPROM_READONLY);
 
 	// ---- canvas
 	LUA_BIND_VOID(canvas_setResolution, (LUA_ARG_USR, LUA_ARG_INT, LUA_ARG_INT));
@@ -195,13 +199,37 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(_hdd_blink, ());
 }
 
-void _bg_task(void* arg) {
+static void _bg_task(void* arg) {
 	while (true) {
 		if (hddled_needDisable && hal_uptimeM() >= hddled_deadline) {
 			hal_led_disable(led_hdd);
 			hddled_needDisable = false;
 		}
 		hal_yield();
+	}
+}
+
+static char* shutdown_error = "7dcb1fb3-dc81-4b32-9f63-cb58536c7bd4";
+static char* reboot_error = "9bb7973d-b421-46b1-b656-cc51d32f0b85";
+static void _lua_hook(lua_State *L) {
+	if (hal_button_hasTriggered(button_shutdown)) {
+		lua_pushstring(L, shutdown_error);
+        lua_error(L);
+	} else if (hal_button_hasTriggered(button_reboot)) {
+		lua_pushstring(L, reboot_error);
+		lua_error(L);
+	}
+}
+
+static void shutdownAction(canvas_t* canvas, lua_State* lua, bool reboot) {
+	HAL_LOGI("shutdown: %i\n", reboot);
+	blackscreen(canvas);
+	if (!reboot) {
+		hal_led_disable(led_power);
+		hal_display_backlight(false);
+		lua_close(lua);
+		hal_display_sendBuffer(canvas);
+		hal_powerlock_unlock();
 	}
 }
 
@@ -271,35 +299,38 @@ void _main() {
 		hal_led_disable(led_error);
 		hal_led_enable(led_power);
 		blackscreen(canvas);
+		hal_display_sendBuffer(canvas);
 		hal_display_backlight(true);
 
 		while (true) {
 			lua_State* lua = luaL_newstate();
+		    lua_sethook(lua, _lua_hook, LUA_MASKRET | LUA_MASKCOUNT, 100);
 			rawSandbox(lua, canvas);
 			if (luaL_dofile(lua, "/storage/machine.lua")) {
 				char* err = lua_tostring(lua, -1);
-				HAL_LOGE("lua crashed: %s\n", err);
-				bsod(canvas, err);
-				hal_led_disable(led_power);
-				#ifdef LEDS_ERROR_NO_BLINK
-					hal_led_enable(led_error);
-				#else
-					hal_led_blink(led_error);
-				#endif
-				lua_close(lua);
-				hal_display_sendBuffer(canvas);
-				crashed = true;
-				break;
-			} else {
-				bool reboot = lua_toboolean(lua, -1);
-				HAL_LOGI("shutdown: %i\n", reboot);
-				blackscreen(canvas);
-				if (!reboot) {
+				if (strcmp(err, shutdown_error) == 0) {
+					shutdownAction(canvas, lua, false);
+					break;
+				} else if (strcmp(err, reboot_error) == 0) {
+					shutdownAction(canvas, lua, true);
+				} else {
+					HAL_LOGE("lua crashed: %s\n", err);
+					bsod(canvas, err);
 					hal_led_disable(led_power);
-					hal_display_backlight(false);
+					#ifdef LEDS_ERROR_NO_BLINK
+						hal_led_enable(led_error);
+					#else
+						hal_led_blink(led_error);
+					#endif
 					lua_close(lua);
 					hal_display_sendBuffer(canvas);
-					hal_powerlock_unlock();
+					crashed = true;
+					break;
+				}
+			} else {
+				bool reboot = lua_toboolean(lua, -1);
+				shutdownAction(canvas, lua, reboot);
+				if (!reboot) {
 					break;
 				}
 			}
