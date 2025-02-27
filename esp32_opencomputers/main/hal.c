@@ -106,7 +106,7 @@ static _command _rotate(uint8_t rotation) {
 		regvalue ^= (1 << 7);
 		regvalue ^= (1 << 4);
 	}
-	if (DISPLAY_FLIP_XY) {
+	if (DISPLAY_SWAP_XY) {
 		regvalue ^= (1 << 5);
 	}
 
@@ -197,7 +197,11 @@ bool _on_color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_e
 static void _initDisplay() {
 	// ---- init spi bus
 	spi_bus_config_t buscfg={
-		.miso_io_num=DISPLAY_MISO,
+		#ifdef DISPLAY_MISO
+			.miso_io_num=DISPLAY_MISO,
+		#else
+			.miso_io_num=-1,
+		#endif
 		.mosi_io_num=DISPLAY_MOSI,
 		.sclk_io_num=DISPLAY_CLK,
 		.quadwp_io_num=-1,
@@ -209,7 +213,11 @@ static void _initDisplay() {
 	// ---- init spi device
 	esp_lcd_panel_io_spi_config_t io_config = {
 		.dc_gpio_num = DISPLAY_DC,
-		.cs_gpio_num = DISPLAY_CS,
+		#ifdef DISPLAY_CS
+			.cs_gpio_num = DISPLAY_CS,
+		#else
+			.cs_gpio_num = -1,
+		#endif
 		.pclk_hz = DISPLAY_FREQ,
 		.lcd_cmd_bits = 8,
 		.lcd_param_bits = 8,
@@ -476,15 +484,17 @@ static void _initTouchscreen() {
 	ESP_ERROR_CHECK(i2c_param_config(TOUCHSCREEN_HOST, &config));
 	ESP_ERROR_CHECK(i2c_driver_install(TOUCHSCREEN_HOST, config.mode, 0, 0, 0));
 
-	gpio_config_t io_conf = {};
-	io_conf.pin_bit_mask |= 1ULL << TOUCHSCREEN_RST;
-	io_conf.mode = GPIO_MODE_OUTPUT;
-	gpio_config(&io_conf);
+	#ifdef TOUCHSCREEN_RST
+		gpio_config_t io_conf = {};
+		io_conf.pin_bit_mask |= 1ULL << TOUCHSCREEN_RST;
+		io_conf.mode = GPIO_MODE_OUTPUT;
+		gpio_config(&io_conf);
 
-	gpio_set_level(TOUCHSCREEN_RST, false);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
-	gpio_set_level(TOUCHSCREEN_RST, true);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+		gpio_set_level(TOUCHSCREEN_RST, false);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+		gpio_set_level(TOUCHSCREEN_RST, true);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	#endif
 }
 
 uint8_t hal_touchscreen_touchCount() {
@@ -510,7 +520,7 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 			break;
 	}
 
-    if (TOUCHSCREEN_FLIP_XY) {
+    if (TOUCHSCREEN_SWAP_XY) {
         int t = x;
         x = y;
         y = t;
