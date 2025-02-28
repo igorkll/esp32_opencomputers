@@ -61,6 +61,17 @@ local image_wifi = {
 	"       CC       "
 }
 
+local image_time = {
+	"      EEEE      ",
+	"    EEELEEEE    ",
+	"  EEEAELEEEEEE  ",
+	"EEEEEEALEEEEEEEE",
+	"EEEEEEEAEEEEEEEE",
+	"  EEEEEEEEEEEE  ",
+	"    EEEEEEEE    ",
+	"      EEEE      "
+}
+
 computer.setBootAddress = function()
 end
 
@@ -76,6 +87,8 @@ local imageColors = {
 	["C"] = 0x4444ff,
 	["D"] = 0xffff44,
 	["W"] = 0xffffff,
+	["E"] = 0x999999,
+	["L"] = 0x000000
 }
 
 local function drawImage(x, y, img)
@@ -183,7 +196,7 @@ local function gui_menu(title, points, images, funcs)
 	end
 end
 
-gui_menu("MENU", {"boot", "wifi", "crash", "reboot", "shutdown"}, {image_boot, image_wifi, nil}, {boot, nil, function ()
+gui_menu("MENU", {"boot", "wifi", "time", "crash", "reboot", "shutdown"}, {image_boot, image_wifi, image_time}, {boot, nil, nil, function ()
 	error("crash")
 end, function ()
 	computer.shutdown(true)
