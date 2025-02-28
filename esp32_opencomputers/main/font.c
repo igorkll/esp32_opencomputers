@@ -59,7 +59,7 @@ char* font_ptrOffset(char* text, size_t offset) {
 	return text;
 }
 
-uchar font_toUChar(char* chr, size_t len) {
+uchar font_toUChar(char* chr, uint8_t len) {
 	uchar out = 0;
 	for (size_t i = 0; i < len; i++) {
 		out += chr[i] << (i * 8);
@@ -157,7 +157,18 @@ int font_findOffset(uchar uchr) {
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
 
-	return -1;
+	#ifdef FONT_CACHE_OFFSETS
+		char* cpy_chr = malloc(len);
+		memcpy(cpy_chr, chr, len);
+
+		FontOffsetCache* cpy_val = malloc(sizeof(FontOffsetCache));
+		cpy_val->offset = FONT_UNKNOWN_CHARCODE;
+		cpy_val->metadata = 0;
+
+		hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
+	#endif
+
+	return FONT_UNKNOWN_CHARCODE;
 }
 
 uint8_t font_charWidth(uchar uchr) {
@@ -172,7 +183,7 @@ uint8_t font_charWidth(uchar uchr) {
 		}
 	#endif
 
-	printf("%li\n", uchr);
+	printf("%li %i\n", uchr, font_ucharLen(uchr));
 	return (_getMetadata(font_findOffset(uchr)) & 0b00000001) + 1;
 }
 
