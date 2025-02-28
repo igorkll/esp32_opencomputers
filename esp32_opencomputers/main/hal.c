@@ -7,6 +7,7 @@
 #include <esp_random.h>
 #include <esp_lcd_io_spi.h>
 #include <esp_lcd_panel_io.h>
+#include <esp_spiffs.h>
 #include <string.h>
 #include <math.h>
 #include <map.h>
@@ -578,14 +579,29 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 // ---------------------------------------------- filesystem
 
 static void _initFilesystem() {
-	static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
-	esp_vfs_fat_mount_config_t storage_mount_config = {
-		.max_files = 8,
-		.format_if_mount_failed = false,
-		.allocation_unit_size = CONFIG_WL_SECTOR_SIZE
-	};
+	{
+		static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
+		esp_vfs_fat_mount_config_t fs_config = {
+			.max_files = 8,
+			.format_if_mount_failed = true,
+			.allocation_unit_size = CONFIG_WL_SECTOR_SIZE
+		};
 
-	ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl("/storage", "storage", &storage_mount_config, &s_wl_handle));
+		ESP_ERROR_CHECK(esp_vfs_fat_spiflash_mount_rw_wl("/storage", "storage", &fs_config, &s_wl_handle));
+	}
+
+	{
+		esp_vfs_spiffs_conf_t fs_config = {
+			.base_path = "/rom",
+			.partition_label = "rom",
+			.max_files = 2,
+			.format_if_mount_failed = false
+		};
+
+		ESP_ERROR_CHECK(esp_vfs_spiffs_register(&fs_config));
+	}
+
+	hal_filesystem_loadStorageDataFromROM();
 }
 
 bool hal_filesystem_exists(const char* path) {
@@ -709,6 +725,50 @@ size_t hal_filesystem_lastModified(const char* path) {
         return 0;
     }
     return file_stat.st_mtime;
+}
+
+bool hal_filesystem_copy(const char* from, const char* to) {
+    FILE* source;
+	FILE* dest;
+    uint8_t buffer[1024];
+    size_t bytesRead;
+
+    source = fopen(from, "rb");
+    if (source == NULL) {
+        return false;
+    }
+
+    dest = fopen(to, "wb");
+    if (dest == NULL) {
+		fclose(source);
+		return false;
+    }
+
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), source)) > 0) {
+        fwrite(buffer, 1, bytesRead, dest);
+    }
+
+    fclose(source);
+    fclose(dest);
+
+	return true;
+}
+
+bool hal_filesystem_formatStorage() {
+	return esp_vfs_fat_spiflash_format_rw_wl("/storage", "storage") != ESP_OK;
+}
+
+static void _loadFile(char* from, char* to) {
+	if (!hal_filesystem_isFile(to)) {
+		hal_filesystem_copy(from, to);
+	}
+}
+
+void hal_filesystem_loadStorageDataFromROM() {
+	hal_filesystem_mkdir("/storage/system");
+	_loadFile("/rom/eeprom.dat", "/storage/eeprom.dat");
+	_loadFile("/rom/eeprom.lbl", "/storage/eeprom.lbl");
+	_loadFile("/rom/eeprom.lua", "/storage/eeprom.lua");
 }
 
 // ---------------------------------------------- sound

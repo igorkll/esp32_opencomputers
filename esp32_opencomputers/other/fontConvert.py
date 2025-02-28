@@ -44,7 +44,7 @@ def rasterizeChar(binchar):
 		for byte in binchar:
 			print(format(byte, '08b').replace('1', '#').replace('0', ' '))
 
-with open("../filesystem/font.bin", 'wb') as file:
+with open("../rom/font.bin", 'wb') as file:
 	waitList = []
 	moveLimit = 256
 	for char in alphabet:

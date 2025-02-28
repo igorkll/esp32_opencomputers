@@ -26,7 +26,7 @@ local tunnelErrors = {
 }
 
 math.randomseed(_defaultRandomSeed)
-package.path = "/storage/?.lua"
+package.path = "/rom/?.lua"
 
 local filesys = require("filesys")
 

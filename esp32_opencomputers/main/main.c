@@ -304,7 +304,7 @@ void _main() {
 			lua_State* lua = luaL_newstate();
 		    lua_sethook(lua, _lua_hook, LUA_MASKCOUNT, 16);
 			rawSandbox(lua, canvas);
-			if (luaL_dofile(lua, "/storage/machine.lua")) {
+			if (luaL_dofile(lua, "/rom/machine.lua")) {
 				char* err = lua_tostring(lua, -1);
 				if (strcmp(err, shutdown_error) == 0) {
 					shutdownAction(canvas, lua, false);

@@ -33,7 +33,7 @@ uint8_t _getMetadata(int offset) {
 // ----------------------------------------------
 
 void font_init() {
-	font = fopen("/storage/font.bin", "rb");
+	font = fopen("/rom/font.bin", "rb");
 	#ifdef FONT_CACHE_OFFSETS
 		cache_offsets = hashmap_create();
 	#endif

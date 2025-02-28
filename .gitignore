@@ -1,3 +1,4 @@
 build
 sdkconfig
-esp32_opencomputers/filesystem/system
+sdkconfig.old
+esp32_opencomputers/storage/system
