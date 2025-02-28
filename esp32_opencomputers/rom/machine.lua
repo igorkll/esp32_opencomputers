@@ -15,6 +15,7 @@ local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
 local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
 local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
 local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
+local deviceAddress = "0ba426d6-19a1-4002-b509-2abf974a7157"
 
 local screenSelf, gpuSelf
 
@@ -535,8 +536,6 @@ local function computer_getProgramLocations()
 end
 
 libcomputer = {
-	print = print,
-
 	uptime = computer_uptime,
 	address = function()
 		return computerAddress
@@ -1693,7 +1692,7 @@ regComponent({
 })
 
 filesys.makeDirectory("/storage/tmpfs")
-addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 1 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
 addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
@@ -2065,6 +2064,31 @@ regComponent({
 })
 
 addComponent({}, "beep", beepAddress)
+
+---------------------------------------------------- device component
+
+regComponent({
+	type = "device",
+	slot = -1,
+	api = {
+		print = {
+			callback = function(self, ...)
+				print(...)
+			end,
+			direct = true,
+			doc = "function(...) -- alias to standard print in lua. it is needed to output information to the debugging console"
+		},
+		setTime = {
+			callback = function(self, now)
+				hal_setTime(now)
+			end,
+			direct = true,
+			doc = "function(now:number) -- sets a new RTC time"
+		}
+	}
+})
+
+addComponent({}, "device", deviceAddress)
 
 ----------------------------------------------------
 

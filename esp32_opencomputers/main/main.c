@@ -191,6 +191,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_VOID(hal_yield, ());
 	LUA_BIND_RETR(hal_freeMemory, (), LUA_RET_INT);
 	LUA_BIND_RETR(hal_totalMemory, (), LUA_RET_INT);
+	LUA_BIND_VOID(hal_setTime, (LUA_ARG_INT));
 
 	// ---- other
 	LUA_BIND_VOID(_hdd_blink, ());

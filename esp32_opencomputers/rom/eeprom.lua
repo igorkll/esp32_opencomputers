@@ -10,6 +10,9 @@ local gpu = component.proxy(component.list("gpu")())
 gpu.bind((component.list("screen")()))
 gpu.setResolution(rx, ry)
 
+local device = component.proxy(component.list("device")())
+device.setTime(42222)
+
 ----------------------------------------------------------
 
 local computer_shutdown = computer.shutdown

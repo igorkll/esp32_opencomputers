@@ -6,6 +6,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
+#include <time.h>
 #include "canvas.h"
 #include "config.h"
 
@@ -147,3 +148,4 @@ double hal_frandom();
 uint32_t hal_random();
 size_t hal_freeMemory();
 size_t hal_totalMemory();
+void hal_setTime(time_t now);

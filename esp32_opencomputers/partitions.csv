@@ -1,6 +1,6 @@
 # Name,   Type, SubType, Offset,  Size, Flags
 factory,  app,  factory, ,  1M,
-storage,  data, fat,     ,  2M,
+storage,  data, fat,     ,  2560K,
 rom,      data, spiffs,  ,  256K,
 nvs,      data, nvs,     ,  64K,
 phy_init, data, phy,     ,  64K,

@@ -10,6 +10,8 @@
 #include <esp_spiffs.h>
 #include <string.h>
 #include <math.h>
+#include <esp_system.h>
+#include <nvs_flash.h>
 #include <map.h>
 #include "hal.h"
 #include "main.h"
@@ -758,17 +760,24 @@ bool hal_filesystem_formatStorage() {
 	return esp_vfs_fat_spiflash_format_rw_wl("/storage", "storage") != ESP_OK;
 }
 
-static void _loadFile(char* from, char* to) {
+static void _copyFromROM(char* from, char* to) {
 	if (!hal_filesystem_isFile(to)) {
-		hal_filesystem_copy(from, to);
+		ESP_LOGI(HAL_LOG_TAG, "copying from ROM (%s => %s)", from, to);
+		if (hal_filesystem_copy(from, to)) {
+			ESP_LOGI(HAL_LOG_TAG, "successfully!");
+		} else {
+			ESP_LOGE(HAL_LOG_TAG, "failed!");
+		}
 	}
 }
 
 void hal_filesystem_loadStorageDataFromROM() {
-	hal_filesystem_mkdir("/storage/system");
-	_loadFile("/rom/eeprom.dat", "/storage/eeprom.dat");
-	_loadFile("/rom/eeprom.lbl", "/storage/eeprom.lbl");
-	_loadFile("/rom/eeprom.lua", "/storage/eeprom.lua");
+	if (hal_filesystem_mkdir("/storage/system")) {
+		ESP_LOGI(HAL_LOG_TAG, "an empty system directory has been created!");
+	}
+	_copyFromROM("/rom/eeprom.dat", "/storage/eeprom.dat");
+	_copyFromROM("/rom/eeprom.lbl", "/storage/eeprom.lbl");
+	_copyFromROM("/rom/eeprom.lua", "/storage/eeprom.lua");
 }
 
 // ---------------------------------------------- sound
@@ -938,6 +947,26 @@ size_t hal_freeMemory() {
 static size_t totalMemory;
 size_t hal_totalMemory() {
 	return totalMemory;
+}
+
+void hal_setTime(time_t now) {
+	/*
+    struct tm timeinfo = {0};
+    timeinfo.tm_year = 2023 - 1900; // Год с 1900
+    timeinfo.tm_mon = 10 - 1;        // Месяц с 0
+    timeinfo.tm_mday = 1;            // День
+    timeinfo.tm_hour = 12;           // Час
+    timeinfo.tm_min = 0;             // Минуты
+    timeinfo.tm_sec = 0;             // Секунды
+	now = mktime(&timeinfo);
+	*/
+
+    struct timeval tv = {
+        .tv_sec = now,
+        .tv_usec = 0
+    };
+
+    settimeofday(&tv, NULL);
 }
 
 // ---------------------------------------------- leds
@@ -1171,6 +1200,15 @@ void hal_powerlock_unlock() {
 
 // ----------------------------------------------
 
+static void _initNvs() {
+	esp_err_t ret = nvs_flash_init();
+	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+		ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_flash_erase());
+		ret = nvs_flash_init();
+	}
+	ESP_ERROR_CHECK_WITHOUT_ABORT(ret);
+}
+
 void app_main() {
 	totalMemory = heap_caps_get_total_size(MALLOC_CAP_8BIT);
 	#ifdef DISPLAY_BL
@@ -1180,6 +1218,7 @@ void app_main() {
 		gpio_config(&io_conf);
 	#endif
 	hal_display_backlight(false);
+	_initNvs();
 	_initDisplay();
 	_initTouchscreen();
 	_initFilesystem();
