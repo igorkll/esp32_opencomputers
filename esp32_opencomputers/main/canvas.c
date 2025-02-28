@@ -321,11 +321,16 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 			index = i + x + (y * canvas->sizeX);
 		}
 		uint8_t llen = font_charLen(*text);
-		canvas->chars[index] = font_toUChar(text, llen);
+		uchar chr = font_toUChar(text, llen);
+		canvas->chars[index] = chr;
 		canvas->foregrounds[index] = canvas->foreground;
 		canvas->backgrounds[index] = canvas->background;
 		text += llen;
-		i++;
+		if (vertical) {
+			i++;
+		} else {
+			i += font_charWidth(chr);
+		}
         len--;
     }
 }

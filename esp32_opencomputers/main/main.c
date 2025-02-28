@@ -164,7 +164,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	// ---- font
 	LUA_BIND_RETR(font_toUChar, (LUA_ARG_STR, LUA_ARG_INT), LUA_RET_INT);
 	LUA_BIND_RETR(font_findOffset, (LUA_ARG_INT), LUA_RET_INT);
-	LUA_BIND_RETR(font_isWide, (LUA_ARG_INT), LUA_RET_BOOL);
+	LUA_BIND_RETR(font_charWidth, (LUA_ARG_INT), LUA_RET_INT);
 
 	// ---- filesystem
 	LUA_BIND_RETR(hal_filesystem_exists, (LUA_ARG_STR), LUA_RET_BOOL);

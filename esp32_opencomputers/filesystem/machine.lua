@@ -665,10 +665,10 @@ libunicode = {
 		return table.concat(result)
 	end,
 	isWide = function(char)
-		return font_isWide(font_findOffset(font_toUChar(char, #char)))
+		return libunicode.charWidth(char) > 1
 	end,
 	charWidth = function(char)
-		return libunicode.isWide(char) and 2 or 1
+		return font_charWidth(font_toUChar(char, #char))
 	end,
 	wlen = function(text)
 		local wlen = 0

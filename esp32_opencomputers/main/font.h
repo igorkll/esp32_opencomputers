@@ -16,7 +16,6 @@ uint8_t font_charLen(char chr);
 uint8_t font_ucharLen(uchar uchr);
 int font_len(char* text, int len);
 int font_findOffset(uchar uchr);
-uint8_t font_charWidth(int offset);
-bool font_isWide(int offset);
+uint8_t font_charWidth(uchar uchr);
 bool font_readData(uint8_t* data, int offset);
 bool font_readPixel(uint8_t* data, uint8_t x, uint8_t y);
