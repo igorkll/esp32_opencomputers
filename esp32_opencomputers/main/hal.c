@@ -393,7 +393,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas) {
 					.bg = backgroundVisible ? backgroundColor : 0
 				};
 
-				if (hashmap_get(cache_rasterized, &finding, sizeof(CharCacheData), &charBuffer) == 0) {
+				if (hashmap_get(cache_rasterized, &finding, sizeof(CharCacheData), (uintptr_t*)(&charBuffer)) == 0) {
 					charBuffer = malloc(bytesPerChar);
 					
 					if (isSpace) {
@@ -436,7 +436,7 @@ hal_display_sendInfo hal_display_sendBuffer(canvas_t* canvas) {
 
 					CharCacheData* cacheKey = malloc(sizeof(CharCacheData));
 					memcpy(cacheKey, &finding, sizeof(CharCacheData));
-					hashmap_set(cache_rasterized, cacheKey, sizeof(CharCacheData), charBuffer);
+					hashmap_set(cache_rasterized, cacheKey, sizeof(CharCacheData), (uintptr_t)charBuffer);
 				}
 
 				_sendData(charBuffer, bytesPerChar);

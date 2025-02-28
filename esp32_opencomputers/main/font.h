@@ -4,7 +4,9 @@
 
 #define FONT_UNKNOWN_CHARCODE 63
 #define FONT_MAXCHAR 32
+
 #define FONT_CACHE_OFFSETS
+#define FONT_CACHE_METADATA
 #define FONT_CACHE_DATA
 
 typedef uint32_t uchar;

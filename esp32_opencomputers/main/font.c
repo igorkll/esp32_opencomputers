@@ -6,14 +6,23 @@
 #include <map.h>
 
 static FILE* font;
-#ifdef FONT_CACHE_OFFSETS
-	static hashmap* cache_offsets;
+#ifdef FONT_CACHE_METADATA
+	static hashmap* cache_metadata;
 
 	typedef struct {
-		int offset;
 		uint8_t metadata;
-	} FontOffsetCache;
+	} FontMetadataCache;
 #endif
+
+#ifdef FONT_CACHE_OFFSETS
+	static hashmap* cache_offsets;
+#endif
+
+typedef struct {
+	int offset;
+	uint8_t metadata;
+} FontOffset;
+
 #ifdef FONT_CACHE_DATA
 	static hashmap* cache_data;
 
@@ -24,9 +33,29 @@ static FILE* font;
 #endif
 
 uint8_t _getMetadata(int offset) {
+	#ifdef FONT_CACHE_DATA
+	{
+		FontMetadataCache* fontMetadataCache;
+		if (hashmap_get(cache_metadata, &offset, sizeof(int), (uintptr_t*)(&fontMetadataCache)) != 0) {
+			return fontMetadataCache->metadata;
+		}
+	}
+	#endif
+
 	fseek(font, offset, SEEK_SET);
 	uint8_t metadata = 0;
 	fread(&metadata, 1, 1, font);
+
+	#ifdef FONT_CACHE_METADATA
+		int* cpy_offset = malloc(sizeof(int));
+		memcpy(cpy_offset, &offset, sizeof(int));
+		
+		FontMetadataCache* fontMetadataCache = malloc(sizeof(FontDataCache));
+		fontMetadataCache->metadata = metadata;
+
+		hashmap_set(cache_metadata, cpy_offset, sizeof(int), (uintptr_t)fontMetadataCache);
+	#endif
+
 	return metadata;
 }
 
@@ -34,6 +63,9 @@ uint8_t _getMetadata(int offset) {
 
 void font_init() {
 	font = fopen("/rom/font.bin", "rb");
+	#ifdef FONT_CACHE_METADATA
+		cache_metadata = hashmap_create();
+	#endif
 	#ifdef FONT_CACHE_OFFSETS
 		cache_offsets = hashmap_create();
 	#endif
@@ -100,7 +132,7 @@ int font_len(char* text, int len) {
     return length;
 }
 
-int font_findOffset(uchar uchr) {
+static FontOffset _find(uchar uchr) {
 	char* chr = (char*)(&uchr);
 	uint8_t len = font_ucharLen(uchr);
 
@@ -108,20 +140,19 @@ int font_findOffset(uchar uchr) {
 
 	if (len == 1) {
 		int offset = chr[0] * 19;
-		fseek(font, offset, SEEK_SET);
-
-		uint8_t metadata;
-		fread(&metadata, 1, 1, font);
-
+		uint8_t metadata = _getMetadata(offset);
 		if (metadata != 2) {
-			return offset;
+			return (FontOffset) {
+				.offset = offset,
+				.metadata = metadata
+			};
 		}
 	}
 
 	#ifdef FONT_CACHE_OFFSETS
-		FontOffsetCache* data;
-		if (hashmap_get(cache_offsets, chr, len, &data) != 0) {
-			return data->offset;
+		FontOffset* data;
+		if (hashmap_get(cache_offsets, chr, len, (uintptr_t*)(&data)) != 0) {
+			return *data;
 		}
 	#endif
 
@@ -142,14 +173,17 @@ int font_findOffset(uchar uchr) {
 					char* cpy_chr = malloc(len);
 					memcpy(cpy_chr, chr, len);
 
-					FontOffsetCache* cpy_val = malloc(sizeof(FontOffsetCache));
+					FontOffset* cpy_val = malloc(sizeof(FontOffset));
 					cpy_val->offset = offset;
 					cpy_val->metadata = metadata;
 
-					hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
+					hashmap_set(cache_offsets, cpy_chr, len, (uintptr_t)cpy_val);
 				#endif
 
-				return offset;
+				return (FontOffset) {
+					.offset = offset,
+					.metadata = metadata
+				};
 			}
 		}
 
@@ -157,39 +191,26 @@ int font_findOffset(uchar uchr) {
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
 
-	#ifdef FONT_CACHE_OFFSETS
-		char* cpy_chr = malloc(len);
-		memcpy(cpy_chr, chr, len);
+	return _find(FONT_UNKNOWN_CHARCODE);
+}
 
-		FontOffsetCache* cpy_val = malloc(sizeof(FontOffsetCache));
-		cpy_val->offset = FONT_UNKNOWN_CHARCODE;
-		cpy_val->metadata = 0;
-
-		hashmap_set(cache_offsets, cpy_chr, len, cpy_val);
-	#endif
-
-	return FONT_UNKNOWN_CHARCODE;
+int font_findOffset(uchar uchr) {
+	FontOffset FontOffset = _find(uchr);
+	return FontOffset.offset;
 }
 
 uint8_t font_charWidth(uchar uchr) {
 	if (uchr < 255) return 1;
 
-	#ifdef FONT_CACHE_OFFSETS
-		char* arr = (char*)(&uchr);
-		FontOffsetCache* data;
-		if (hashmap_get(cache_offsets, arr, font_ucharLen(uchr), &data) != 0) {
-			return (data->metadata & 0b00000001) + 1;
-		}
-	#endif
-
-	return (_getMetadata(font_findOffset(uchr)) & 0b00000001) + 1;
+	FontOffset fontOffset = _find(uchr);
+	return (fontOffset.metadata & 0b00000001) + 1;
 }
 
 bool font_readData(uint8_t* data, int offset) {
 	#ifdef FONT_CACHE_DATA
 	{
 		FontDataCache* fontDataCache;
-		if (hashmap_get(cache_data, &offset, sizeof(int), &fontDataCache) != 0) {
+		if (hashmap_get(cache_data, &offset, sizeof(int), (uintptr_t*)(&fontDataCache)) != 0) {
 			bool isWide = fontDataCache->metadata & 0b00000001;
 			size_t charsize = isWide ? 32 : 16;
 			memcpy(data, fontDataCache->data, charsize);
@@ -217,7 +238,7 @@ bool font_readData(uint8_t* data, int offset) {
 		fontDataCache->metadata = metadata;
 		memcpy(fontDataCache->data, data, charsize);
 
-		hashmap_set(cache_data, cpy_offset, sizeof(int), fontDataCache);
+		hashmap_set(cache_data, cpy_offset, sizeof(int), (uintptr_t)fontDataCache);
 	#endif
 
 	return isWide;
