@@ -120,7 +120,6 @@ int font_findOffset(uchar uchr) {
 	#ifdef FONT_CACHE_OFFSETS
 		FontOffsetCache* data;
 		if (hashmap_get(cache_offsets, chr, len, &data) != 0) {
-			printf("F2\n");
 			return data->offset;
 		}
 	#endif
@@ -178,12 +177,10 @@ uint8_t font_charWidth(uchar uchr) {
 		char* arr = (char*)(&uchr);
 		FontOffsetCache* data;
 		if (hashmap_get(cache_offsets, arr, font_ucharLen(uchr), &data) != 0) {
-			printf("F\n");
 			return (data->metadata & 0b00000001) + 1;
 		}
 	#endif
 
-	printf("%li %i\n", uchr, font_ucharLen(uchr));
 	return (_getMetadata(font_findOffset(uchr)) & 0b00000001) + 1;
 }
 
@@ -192,7 +189,6 @@ bool font_readData(uint8_t* data, int offset) {
 	{
 		FontDataCache* fontDataCache;
 		if (hashmap_get(cache_data, &offset, sizeof(int), &fontDataCache) != 0) {
-			printf("F3\n");
 			bool isWide = fontDataCache->metadata & 0b00000001;
 			size_t charsize = isWide ? 32 : 16;
 			memcpy(data, fontDataCache->data, charsize);

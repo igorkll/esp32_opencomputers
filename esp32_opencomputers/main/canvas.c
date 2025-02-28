@@ -275,7 +275,7 @@ void canvas_fill(canvas_t* canvas, canvas_pos x, canvas_pos y, canvas_pos sizeX,
 	}
 }
 
-void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t len, bool vertical) {
+void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, int len, bool vertical) {
 	if (x > canvas->sizeX || y > canvas->sizeY) return;
 
 	if (vertical) {
@@ -294,8 +294,6 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 
 	x--;
 	y--;
-
-	if (len == 0) len = strlen(text);
 	len = font_len(text, len);
 
 	canvas_pos size;
@@ -313,24 +311,26 @@ void canvas_set(canvas_t* canvas, canvas_pos x, canvas_pos y, char* text, size_t
 	if (len <= 0) return;
 
 	size_t i = 0;
-	while (len) {
+	while (len > 0) {
 		size_t index;
 		if (vertical) {
 			index = x + ((i + y) * canvas->sizeX);
 		} else {
 			index = i + x + (y * canvas->sizeX);
 		}
+		
 		uint8_t llen = font_charLen(*text);
 		uchar chr = font_toUChar(text, llen);
 		canvas->chars[index] = chr;
 		canvas->foregrounds[index] = canvas->foreground;
 		canvas->backgrounds[index] = canvas->background;
-		text += llen;
 		if (vertical) {
 			i++;
 		} else {
 			i += font_charWidth(chr);
 		}
+
+		text += llen;
         len--;
     }
 }
