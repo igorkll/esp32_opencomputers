@@ -866,6 +866,11 @@ uint32_t hal_random() {
 	return esp_random();
 }
 
+double hal_frandom() {
+	uint32_t random_value = esp_random();
+	return random_value / (double)UINT32_MAX;
+}
+
 size_t hal_freeMemory() {
 	return heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
@@ -944,12 +949,16 @@ void hal_led_set(hal_led* led, uint8_t value) {
 	ledc_update_duty(HAL_LEDC_MODE, led->channel);
 }
 
+void hal_led_setBool(hal_led* led, bool state) {
+	hal_led_set(led, state ? led->enableLight : led->disableLight);
+}
+
 void hal_led_enable(hal_led* led) {
-	hal_led_set(led, led->enableLight);
+	hal_led_setBool(led, true);
 }
 
 void hal_led_disable(hal_led* led) {
-	hal_led_set(led, led->disableLight);
+	hal_led_setBool(led, false);
 }
 
 void hal_led_free(hal_led* led) {

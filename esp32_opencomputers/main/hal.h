@@ -90,6 +90,7 @@ hal_led* hal_led_new(gpio_num_t pin, bool invert, uint8_t enableLight, uint8_t d
 hal_led* hal_led_stub();
 void hal_led_blink(hal_led* led);
 void hal_led_set(hal_led* led, uint8_t value);
+void hal_led_setBool(hal_led* led, bool state);
 void hal_led_enable(hal_led* led);
 void hal_led_disable(hal_led* led);
 void hal_led_free(hal_led* led);
@@ -139,6 +140,7 @@ void hal_delay(uint32_t milliseconds);
 void hal_yield();
 double hal_uptimeM();
 double hal_uptime();
+double hal_frandom();
 uint32_t hal_random();
 size_t hal_freeMemory();
 size_t hal_totalMemory();

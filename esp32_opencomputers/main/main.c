@@ -115,12 +115,9 @@ static int _canvasGet_bind(lua_State* lua) {
 	return 7;
 }
 
-static bool hddled_needDisable = false;
-static double hddled_deadline = 0;
+static double hddled_updateTime = -1;
 static void _hdd_blink() {
-	hddled_deadline = hal_uptimeM() + 50;
-	hal_led_enable(led_hdd);
-	hddled_needDisable = true;
+	hddled_updateTime = hal_uptimeM();
 }
 
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
@@ -201,11 +198,12 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 
 static void _bg_task(void* arg) {
 	while (true) {
-		if (hddled_needDisable && hal_uptimeM() >= hddled_deadline) {
+		if (hddled_updateTime >= 0) {
+			hal_led_setBool(led_hdd, hal_uptimeM() - hddled_updateTime < 400 && hal_frandom() > 0.1);
+		} else {
 			hal_led_disable(led_hdd);
-			hddled_needDisable = false;
 		}
-		hal_yield();
+		hal_delay(1000 / 60);
 	}
 }
 
