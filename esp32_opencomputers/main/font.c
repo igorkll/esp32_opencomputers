@@ -88,8 +88,9 @@ uint8_t font_ucharLen(uchar uchr) {
 
 int font_len(char* text, int len) {
 	int length = 0;
+	bool autolen = len == 0;
 
-    while (*text || len > 0) {
+    while ((autolen && *text) || len > 0) {
 		uint8_t llen = font_charLen(*text);
 		text += llen;
 		len -= llen;
