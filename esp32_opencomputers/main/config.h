@@ -137,3 +137,12 @@
 #define TOUCHSCREEN_ROTATION  1
 #define TOUCHSCREEN_OFFSET_X  0
 #define TOUCHSCREEN_OFFSET_Y  0
+
+// ---------------------------------------------- other
+
+//why is there a delay?
+//the fact is that after flashing the controller, it starts immediately, and the esp-idf port monitor opens immediately.
+//the esp-idf port monitor reboots the controller, and sometimes this happened exactly at the time of writing to fatfs
+//which in turn sometimes leads to fatfs being broken
+//the delay is triggered only at the first initialization after the firmware, which gives time to start the port monitor so that a reboot does not occur during writing
+#define FIRST_INIT_DELAY 1000 //optional

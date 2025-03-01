@@ -603,6 +603,17 @@ static void _initFilesystem() {
 		ESP_ERROR_CHECK(esp_vfs_spiffs_register(&fs_config));
 	}
 
+	#ifdef FIRST_INIT_DELAY
+		if (!hal_filesystem_exists("/storage/eeprom.lua")) {
+			//why is there a delay?
+			//the fact is that after flashing the controller, it starts immediately, and the esp-idf port monitor opens immediately.
+			//the esp-idf port monitor reboots the controller, and sometimes this happened exactly at the time of writing to fatfs
+			//which in turn sometimes leads to fatfs being broken
+			//the delay is triggered only at the first initialization after the firmware, which gives time to start the port monitor so that a reboot does not occur during writing
+			hal_delay(FIRST_INIT_DELAY);
+		}
+	#endif
+
 	hal_filesystem_loadStorageDataFromROM();
 }
 
