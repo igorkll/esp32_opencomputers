@@ -14,5 +14,9 @@ idf_component_register(
 		"../c-hashmap"
 )
 
-fatfs_create_spiflash_image(storage ../storage FLASH_IN_PROJECT)
+if(EXISTS "../storage")
+	fatfs_create_spiflash_image(storage ../storage FLASH_IN_PROJECT)
+else()
+	fatfs_create_spiflash_image(storage ../other/defaultStorage FLASH_IN_PROJECT)
+endif()
 spiffs_create_partition_image(rom ../rom FLASH_IN_PROJECT)

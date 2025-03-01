@@ -760,9 +760,9 @@ bool hal_filesystem_formatStorage() {
 	return esp_vfs_fat_spiflash_format_rw_wl("/storage", "storage") != ESP_OK;
 }
 
-static void _copyFromROM(char* from, char* to) {
+static void _copyFrom(char* title, char* from, char* to) {
 	if (!hal_filesystem_isFile(to)) {
-		ESP_LOGI(HAL_LOG_TAG, "copying from ROM (%s => %s)", from, to);
+		ESP_LOGI(HAL_LOG_TAG, "copying from %s (%s => %s)", title, from, to);
 		if (hal_filesystem_copy(from, to)) {
 			ESP_LOGI(HAL_LOG_TAG, "successfully!");
 		} else {
@@ -775,9 +775,9 @@ void hal_filesystem_loadStorageDataFromROM() {
 	if (hal_filesystem_mkdir("/storage/system")) {
 		ESP_LOGI(HAL_LOG_TAG, "an empty system directory has been created!");
 	}
-	_copyFromROM("/rom/eeprom.dat", "/storage/eeprom.dat");
-	_copyFromROM("/rom/eeprom.lbl", "/storage/eeprom.lbl");
-	_copyFromROM("/rom/eeprom.lua", "/storage/eeprom.lua");
+	_copyFrom("ROM", "/rom/eeprom.dat", "/storage/eeprom.dat");
+	_copyFrom("ROM", "/rom/eeprom.lbl", "/storage/eeprom.lbl");
+	_copyFrom("ROM", "/rom/eeprom.lua", "/storage/eeprom.lua");
 }
 
 // ---------------------------------------------- sound

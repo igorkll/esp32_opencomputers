@@ -12,6 +12,14 @@
 * hardware on/off/reboot buttons are supported
 * self-locking power is supported
 
+## paths
+* /operating_systems - just a few operating systems as an example for an emulator
+* /esp32_opencomputers/main/config.h - project configuration
+* /esp32_opencomputers/storage/system - disk contents by default (optional)
+* /esp32_opencomputers/storage/eeprom.lua - override the default EEPROM content (optional)
+* /esp32_opencomputers/storage/eeprom.dat - override the default EEPROM data (optional)
+* /esp32_opencomputers/storage/eeprom.lbl - override the default EEPROM label (optional)
+
 ## warnings
 * the project can only be compiled by the GCC compiler
 * you need an esp32 with external memory (PSRAM/SPIRAM) or a large amount of HEAP in order for you to have enough memory for lua. otherwise, you can forget about running any operating system
