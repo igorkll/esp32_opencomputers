@@ -28,6 +28,13 @@ local arrow = {
 	"   ██      ██   "
 }
 
+local small_arrow = {
+	"  ██  ",
+	"██  ██"
+}
+local small_arrow_sizeX = unicode.len(small_arrow[1])
+local small_arrow_sizeY = #small_arrow[1]
+
 local image_empty = {
 	"                ",
 	"                ",
@@ -70,6 +77,17 @@ local image_time = {
 	"  EEEEEEEEEEEE  ",
 	"    EEEEEEEE    ",
 	"      EEEE      "
+}
+
+local image_shutdown = {
+	"       AA       ",
+	"   AA  AA  AA   ",
+	" AA    AA    AA ",
+	"A      AA      A",
+	"A      AA      A",
+	" AA    AA    AA ",
+	"   AA      AA   ",
+	"     AAAAAA     "
 }
 
 computer.setBootAddress = function()
@@ -196,10 +214,49 @@ local function gui_menu(title, points, images, funcs)
 	end
 end
 
-gui_menu("MENU", {"boot", "wifi", "time", "crash", "reboot", "shutdown"}, {image_boot, image_wifi, image_time}, {boot, nil, nil, function ()
-	error("crash")
+gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, function ()
+	
 end, function ()
-	computer.shutdown(true)
-end, function ()
-	computer.shutdown()
-end})
+	local function drawArrow(x, y, revers)
+		
+		for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
+			gpu.set(x, y, small_arrow[i])
+			y = y + 1
+		end
+	end
+
+	local arrowsUp = 2
+	local arrowsDown = ry - 4
+	local arrow1 = 4
+	local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
+	local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
+	local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+
+	local function redraw()
+		gpu.setBackground(backgroundColor)
+		gpu.setForeground(arrowColor)
+		gpu.fill(1, 1, rx, ry, " ")
+
+		gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
+		gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
+
+		drawArrow(arrow1, arrowsUp, false)
+		drawArrow(arrow2, arrowsUp, false)
+		drawArrow(arrow3, arrowsUp, false)
+		drawArrow(arrow4, arrowsUp, false)
+
+		drawArrow(arrow1, arrowsDown, true)
+		drawArrow(arrow2, arrowsDown, true)
+		drawArrow(arrow3, arrowsDown, true)
+		drawArrow(arrow4, arrowsDown, true)
+	end
+	redraw()
+
+	while true do
+		local eventData = {computer.pullSignal()}
+
+		if eventData[1] == "touch" then
+			
+		end
+	end
+end, computer.shutdown})
