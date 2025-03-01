@@ -1210,9 +1210,6 @@ static void _initNvs() {
 }
 
 void app_main() {
-	#ifdef POWER_DELAY
-		hal_delay(POWER_DELAY);
-	#endif
 	totalMemory = heap_caps_get_total_size(MALLOC_CAP_8BIT);
 	#ifdef DISPLAY_BL
 		gpio_config_t io_conf = {};

@@ -52,12 +52,6 @@
 
 // ---------------------------------------------- power settings
 
-//why is there a delay??
-//the fact is that when I flash the device through the fire icon, the port monitor immediately opens, which reboots the device, but after the firmware it manages to turn on and the monitor reboots it almost immediately.
-//but after flashing, the device tries to copy some files from the ROM, as a result, sometimes the files are copied incorrectly and I have to flash it again.
-//the delay during initialization fixes this problem because the device does not start immediately after the flash
-#define POWER_DELAY 1000 //optional
-
 //implements power self-locking. you can make a non-locking button that turns on the device and add a relay or transistor that supplies power and is opened by a control signal from the microcontroller. in this case, when calling computer.shutdown the power supply is physically cut off.
 #define POWER_POWERLOCK 32 //optional
 //select the operating modes of the self-locking power. what will be the value for a specific trigger condition. VOID (pin is hanging in the air) HIGH or LOW
