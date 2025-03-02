@@ -22,7 +22,7 @@
 
 ## warnings
 * the project can only be compiled by the GCC compiler
-* you need an esp32 with external memory (PSRAM/SPIRAM) or a large amount of HEAP in order for you to have enough memory for lua. otherwise, you can forget about running any operating system
+* you need an esp32 with external memory (PSRAM/SPIRAM) or a large amount of HEAP in order for you to have enough memory
 * the project was designed to work with the display on the st77xx controller. if you have a display with another controller, then you need to edit the esp32_opencomputers/main/hal.c file for your display
 
 ## configuration a project
