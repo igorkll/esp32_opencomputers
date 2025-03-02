@@ -201,15 +201,17 @@ local function gui_menu(title, points, images, funcs)
 			elseif eventData[4] >= iconY and eventData[4] < iconY + 8 then
 				if eventData[3] >= icon1X and eventData[3] < icon1X + 16 then
 					if funcs[current] then
-						funcs[current]()
-					elseif funcs[current] == true then
-						return
+						if funcs[current]() then
+							break
+						end
+						redraw()
 					end
 				elseif eventData[3] >= icon2X and eventData[3] < icon2X + 16 then
 					if funcs[current+1] then
-						funcs[current+1]()
-					elseif funcs[current+1] == true then
-						return
+						if funcs[current+1]() then
+							break
+						end
+						redraw()
 					end
 				end 
 			end
@@ -254,7 +256,9 @@ local function gui_list(points)
 						current = current + 1
 						redraw()
 					end
-				end 
+				elseif eventData[3] >= iconBack and eventData[3] < iconBack + 8 then
+					break
+				end
 			else
 				points[current]:event(eventData)
 			end
@@ -277,10 +281,10 @@ end, function ()
 			
 				local arrowsUp = 2
 				local arrowsDown = ry - 4
-				local arrow1 = 4
-				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
-				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
-				local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+				local arrow1 = 5
+				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
+				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
+				local arrow4 = rx - (small_arrow_sizeX - 1) - 4
 			
 				gpu.setBackground(backgroundColor)
 				gpu.setForeground(dotsColor)
@@ -314,10 +318,10 @@ end, function ()
 			
 				local arrowsUp = 2
 				local arrowsDown = ry - 4
-				local arrow1 = 4
-				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
-				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
-				local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+				local arrow1 = 5
+				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
+				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
+				local arrow4 = rx - (small_arrow_sizeX - 1) - 4
 			
 				gpu.setBackground(backgroundColor)
 				gpu.setForeground(pointColor)
