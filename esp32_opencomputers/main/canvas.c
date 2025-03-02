@@ -115,6 +115,18 @@ canvas_color fromFullColor(canvas_fullColor rgb888) {
     return (r5 << 11) | (g6 << 5) | b5;
 }
 
+canvas_fullColor toFullColor(canvas_color rgb565) {
+    uint16_t r5 = (rgb565 >> 11) & 0x1F;
+    uint16_t g6 = (rgb565 >> 5) & 0x3F;
+    uint16_t b5 = rgb565 & 0x1F;
+
+    uint8_t r = (r5 << 3) | (r5 >> 2);
+    uint8_t g = (g6 << 2) | (g6 >> 4);
+    uint8_t b = (b5 << 3) | (b5 >> 2);
+
+    return (r << 16) | (g << 8) | b;
+}
+
 // ----------------------------------------------
 
 canvas_t* canvas_create(canvas_pos sizeX, canvas_pos sizeY, uint8_t depth) {
@@ -394,8 +406,8 @@ canvas_get_result canvas_get(canvas_t* canvas, canvas_pos x, canvas_pos y) {
 
 	canvas_get_result result = {0};
 	result.chr = canvas->chars[index];
-	result.foreground = canvas->palette[foreground];
-	result.background = canvas->palette[background];
+	result.foreground = toFullColor(canvas->palette[foreground]);
+	result.background = toFullColor(canvas->palette[background]);
 	
 	if (foreground < 16) {
 		result.foreground_isPal = true;
