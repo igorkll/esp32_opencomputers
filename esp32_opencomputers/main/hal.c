@@ -610,6 +610,7 @@ static void _initFilesystem() {
 			//the esp-idf port monitor reboots the controller, and sometimes this happened exactly at the time of writing to fatfs
 			//which in turn sometimes leads to fatfs being broken
 			//the delay is triggered only at the first initialization after the firmware, which gives time to start the port monitor so that a reboot does not occur during writing
+			HAL_LOGI("first init delay: %i", FIRST_INIT_DELAY);
 			hal_delay(FIRST_INIT_DELAY);
 		}
 	#endif
@@ -773,9 +774,9 @@ bool hal_filesystem_formatStorage() {
 
 static void _copyFrom(char* title, char* from, char* to) {
 	if (!hal_filesystem_isFile(to)) {
-		ESP_LOGI(HAL_LOG_TAG, "copying from %s (%s => %s)", title, from, to);
+		HAL_LOGI("copying from %s (%s => %s)", title, from, to);
 		if (hal_filesystem_copy(from, to)) {
-			ESP_LOGI(HAL_LOG_TAG, "successfully!");
+			HAL_LOGI("successfully!");
 		} else {
 			ESP_LOGE(HAL_LOG_TAG, "failed!");
 		}
@@ -784,7 +785,7 @@ static void _copyFrom(char* title, char* from, char* to) {
 
 void hal_filesystem_loadStorageDataFromROM() {
 	if (hal_filesystem_mkdir("/storage/system")) {
-		ESP_LOGI(HAL_LOG_TAG, "an empty system directory has been created!");
+		HAL_LOGI("an empty system directory has been created!");
 	}
 	_copyFrom("ROM", "/rom/eeprom.dat", "/storage/eeprom.dat");
 	_copyFrom("ROM", "/rom/eeprom.lbl", "/storage/eeprom.lbl");
