@@ -1,11 +1,12 @@
-alphabet = ''.join(chr(i) for i in range(256)) + "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ" + "─━│┃┄┅┆┇┈┉┊┋┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬╭╮╯╰╱╲╳╴╵╶╷╸╹╺╻╼╽╾╿▀▁▂▃▄▅▆▇█▉▊▋▌▍▎▏▐░▒▓▔▕▖▗▘▙▚▛▜▝▞▟◣◢•⚫∙⬤◖◗▲ ▼ ▽ △ ◥◤◢◣"
+alphabet = ''.join(chr(i) for i in range(256)) + "абвгдеёжзийклмнопрстуфхцчшщьыъэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЬЫЪЭЮЯ" + "💫📌📂❌⛌🗓🖹🗘⇲⇊💻🌍📷➕🗎👁𝕩✂⧉📦🖊⭐🥰😭😎🥺🤔🤓🛒🛈─━│┃┄┅┆┇┈┉┊┋┌┍┎┏┐┑┒┓└┕┖┗┘┙┚┛├┝┞┟┠┡┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋╌╍╎╏═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬╭╮╯╰╱╲╳╴╵╶╷╸╹╺╻╼╽╾╿▀▁▂▃▄▅▆▇█▉▊▋▌▍▎▏▐░▒▓▔▕▖▗▘▙▚▛▜▝▞▟◣◢•⚫∙⬤◖◗▲ ▼ ▽ △ ◥◤◢◣"
 
-def add_unicode_range(original_string, start, end):
-    for codepoint in range(start, end + 1):
-        original_string += chr(codepoint)
-    return original_string
+def unicode_range(start, end):
+	strr = ""
+	for codepoint in range(start, end + 1):
+		strr += chr(codepoint)
+	return strr
 
-alphabet = add_unicode_range(alphabet, 10240, 10240 + 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1)
+alphabet = alphabet + unicode_range(10240, 10240 + 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1)
 
 """
 alphabet = ""
@@ -31,9 +32,9 @@ def findChar(char):
 	return None
 
 def convertChar(hex_string):
-    hex_string = hex_string.strip().upper()
-    byte_array = bytearray(int(hex_string[i:i+2], 16) for i in range(0, len(hex_string), 2))
-    return byte_array
+	hex_string = hex_string.strip().upper()
+	byte_array = bytearray(int(hex_string[i:i+2], 16) for i in range(0, len(hex_string), 2))
+	return byte_array
 
 def rasterizeChar(binchar):
 	charlen = len(binchar)
@@ -67,7 +68,7 @@ with open("../rom/font.bin", 'wb') as file:
 			if charlen >= 32:
 				metadata += 1
 
-			file.write(bytearray([0]))
+			file.write(bytearray([metadata]))
 			file.write(bytearray([len(char_code)]))
 			file.write(char_code)
 			file.write(binchar)

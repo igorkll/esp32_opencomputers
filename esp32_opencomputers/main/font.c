@@ -133,7 +133,7 @@ int font_len(char* text, int len) {
 }
 
 static FontOffset _find(uchar uchr) {
-	char* chr = (char*)(&uchr);
+	uint8_t* chr = (uint8_t*)(&uchr);
 	uint8_t len = font_ucharLen(uchr);
 
 	uint8_t charcode[sizeof(uchar)];
@@ -170,7 +170,7 @@ static FontOffset _find(uchar uchr) {
 			fread(charcode, 1, charlen, font);
 			if (memcmp(charcode, chr, len) == 0) {
 				#ifdef FONT_CACHE_OFFSETS
-					char* cpy_chr = malloc(len);
+					uint8_t* cpy_chr = malloc(len);
 					memcpy(cpy_chr, chr, len);
 
 					FontOffset* cpy_val = malloc(sizeof(FontOffset));
@@ -191,12 +191,9 @@ static FontOffset _find(uchar uchr) {
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
 
-	printf("CHR_NONE %i _ %i %i %i %i\n", len, charcode[0], charcode[1], charcode[2], charcode[3]);
-
 	FontOffset fontOffset = _find(FONT_UNKNOWN_CHARCODE);
-
 	#ifdef FONT_CACHE_OFFSETS
-		char* cpy_chr = malloc(len);
+		uint8_t* cpy_chr = malloc(len);
 		memcpy(cpy_chr, chr, len);
 
 		FontOffset* cpy_val = malloc(sizeof(FontOffset));
@@ -205,7 +202,6 @@ static FontOffset _find(uchar uchr) {
 
 		hashmap_set(cache_offsets, cpy_chr, len, (uintptr_t)cpy_val);
 	#endif
-
 	return fontOffset;
 }
 
