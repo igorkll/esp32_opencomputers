@@ -191,7 +191,22 @@ static FontOffset _find(uchar uchr) {
 		offset += 2 + charlen + (isWide ? 32 : 16);
 	} while (!feof(font));
 
-	return _find(FONT_UNKNOWN_CHARCODE);
+	printf("CHR_NONE %i _ %i %i %i %i\n", len, charcode[0], charcode[1], charcode[2], charcode[3]);
+
+	FontOffset fontOffset = _find(FONT_UNKNOWN_CHARCODE);
+
+	#ifdef FONT_CACHE_OFFSETS
+		char* cpy_chr = malloc(len);
+		memcpy(cpy_chr, chr, len);
+
+		FontOffset* cpy_val = malloc(sizeof(FontOffset));
+		cpy_val->offset = fontOffset.offset;
+		cpy_val->metadata = fontOffset.metadata;
+
+		hashmap_set(cache_offsets, cpy_chr, len, (uintptr_t)cpy_val);
+	#endif
+
+	return fontOffset;
 }
 
 int font_findOffset(uchar uchr) {
@@ -219,10 +234,14 @@ bool font_readData(uint8_t* data, int offset) {
 	}
 	#endif
 
-	uint8_t metadata = _getMetadata(offset);
+	fseek(font, offset, SEEK_SET);
+
+	uint8_t metadata;
+	fread(&metadata, 1, 1, font);
 	
 	uint8_t charlen;
 	fread(&charlen, 1, 1, font);
+
 	fseek(font, charlen, SEEK_CUR);
 
 	bool isWide = metadata & 0b00000001;
