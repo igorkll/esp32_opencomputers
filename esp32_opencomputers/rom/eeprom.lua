@@ -3,6 +3,10 @@ local backgroundColor = 0x333333
 local titleColor = 0xffffff
 local pointColor = 0xffffff
 local arrowColor = 0xff4444
+local buttonColor = 0x30a1ff
+local buttonTextColor = 0xffffff
+local dotsColor = 0xffffff
+local numberColor = 0xffffff
 
 ----------------------------------------------------------
 
@@ -16,11 +20,7 @@ device.setTime(42222)
 ----------------------------------------------------------
 
 local computer_shutdown = computer.shutdown
-
 local bootDisk = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
-local iconY = 5
-local offset = 6
-local icon1X, icon2X = 1 + offset, rx - 15 - offset
 
 local arrow = {
 	"       ██       ",
@@ -156,6 +156,9 @@ end
 local function gui_menu(title, points, images, funcs)
 	local current = 1
 
+	local iconY = 5
+	local icon1X, icon2X = 1 + 6, rx - 15 - 6
+
 	local function redraw()
 		gpu.setBackground(backgroundColor)
 		gpu.setForeground(pointColor)
@@ -214,41 +217,25 @@ local function gui_menu(title, points, images, funcs)
 	end
 end
 
-gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, function ()
-	
-end, function ()
-	local function drawArrow(x, y, revers)
-		
-		for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
-			gpu.set(x, y, small_arrow[i])
-			y = y + 1
-		end
-	end
+local function gui_list(points)
+	local current = 1
 
-	local arrowsUp = 2
-	local arrowsDown = ry - 4
-	local arrow1 = 4
-	local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
-	local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
-	local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+	local iconY = ry - 1
+	local iconBack = 1 + 2
+	local icon1X, icon2X = iconBack + 10, rx - 7 - 2
 
 	local function redraw()
-		gpu.setBackground(backgroundColor)
-		gpu.setForeground(arrowColor)
-		gpu.fill(1, 1, rx, ry, " ")
+		points[current].draw()
 
-		gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
-		gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
-
-		drawArrow(arrow1, arrowsUp, false)
-		drawArrow(arrow2, arrowsUp, false)
-		drawArrow(arrow3, arrowsUp, false)
-		drawArrow(arrow4, arrowsUp, false)
-
-		drawArrow(arrow1, arrowsDown, true)
-		drawArrow(arrow2, arrowsDown, true)
-		drawArrow(arrow3, arrowsDown, true)
-		drawArrow(arrow4, arrowsDown, true)
+		gpu.setBackground(buttonColor)
+		gpu.setForeground(buttonTextColor)
+		gpu.set(iconBack, iconY, " < back ")
+		if current > 1 then
+			gpu.set(icon1X, iconY, " < prev ")
+		end
+		if current < #points then
+			gpu.set(icon2X, iconY, " next > ")
+		end
 	end
 	redraw()
 
@@ -256,7 +243,102 @@ end, function ()
 		local eventData = {computer.pullSignal()}
 
 		if eventData[1] == "touch" then
-			
+			if eventData[4] == iconY then
+				if eventData[3] >= icon1X and eventData[3] < icon1X + 8 then
+					if current > 1 then
+						current = current - 1
+						redraw()
+					end
+				elseif eventData[3] >= icon2X and eventData[3] < icon2X + 8 then
+					if current < #points then
+						current = current + 1
+						redraw()
+					end
+				end 
+			else
+				points[current]:event(eventData)
+			end
 		end
 	end
+end
+
+gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, function ()
+	
+end, function ()
+	gui_list({
+		{
+			draw = function()
+				local function drawArrow(x, y, revers)
+					for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
+						gpu.set(x, y, small_arrow[i])
+						y = y + 1
+					end
+				end
+			
+				local arrowsUp = 2
+				local arrowsDown = ry - 4
+				local arrow1 = 4
+				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
+				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
+				local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+			
+				gpu.setBackground(backgroundColor)
+				gpu.setForeground(dotsColor)
+				gpu.fill(1, 1, rx, ry, " ")
+		
+				gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
+				gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
+		
+				gpu.setForeground(arrowColor)
+				drawArrow(arrow1, arrowsUp, false)
+				drawArrow(arrow2, arrowsUp, false)
+				drawArrow(arrow3, arrowsUp, false)
+				drawArrow(arrow4, arrowsUp, false)
+				drawArrow(arrow1, arrowsDown, true)
+				drawArrow(arrow2, arrowsDown, true)
+				drawArrow(arrow3, arrowsDown, true)
+				drawArrow(arrow4, arrowsDown, true)
+			end,
+			event = function(eventData)
+				
+			end
+		},
+		{
+			draw = function()
+				local function drawArrow(x, y, revers)
+					for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
+						gpu.set(x, y, small_arrow[i])
+						y = y + 1
+					end
+				end
+			
+				local arrowsUp = 2
+				local arrowsDown = ry - 4
+				local arrow1 = 4
+				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -6
+				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 6
+				local arrow4 = rx - (small_arrow_sizeX - 1) - 3
+			
+				gpu.setBackground(backgroundColor)
+				gpu.setForeground(pointColor)
+				gpu.fill(1, 1, rx, ry, " ")
+		
+				gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
+				gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
+		
+				drawArrow(arrow1, arrowsUp, false)
+				drawArrow(arrow2, arrowsUp, false)
+				drawArrow(arrow3, arrowsUp, false)
+				drawArrow(arrow4, arrowsUp, false)
+		
+				drawArrow(arrow1, arrowsDown, true)
+				drawArrow(arrow2, arrowsDown, true)
+				drawArrow(arrow3, arrowsDown, true)
+				drawArrow(arrow4, arrowsDown, true)
+			end,
+			event = function(eventData)
+				
+			end
+		}
+	})
 end, computer.shutdown})
