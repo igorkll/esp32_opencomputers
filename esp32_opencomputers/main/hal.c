@@ -3,6 +3,7 @@
 #include <esp_vfs.h>
 #include <esp_vfs_fat.h>
 #include <driver/gptimer.h>
+#include <freertos/semphr.h>
 #include <esp_timer.h>
 #include <esp_random.h>
 #include <esp_lcd_io_spi.h>
@@ -801,67 +802,81 @@ static hal_sound_channel sound_channels[SOUND_CHANNELS];
 static gptimer_handle_t sound_timer;
 static dac_oneshot_handle_t sound_output;
 static uint64_t sound_tick = 0;
+static SemaphoreHandle_t sound_isr_mutex;
 
 #define SOUND_ARRAY_DIV 4
 #define SOUND_ARRAY_SIZE (SOUND_FREQ / SOUND_ARRAY_DIV)
-static uint8_t sound_sin[SOUND_ARRAY_SIZE];
-static uint8_t sound_noise[SOUND_ARRAY_SIZE];
+static int8_t sound_sin[SOUND_ARRAY_SIZE];
+static int8_t sound_noise[SOUND_ARRAY_SIZE];
 
 #define SOUND_FREQ_M (SOUND_FREQ - 1)
 #define SOUND_FREQ_D (SOUND_FREQ / 2)
 #define SOUND_FREQ_MD (SOUND_FREQ_M / 2)
 
 static bool IRAM_ATTR _timer_ISR(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
-	uint32_t value = 0;
-	for (size_t i = 0; i < SOUND_CHANNELS; i++) {
-		hal_sound_channel* channel = &sound_channels[i];
-		if (channel->enabled) {
-			if (channel->disableTimer > 0) {
-				channel->disableTimer--;
-				if (channel->disableTimer == 0) {
-					channel->enabled = false;
+	if (xSemaphoreTakeFromISR(sound_isr_mutex, NULL) == pdTRUE) {
+		int32_t value = 0;
+		for (size_t i = 0; i < SOUND_CHANNELS; i++) {
+			hal_sound_channel* channel = &sound_channels[i];
+			if (channel->enabled) {
+				if (channel->disableTimer > 0) {
+					channel->disableTimer--;
+					if (channel->disableTimer == 0) {
+						channel->enabled = false;
+					}
 				}
+
+				uint64_t freqValue = sound_tick * channel->freq;
+				uint64_t secondTick = freqValue % SOUND_FREQ;
+				uint64_t tickChange = freqValue / SOUND_FREQ;
+				int8_t localValue = 0;
+				switch (channel->wave) {
+					case hal_sound_square:
+						localValue = secondTick >= (SOUND_FREQ / 2) ? 127 : -128;
+						break;
+
+					case hal_sound_saw:
+						localValue = (secondTick / (SOUND_FREQ_M / 255)) - 128;
+						break;
+
+					case hal_sound_triangle:
+						localValue = ((SOUND_FREQ_MD - abs(secondTick - SOUND_FREQ_MD)) / (SOUND_FREQ_D / 255)) - 128;
+						break;
+
+					case hal_sound_sin:
+						localValue = sound_sin[secondTick / SOUND_ARRAY_DIV];
+						break;
+
+					case hal_sound_noise:
+						localValue = sound_noise[tickChange % SOUND_ARRAY_SIZE];
+						break;
+				}
+				value += (localValue * channel->volume * SOUND_MASTER_VOLUME) / 255 / 255;
 			}
-
-			int freqValue = sound_tick * channel->freq;
-			int secondTick = freqValue % SOUND_FREQ;
-			int tickChange = freqValue / SOUND_FREQ;
-			uint8_t localValue = 0;
-			switch (channel->wave) {
-				case hal_sound_square:
-					localValue = secondTick >= (SOUND_FREQ / 2) ? 255 : 0;
-					break;
-
-				case hal_sound_saw:
-					localValue += secondTick / (SOUND_FREQ_M / 255);
-					break;
-
-				case hal_sound_triangle:
-					localValue += (SOUND_FREQ_MD - abs(secondTick - SOUND_FREQ_MD)) / (SOUND_FREQ_D / 255);
-					break;
-
-				case hal_sound_sin:
-					localValue += sound_sin[secondTick / SOUND_ARRAY_DIV];
-					break;
-
-				case hal_sound_noise:
-					localValue += sound_noise[tickChange % SOUND_ARRAY_SIZE];
-					break;
-			}
-			value += (localValue * channel->volume * SOUND_MASTER_VOLUME) / 255 / 255;
 		}
+		value *= 0.7;
+		value += 128;
+		if (value < 0) {
+			value = 0;
+		} if (value > 255) {
+			value = 255;
+		}
+		dac_oneshot_output_voltage(sound_output, value);
+		sound_tick++;
+
+		xSemaphoreGiveFromISR(sound_isr_mutex, NULL);
 	}
-	dac_oneshot_output_voltage(sound_output, value > 255 ? 255 : value);
-	sound_tick++;
 	return false;
 }
 
 static void _initSound() {
+	sound_isr_mutex = xSemaphoreCreateMutex();
+
 	memset(&sound_channels, 0, SOUND_CHANNELS * sizeof(hal_sound_channel));
 
 	for (size_t i = 0; i < SOUND_ARRAY_SIZE; i++) {
-		sound_sin[i] = nRound(((sin((i / (SOUND_ARRAY_SIZE - 1.0)) * (M_PI * 2.0)) + 1.0) / 2.0) * 255.0);
-		sound_noise[i] = rand() % 256;
+		sound_sin[i] = nRound(((sin((i / (SOUND_ARRAY_SIZE - 1.0)) * (M_PI * 2.0)) + 1.0) / 2.0) * 255.0) - 128;
+		sound_noise[i] = (rand() % 256) - 128;
 	}
 
 	gptimer_alarm_config_t alarm_config = {
@@ -894,7 +909,9 @@ static void _initSound() {
 }
 
 void hal_sound_updateChannel(uint8_t index, hal_sound_channel settings) {
+	xSemaphoreTake(sound_isr_mutex, portMAX_DELAY);
 	sound_channels[index] = settings;
+	xSemaphoreGive(sound_isr_mutex);
 }
 #else
 static void _initSound() {
