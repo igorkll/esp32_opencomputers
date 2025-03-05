@@ -7,16 +7,6 @@ local secondaryTouchTime = CONTROL_SECONDARY_PRESS_ON_LONG_TOUCH_TIME
 local debugMode = false
 local debugMode_traceback = false
 
-local computerAddress = "93a30c10-fc50-4ba4-8527-a0f924d6547a"
-local tmpAddress = "15eb5b81-406e-45c5-8a43-60869fcb4f5b"
-local eepromAddress = "04cbdf2d-701b-4f66-b216-c593d3bc5c62"
-local diskAddress = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
-local screenAddress = "037ba5c4-6a28-4312-9b92-5f3685b6b320"
-local gpuAddress = "1cf41ca0-ce70-4ed7-ad62-7f9eb89f34a9"
-local keyboardAddress = "1dee9ef9-15b0-4b3c-a70d-f3645069530d"
-local beepAddress = "da324530-9b32-42fe-abcf-7bbe33a50246"
-local deviceAddress = "0ba426d6-19a1-4002-b509-2abf974a7157"
-
 local screenSelf, gpuSelf
 
 local shutdownTrigger = "7dcb1fb3"
@@ -30,6 +20,25 @@ math.randomseed(_defaultRandomSeed)
 package.path = "/rom/?.lua"
 
 local filesys = require("filesys")
+
+local function genUuid()
+	local r = math.random
+	return string.format("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+	r(0,255),r(0,255),r(0,255),r(0,255),
+	r(0,255),r(0,255),
+	r(64,79),r(0,255),
+	r(128,191),r(0,255),
+	r(0,255),r(0,255),r(0,255),r(0,255),r(0,255),r(0,255))
+end
+
+local function deviceUuid()
+	return genUuid()
+end
+
+local computerAddress = deviceUuid()
+local tmpAddress = deviceUuid()
+local screenAddress = deviceUuid()
+local keyboardAddress = deviceUuid()
 
 local function debugPrint(...)
 	if debugMode then
@@ -737,6 +746,23 @@ local componentCallback = {
     end
 }
 
+local function _fields(address)
+	local comp = componentList[address]
+	local fields = {}
+
+	for name, method in pairs(comp.api) do
+		if method.field then
+			fields[name] = {
+				direct = not not method.direct,
+				setter = not not method.setter,
+				getter = not not method.getter
+			}
+		end
+	end
+
+	return fields
+end
+
 libcomponent = {
     doc = function(address, method)
         checkArg(1, address, "string")
@@ -755,6 +781,7 @@ libcomponent = {
     invoke = function(address, method, ...)
         checkArg(1, address, "string")
         checkArg(2, method, "string")
+		local arg = ...
         local comp = componentList[address]
 		if not comp then
 			error("no such component", 2)
@@ -786,7 +813,15 @@ libcomponent = {
 			end
 		end
 
-		return spcall(comp.api[method].callback, comp.self, ...)
+		local methodobj = comp.api[method]
+		if methodobj.field then
+			if arg then
+				return spcall(methodobj.setter, comp.self, ...)
+			else
+				return spcall(methodobj.getter, comp.self, ...)
+			end
+		end
+		return spcall(methodobj.callback, comp.self, ...)
     end,
     list = function(filter, exact)
         checkArg(1, filter, "string", "nil")
@@ -843,7 +878,7 @@ libcomponent = {
 		if not comp then
 			return nil, "no such component"
 		end
-        return {}
+        return _fields(address)
     end,
     proxy = function(address)
 		checkArg(1, address, "string")
@@ -856,7 +891,7 @@ libcomponent = {
         if proxyCache[address] then
             return proxyCache[address]
         end
-        local proxy = {address = address, type = comp.type, slot = comp.base.slot, fields = {}}
+        local proxy = {address = address, type = comp.type, slot = comp.base.slot, fields = _fields(address)}
         for name in pairs(comp.api) do
 			proxy[name] = setmetatable({address = address, name = name}, componentCallback)
         end
@@ -998,7 +1033,7 @@ regComponent({
 	}
 })
 
-addComponent({}, "eeprom", eepromAddress)
+addComponent({}, "eeprom", deviceUuid())
 
 ---------------------------------------------------- keyboard component
 
@@ -1692,7 +1727,7 @@ regComponent({
 })
 
 filesys.makeDirectory("/storage/tmpfs")
-addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", deviceUuid())
 addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
@@ -2021,7 +2056,7 @@ gpuSelf = {
 	depth = 1
 }
 
-addComponent(gpuSelf, "gpu", gpuAddress)
+addComponent(gpuSelf, "gpu", deviceUuid())
 
 ---------------------------------------------------- beep component
 
@@ -2063,7 +2098,41 @@ regComponent({
 	}
 })
 
-addComponent({}, "beep", beepAddress)
+addComponent({}, "beep", deviceUuid())
+
+---------------------------------------------------- noise component
+
+regComponent({
+	type = "noise",
+	slot = -1,
+	api = {
+		channel_count = {
+			getter = function(self)
+				return SOUND_NOISECARD_CHANNELS
+			end,
+			direct = true,
+			field = true
+		},
+		modes = {
+			getter = function(self)
+				return {
+					"square",
+					"sine",
+					"triangle",
+					"sawtooth",
+					sawtooth = 4,
+					sine = 2,
+					square = 1,
+					triangle = 3
+				}
+			end,
+			direct = true,
+			field = true
+		},
+	}
+})
+
+addComponent({}, "noise", deviceUuid())
 
 ---------------------------------------------------- device component
 
@@ -2088,7 +2157,7 @@ regComponent({
 	}
 })
 
-addComponent({}, "device", deviceAddress)
+addComponent({}, "device", deviceUuid())
 
 ----------------------------------------------------
 
