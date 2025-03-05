@@ -22,6 +22,10 @@ bool sound_beep_addBeep(uint16_t freq, float time);
 void sound_beep_beep();
 uint8_t sound_beep_getBeepCount();
 
+// ---------------------------------------------- noise card
+
+bool sound_noise_clear();
+
 // ----------------------------------------------
 
 void sound_init();

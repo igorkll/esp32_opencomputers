@@ -2053,7 +2053,7 @@ regComponent({
 				sound_beep_beep()
 
 				if failed then
-					return false, "already too many sounds playing, maximum is 8"
+					return false, "already too many sounds playing, maximum is " .. SOUND_BEEPCARD_CHANNELS
 				end
 				return true
 			end,
