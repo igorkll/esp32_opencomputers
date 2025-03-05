@@ -20,7 +20,7 @@ device.setTime(42222)
 ----------------------------------------------------------
 
 local computer_shutdown = computer.shutdown
-local bootDisk = "b7e450d0-8c8b-43a1-89d5-41216256d45a"
+local bootDisk = device.getInternalDiskAddress()
 
 local arrow = {
 	"       ██       ",

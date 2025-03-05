@@ -19,7 +19,30 @@ local tunnelErrors = {
 math.randomseed(_defaultRandomSeed)
 package.path = "/rom/?.lua"
 
+require("funcs")
 local filesys = require("filesys")
+local tblsave = require("tblsave")
+
+---------------------------------------------------- storage
+
+local storageFilePath = "/storage/settings.tbl"
+local defaultStorageData = {uuids={}}
+local loadedStorageData = tblsave.load(storageFilePath)
+local currentStorageData = loadedStorageData or defaultStorageData
+local firstStorageInit = not loadedStorageData
+
+if loadedStorageData then
+	HAL_LOGI("storage loaded")
+else
+	HAL_LOGI("first storage init")
+end
+
+local function saveStorageData()
+	HAL_LOGI("save storage")
+	tblsave.save(storageFilePath, currentStorageData)
+end
+
+----------------------------------------------------
 
 local function genUuid()
 	local r = math.random
@@ -31,11 +54,21 @@ local function genUuid()
 	r(0,255),r(0,255),r(0,255),r(0,255),r(0,255),r(0,255))
 end
 
+local currentDeviceUuidIndex = 1
 local function deviceUuid()
-	return genUuid()
+	local uuid
+	if currentStorageData.uuids[currentDeviceUuidIndex] then
+		uuid = currentStorageData.uuids[currentDeviceUuidIndex]
+	else
+		uuid = genUuid()
+		currentStorageData.uuids[currentDeviceUuidIndex] = uuid
+	end
+	currentDeviceUuidIndex = currentDeviceUuidIndex + 1
+	return uuid
 end
 
 local computerAddress = deviceUuid()
+local diskAddress = deviceUuid()
 local tmpAddress = deviceUuid()
 local screenAddress = deviceUuid()
 local keyboardAddress = deviceUuid()
@@ -58,21 +91,6 @@ end
 
 local function computer_uptime()
 	return math.floor(uptime() * 10) / 10;
-end
-
-local function checkArg(n, have, ...)
-	have = type(have)
-	local function check(want, ...)
-		if not want then
-			return false
-		else
-			return have == want or check(...)
-		end
-	end
-	if not check(...) then
-		local msg = string.format("bad argument #%d (%s expected, got %s)", n, table.concat({...}, " or "), have)
-		error(msg, 3)
-	end
 end
 
 local function stringCheckArg(n, have)
@@ -410,6 +428,10 @@ local function regComponent(base)
 end
 
 local function addComponent(self, ctype, address)
+	checkArg(1, self, "table")
+	checkArg(2, ctype, "string")
+	checkArg(3, address, "string")
+
 	local base = baseComponentList[ctype]
 	componentList[address] = {
 		type = ctype,
@@ -1727,7 +1749,7 @@ regComponent({
 })
 
 filesys.makeDirectory("/storage/tmpfs")
-addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", deviceUuid())
+addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
 addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress)
 
 ---------------------------------------------------- gpu component
@@ -2153,6 +2175,13 @@ regComponent({
 			end,
 			direct = true,
 			doc = "function(now:number) -- sets a new RTC time"
+		},
+		getInternalDiskAddress = {
+			callback = function(self)
+				return diskAddress
+			end,
+			direct = true,
+			doc = "function():string -- returns the address of the device's internal disk (regardless of where the boot is from)"
 		}
 	}
 })
@@ -2160,6 +2189,10 @@ regComponent({
 addComponent({}, "device", deviceUuid())
 
 ----------------------------------------------------
+
+if firstStorageInit then
+	saveStorageData()
+end
 
 local function pullEvent(wait)
 	local deadline = computer_uptime() + wait

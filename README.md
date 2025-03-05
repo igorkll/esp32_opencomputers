@@ -11,6 +11,7 @@
 * a large number of settings in config.h
 * hardware on/off/reboot buttons are supported
 * self-locking power is supported
+* the UUIDs of all components are randomly generated when the device is turned on for the first time
 
 ## paths
 * /operating_systems - just a few operating systems as an example for an emulator
@@ -34,6 +35,7 @@
 ## additional functions (device component)
 * device.print(...) - alias to standard print in lua. it is needed to output information to the debugging console
 * device.setTime(now:number) - sets a new RTC time
+* device.getInternalDiskAddress():string - returns the address of the device's internal disk (regardless of where the boot is from)
 
 ## available components
 * device (this component is added by the emulator, it contains the emulator API)

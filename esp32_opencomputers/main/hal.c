@@ -1040,11 +1040,11 @@ static void _led_blink_task(void* arg) {
 	while (true) {
 		ledc_set_duty(HAL_LEDC_MODE, led->channel, led->enableLight);
 		ledc_update_duty(HAL_LEDC_MODE, led->channel);
-		hal_delay(1000);
+		hal_delay(500);
 
 		ledc_set_duty(HAL_LEDC_MODE, led->channel, led->disableLight);
 		ledc_update_duty(HAL_LEDC_MODE, led->channel);
-		hal_delay(1000);
+		hal_delay(500);
 	}
 }
 
