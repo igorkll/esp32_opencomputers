@@ -13,6 +13,19 @@
 * self-locking power is supported
 * the UUIDs of all components are randomly generated when the device is turned on for the first time
 
+# in development
+* noise card
+* sound card
+* tape drive
+* note block
+* iron note block
+* modem (via bluetooth)
+* internet (via wifi)
+* BIOS time setting menu
+* the menu for connecting to wifi networks in the BIOS
+* wide characters
+* keyboard input methods
+
 ## paths
 * /operating_systems - just a few operating systems as an example for an emulator
 * /esp32_opencomputers/main/config.h - project configuration
@@ -42,6 +55,6 @@
 * eeprom
 * screen
 * filesystem
-* keyboard
+* keyboard (it is conditionally supported, but the input methods have not yet been implemented)
 * gpu
 * beep (beep card from the computronics addon)

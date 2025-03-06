@@ -71,7 +71,7 @@ local computerAddress = deviceUuid()
 local diskAddress = deviceUuid()
 local tmpAddress = deviceUuid()
 local screenAddress = deviceUuid()
-local keyboardAddress = deviceUuid()
+local keyboardAddress = ENV_KEYBOARD_ENABLED and deviceUuid()
 
 local function debugPrint(...)
 	if debugMode then
@@ -1059,18 +1059,20 @@ addComponent({}, "eeprom", deviceUuid())
 
 ---------------------------------------------------- keyboard component
 
-regComponent({
-	type = "keyboard",
-	slot = -1,
-	api = {},
-	deviceinfo = {
-		class = "input",
-		description = "Keyboard",
-		product = "Keyboard"
-	}
-})
+if keyboardAddress then
+	regComponent({
+		type = "keyboard",
+		slot = -1,
+		api = {},
+		deviceinfo = {
+			class = "input",
+			description = "Keyboard",
+			product = "Keyboard"
+		}
+	})
 
-addComponent({}, "keyboard", keyboardAddress)
+	addComponent({}, "keyboard", keyboardAddress)
+end
 
 ---------------------------------------------------- computer component
 
@@ -1175,7 +1177,10 @@ regComponent({
 		},
 		getKeyboards = {
 			callback = function(self)
-				return {keyboardAddress}
+				if keyboardAddress then
+					return {keyboardAddress}
+				end
+				return {}
 			end,
 			direct = false,
 			doc = "function():table -- The list of keyboards attached to the screen."

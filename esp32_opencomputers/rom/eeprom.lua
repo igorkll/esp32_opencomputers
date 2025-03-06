@@ -266,9 +266,11 @@ local function gui_list(points)
 	end
 end
 
-gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, function ()
+local function gui_menu_wifi()
 	
-end, function ()
+end
+
+local function gui_menu_time()
 	gui_list({
 		{
 			draw = function()
@@ -345,4 +347,7 @@ end, function ()
 			end
 		}
 	})
-end, computer.shutdown})
+end
+
+--gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, gui_menu_wifi, gui_menu_time, computer.shutdown})
+gui_menu("MENU", {"boot", "shutdown"}, {image_boot, image_shutdown}, {boot, computer.shutdown})

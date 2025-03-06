@@ -15,6 +15,8 @@
 #define ENV_EEPROM_DATASIZE 4 * 1024
 #define ENV_EEPROM_READONLY true
 
+#define ENV_KEYBOARD_ENABLED false
+
 // ---------------------------------------------- bsod settings
 
 #define BSOD_RESOLUTION_X 50
@@ -137,6 +139,10 @@
 #define TOUCHSCREEN_ROTATION  1
 #define TOUCHSCREEN_OFFSET_X  0
 #define TOUCHSCREEN_OFFSET_Y  0
+
+// ---------------------------------------------- keyboard settings
+
+//keyboard input methods have not been implemented yet
 
 // ---------------------------------------------- other
 
