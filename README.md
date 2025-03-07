@@ -26,6 +26,7 @@
 * the menu for connecting to wifi networks in the BIOS
 * wide characters
 * keyboard input methods
+* gpu video ram buffers
 
 ## recommended components
 * esp32 with PSRAM: https://aliexpress.ru/item/1005004571486357.html
