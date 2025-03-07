@@ -1334,6 +1334,9 @@ void app_main() {
 		io_conf.mode = GPIO_MODE_OUTPUT;
 		gpio_config(&io_conf);
 	#endif
+
+	gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
+
 	hal_display_backlight(false);
 	_initNvs();
 	_initDisplay();
