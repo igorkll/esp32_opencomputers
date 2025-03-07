@@ -156,9 +156,9 @@
 // ---------------------------------------------- sdcard settings
 
 //#define SDCARD_SPI SPI2_HOST
-#define DISPLAY_MISO 12 //optional
-#define DISPLAY_MOSI 13
-#define DISPLAY_CLK  14
+//#define SDCARD_MISO 12
+//#define SDCARD_MOSI 13
+//#define SDCARD_CLK  14
 
 //indicates that need to use the same SPI for the sd card as for the display
 #define SDCARD_DISPLAY_SPI

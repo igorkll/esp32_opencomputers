@@ -582,15 +582,56 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 // ---------------------------------------------- filesystem
 
 #ifdef SDCARD_DISPLAY_SPI
+	#define SDCARD_SPI  DISPLAY_HOST
+	#define SDCARD_MISO DISPLAY_MISO
+	#define SDCARD_MOSI DISPLAY_MOSI
+	#define SDCARD_CLK  DISPLAY_CLK
+	static bool _sdcard_spiInited = true;
+#else
+	static bool _sdcard_spiInited = false;
+#endif
+
+#ifdef SDCARD_SPI
 	#include <sdmmc_cmd.h>
 
 	static void _initSdcard() {
+		if (!_sdcard_spiInited) {
+			spi_bus_config_t buscfg={
+				#ifdef SDCARD_MISO
+					.miso_io_num=SDCARD_MISO,
+				#else
+					.miso_io_num=-1,
+				#endif
+
+				#ifdef SDCARD_MOSI
+					.mosi_io_num=SDCARD_MOSI,
+				#else
+					.mosi_io_num=-1,
+				#endif
+
+				#ifdef SDCARD_CLK
+					.sclk_io_num=SDCARD_CLK,
+				#else
+					.sclk_io_num=-1,
+				#endif
+
+				.quadwp_io_num=-1,
+				.quadhd_io_num=-1,
+				.max_transfer_sz = 4096
+			};
+
+			if (spi_bus_initialize(SDCARD_SPI, &buscfg, SPI_DMA_CH_AUTO) != ESP_OK) {
+				return;
+			}
+			_sdcard_spiInited = true;
+		}
+
 		static sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-		host.slot = DISPLAY_HOST;
+		host.slot = SDCARD_SPI;
 
 		static sdspi_device_config_t slot_config = {
-			.host_id = DISPLAY_HOST,
-			
+			.host_id = SDCARD_SPI,
+
 			#ifdef SDCARD_CS
 				.gpio_cs = SDCARD_CS,
 			#else
