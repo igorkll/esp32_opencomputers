@@ -581,6 +581,51 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 
 // ---------------------------------------------- filesystem
 
+#ifdef SDCARD_DISPLAY_SPI
+	#include <sdmmc_cmd.h>
+
+	static void _initSdcard() {
+		static sdmmc_host_t host = SDSPI_HOST_DEFAULT();
+		host.slot = DISPLAY_HOST;
+
+		static sdspi_device_config_t slot_config = {
+			.host_id = DISPLAY_HOST,
+			
+			#ifdef SDCARD_CS
+				.gpio_cs = SDCARD_CS,
+			#else
+				.gpio_cs = -1,
+			#endif
+
+			#ifdef SDCARD_CD
+				.gpio_cd = SDCARD_CD,
+			#else
+				.gpio_cd = -1,
+			#endif
+
+			#ifdef SDCARD_WP
+				.gpio_wp = SDCARD_WP,
+			#else
+				.gpio_wp = -1,
+			#endif
+		};
+
+		esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+			.format_if_mount_failed = true,
+			.max_files = 4,
+			.allocation_unit_size = 16 * 1024
+		};
+		sdmmc_card_t* card;
+
+		ESP_ERROR_CHECK(esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &card));
+
+		sdmmc_card_print_info(stdout, card);
+	}
+#else
+	static void _initSdcard() {
+	}
+#endif
+
 static void _initFilesystem() {
 	{
 		static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
@@ -617,6 +662,8 @@ static void _initFilesystem() {
 	#endif
 
 	hal_filesystem_loadStorageDataFromROM();
+
+	_initSdcard();
 }
 
 bool hal_filesystem_exists(const char* path) {

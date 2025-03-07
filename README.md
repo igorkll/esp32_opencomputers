@@ -60,6 +60,8 @@
 * device.print(...) - alias to standard print in lua. it is needed to output information to the debugging console
 * device.setTime(now:number) - sets a new RTC time
 * device.getInternalDiskAddress():string - returns the address of the device's internal disk (regardless of where the boot is from)
+* device.sdcardAvailable():boolean - returns true if the sd card is inserted into the device
+* device.sdcardNeedFormat():boolean - indicates that the sd card needs to be formatted in order to be used in the device
 
 ## available components
 * device (this component is added by the emulator, it contains the emulator API)

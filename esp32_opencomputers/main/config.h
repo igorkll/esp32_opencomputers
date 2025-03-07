@@ -152,3 +152,17 @@
 //which in turn sometimes leads to fatfs being broken
 //the delay is triggered only at the first initialization after the firmware, which gives time to start the port monitor so that a reboot does not occur during writing
 #define FIRST_INIT_DELAY 1000 //optional
+
+// ---------------------------------------------- sdcard settings
+
+//#define SDCARD_SPI SPI2_HOST
+#define DISPLAY_MISO 12 //optional
+#define DISPLAY_MOSI 13
+#define DISPLAY_CLK  14
+
+//indicates that need to use the same SPI for the sd card as for the display
+#define SDCARD_DISPLAY_SPI
+
+#define SDCARD_CS 2
+//#define SDCARD_CD
+//#define SDCARD_WP
