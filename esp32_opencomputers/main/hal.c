@@ -724,12 +724,13 @@ bool hal_filesystem_sdcardUnmount() {
 	#ifdef _SDCARD
 		esp_err_t err = ESP_FAIL;
 
-		if (_sdcard_available && !_sdcard_needFormat) {
+		if (_sdcard) {
 			err = esp_vfs_fat_sdcard_unmount("/sdcard", _sdcard);
 		}
 
 		_sdcard_available = false;
 		_sdcard_needFormat = false;
+		_sdcard = NULL;
 
 		return err == ESP_OK;
 	#endif
@@ -744,8 +745,8 @@ bool hal_filesystem_sdcardErase() {
 			_initSdcard(true);
 		}
 		if (_sdcard) {
-			esp_vfs_fat_sdcard_unmount("/sdcard", _sdcard);
-			result = sdmmc_full_erase(_sdcard) == ESP_OK;
+			uint8_t buff[512];
+			result = sdmmc_io_write_bytes(_sdcard, 0, 0, buff, 512) == ESP_OK;
 			_sdcard_deinit(_sdcard);
 			_sdcard = NULL;
 		}
