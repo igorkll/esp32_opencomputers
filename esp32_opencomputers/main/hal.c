@@ -738,6 +738,11 @@ bool hal_filesystem_sdcardUnmount() {
 	return false;
 }
 
+uint64_t hal_filesystem_sdcardGetSize() {
+	if (!_sdcard) return 0;
+	return _sdcard->csd.capacity * _sdcard->csd.sector_size;
+}
+
 static void _initFilesystem() {
 	{
 		static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;

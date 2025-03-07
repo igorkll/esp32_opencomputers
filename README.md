@@ -13,6 +13,9 @@
 * self-locking power is supported
 * the UUIDs of all components are randomly generated when the device is turned on for the first time
 * screen precise mode is supported
+* an SD card is supported (it is defined as a floppy disk)
+* disk_drive.eject() unmounts the sd card. after that, it can be extracted without the risk of damaging the filesystem
+* you can assign a separate LED to the memory card, which will blink when it is accessed
 
 ## in development
 * noise card
@@ -64,12 +67,14 @@
 * device.sdcardNeedFormat():boolean - indicates that the sd card needs to be formatted in order to be used in the device
 * device.sdcardFormat():boolean - formats the sd card
 * device.sdcardUnmount():boolean - unmounts the sd card
+* device.sdcardGetSize():number - returns the capacity of the sd card in bytes
 
 ## available components
 * device (this component is added by the emulator, it contains the emulator API)
 * eeprom
 * screen
 * filesystem
+* disk_drive (serves as a slot for a memory card)
 * keyboard (it is conditionally supported, but the input methods have not yet been implemented)
 * gpu
 * beep (beep card from the computronics addon)

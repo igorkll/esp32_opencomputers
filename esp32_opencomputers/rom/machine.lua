@@ -2234,6 +2234,13 @@ regComponent({
 			end,
 			direct = true,
 			doc = "function():boolean -- unmounts the sd card"
+		},
+		sdcardGetSize = {
+			callback = function(self)
+				return hal_filesystem_sdcardGetSize()
+			end,
+			direct = true,
+			doc = "function():number -- returns the capacity of the sd card in bytes"
 		}
 	}
 })
@@ -2244,7 +2251,7 @@ addComponent({}, "device", deviceUuid())
 
 local function attachSdcard(self)
 	local sdcardUuid = genUuid()
-	local size = 2 * 1024 * 1024
+	local size = hal_filesystem_sdcardGetSize()
 	addComponent({path = "/sdcard", readonly = false, labelReadonly = false, label = "sdcard", size = size, led = _sdcard_blink}, "filesystem", sdcardUuid, {
 		capacity = tostring(size),
 		size = tostring(size),
