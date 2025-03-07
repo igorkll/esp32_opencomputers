@@ -90,6 +90,28 @@ local image_shutdown = {
 	"     AAAAAA     "
 }
 
+local image_yes = {
+	"             B  ",
+	"            B   ",
+	" B         B    ",
+	"  B       B     ",
+	"   B     B      ",
+	"    B   B       ",
+	"     B B        ",
+	"      B         "
+}
+
+local image_no = {
+	"AA            AA",
+	"  AA        AA  ",
+	"    AA    AA    ",
+	"      AAAA      ",
+	"      AAAA      ",
+	"    AA    AA    ",
+	"  AA        AA  ",
+	"AA            AA"
+}
+
 computer.setBootAddress = function()
 end
 
@@ -347,6 +369,15 @@ local function gui_menu_time()
 			end
 		}
 	})
+end
+
+if device.sdcardAvailable() and device.sdcardNeedFormat() then
+	gui_menu("format sdcard?", {"NO (sdcard won't work)", "YES (data will be erased)"}, {image_no, image_yes}, function ()
+		return true
+	end, function ()
+		device.sdcardFormat()
+		return true
+	end)
 end
 
 --gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, gui_menu_wifi, gui_menu_time, computer.shutdown})

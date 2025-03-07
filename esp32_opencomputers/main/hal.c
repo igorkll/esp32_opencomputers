@@ -581,6 +581,10 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 
 // ---------------------------------------------- filesystem
 
+static bool _sdcard_available = false;
+static bool _sdcard_needFormat = false;
+static sdmmc_card_t* _sdcard = NULL;
+
 #ifdef SDCARD_DISPLAY_SPI
 	#define SDCARD_SPI  DISPLAY_HOST
 	#define SDCARD_MISO DISPLAY_MISO
@@ -592,9 +596,10 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 #endif
 
 #ifdef SDCARD_SPI
+	#define _SDCARD
 	#include <sdmmc_cmd.h>
 
-	static void _initSdcard() {
+	static void _initSdcard(bool format) {
 		if (!_sdcard_spiInited) {
 			spi_bus_config_t buscfg={
 				#ifdef SDCARD_MISO
@@ -652,20 +657,67 @@ hal_touchscreen_point hal_touchscreen_getPoint(uint8_t index) {
 		};
 
 		esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-			.format_if_mount_failed = true,
+			.format_if_mount_failed = format,
 			.max_files = 4,
 			.allocation_unit_size = 16 * 1024
 		};
-		sdmmc_card_t* card;
 
-		ESP_ERROR_CHECK(esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &card));
+		esp_err_t ret = esp_vfs_fat_sdspi_mount("/sdcard", &host, &slot_config, &mount_config, &_sdcard);
+		if (ret != ESP_OK) {
+			if (ret == ESP_FAIL) {
+				_sdcard_available = true;
+				_sdcard_needFormat = true;
+			} else {
+				_sdcard_available = false;
+				_sdcard_needFormat = false;
+			}
+			return;
+		}
 
-		sdmmc_card_print_info(stdout, card);
+		_sdcard_available = true;
+		_sdcard_needFormat = false;
+		sdmmc_card_print_info(stdout, _sdcard);
+	}
+
+	static void _uninitSdcard() {
+		if (_sdcard_available && !_sdcard_needFormat) {
+			ESP_ERROR_CHECK_WITHOUT_ABORT(esp_vfs_fat_sdcard_unmount("/sdcard", _sdcard));
+		}
+
+		_sdcard_available = false;
+		_sdcard_needFormat = false;
 	}
 #else
-	static void _initSdcard() {
+	static void _initSdcard(bool format) {
+	}
+
+	static void _uninitSdcard() {
 	}
 #endif
+
+bool hal_filesystem_sdcardAvailable() {
+	return _sdcard_available;
+}
+
+bool hal_filesystem_sdcardNeedFormat() {
+	return _sdcard_needFormat;
+}
+
+void hal_filesystem_sdcardFormat() {
+	#ifdef _SDCARD
+		if (_sdcard_available) {
+			if (_sdcard_needFormat) {
+				_initSdcard(true);
+			} else {
+				ESP_ERROR_CHECK_WITHOUT_ABORT(esp_vfs_fat_sdcard_format("/sdcard", _sdcard));
+			}
+		}
+	#endif
+}
+
+void hal_filesystem_sdcardUnmount() {
+	_uninitSdcard();
+}
 
 static void _initFilesystem() {
 	{
@@ -704,7 +756,7 @@ static void _initFilesystem() {
 
 	hal_filesystem_loadStorageDataFromROM();
 
-	_initSdcard();
+	_initSdcard(false);
 }
 
 bool hal_filesystem_exists(const char* path) {

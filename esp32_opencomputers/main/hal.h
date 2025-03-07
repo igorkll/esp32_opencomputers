@@ -47,6 +47,11 @@ bool hal_filesystem_copy(const char* from, const char* to);
 bool hal_filesystem_formatStorage();
 void hal_filesystem_loadStorageDataFromROM();
 
+bool hal_filesystem_sdcardAvailable();
+bool hal_filesystem_sdcardNeedFormat();
+void hal_filesystem_sdcardFormat();
+void hal_filesystem_sdcardUnmount();
+
 // ---------------------------------------------- sound
 
 #define SOUND_CHANNELS ((8 * 3) + 2)
