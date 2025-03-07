@@ -21,6 +21,9 @@
 static hal_led* led_power;
 static hal_led* led_error;
 static hal_led* led_hdd;
+#ifdef LEDS_SDCARD_PIN
+	static hal_led* led_sdcard;
+#endif
 
 static hal_button* button_wakeup;
 static hal_button* button_shutdown;
@@ -120,6 +123,20 @@ static void _hdd_blink() {
 	hddled_updateTime = hal_uptimeM();
 }
 
+#ifdef LEDS_SDCARD_ALIAS_HDD
+	static void _sdcard_blink() {
+		_hdd_blink();
+	}
+#elif LEDS_SDCARD_PIN
+	static double sdcardled_updateTime = -1;
+	static void _sdcard_blink() {
+		sdcardled_updateTime = hal_uptimeM();
+	}
+#else
+	static void _sdcard_blink() {
+	}
+#endif
+
 static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	luaL_openlibs(lua);
 	LUA_PUSH_USR(canvas);
@@ -206,6 +223,7 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 
 	// ---- other
 	LUA_BIND_VOID(_hdd_blink, ());
+	LUA_BIND_VOID(_sdcard_blink, ());
 }
 
 static void _bg_task(void* arg) {
@@ -215,6 +233,15 @@ static void _bg_task(void* arg) {
 		} else {
 			hal_led_disable(led_hdd);
 		}
+
+		#ifdef LEDS_SDCARD_PIN
+			if (sdcardled_updateTime >= 0) {
+				hal_led_setBool(led_sdcard, hal_uptimeM() - sdcardled_updateTime < 400 && hal_frandom() > 0.1);
+			} else {
+				hal_led_disable(led_sdcard);
+			}
+		#endif
+
 		hal_delay(1000 / 60);
 	}
 }
@@ -263,6 +290,10 @@ void _main() {
 		led_hdd = hal_led_new(LEDS_HDD_PIN, LEDS_HDD_INVERT, LEDS_HDD_LIGHT_ON, LEDS_HDD_LIGHT_OFF);
 	#else
 		led_hdd = hal_led_stub();
+	#endif
+
+	#ifdef LEDS_SDCARD_PIN
+		led_sdcard = hal_led_new(LEDS_SDCARD_PIN, LEDS_SDCARD_INVERT, LEDS_SDCARD_LIGHT_ON, LEDS_SDCARD_LIGHT_OFF);
 	#endif
 
 	// ---- buttons

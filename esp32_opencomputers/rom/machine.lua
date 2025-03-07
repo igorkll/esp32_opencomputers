@@ -2223,8 +2223,19 @@ addComponent({}, "device", deviceUuid())
 
 ---------------------------------------------------- disk_drive component
 
-local function insertSdcardToDrive(self)
-	
+local function attachSdcard(self)
+	local sdcardUuid = genUuid()
+	addComponent({path = "/sdcard", readonly = false, labelReadonly = false, label = "sdcard", size = 2 * 1024 * 1024, led = _sdcard_blink}, "filesystem", sdcardUuid)
+	self.media = sdcardUuid
+	self.eject = function ()
+		hal_filesystem_sdcardUnmount()
+	end
+end
+
+local function detachSdcard(self)
+	delComponent(self.media)
+	self.media = nil
+	self.eject = nil
 end
 
 regComponent({
@@ -2252,10 +2263,11 @@ regComponent({
 		eject = {
 			callback = function(self, velocity)
 				if self.media then
-					delComponent(self.media)
 					if self.eject then
 						self.eject()
+						self.eject = nil
 					end
+					delComponent(self.media)
 					self.media = nil
 					return true
 				end
@@ -2269,7 +2281,7 @@ regComponent({
 
 local disk_drive_self = {}
 addComponent(disk_drive_self, "disk_drive", deviceUuid())
-insertSdcardToDrive(disk_drive_self)
+attachSdcard(disk_drive_self)
 
 ----------------------------------------------------
 
