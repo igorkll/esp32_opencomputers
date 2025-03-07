@@ -12,8 +12,9 @@
 * hardware on/off/reboot buttons are supported
 * self-locking power is supported
 * the UUIDs of all components are randomly generated when the device is turned on for the first time
+* screen precise mode is supported
 
-# in development
+## in development
 * noise card
 * sound card
 * tape drive
@@ -25,6 +26,15 @@
 * the menu for connecting to wifi networks in the BIOS
 * wide characters
 * keyboard input methods
+
+## recommended components
+* esp32 with PSRAM: https://aliexpress.ru/item/1005004571486357.html
+* 480x320 display (with capacitive touchscreen): https://aliexpress.ru/item/1005008428462644.html
+
+## recommended display resolutions
+* 50 x 16 - 400 x 256 (480 x 320)
+* 80 x 25 - 640 x 400 (640 x 480)
+* 160 x 50 - 1280 x 800
 
 ## paths
 * /operating_systems - just a few operating systems as an example for an emulator
