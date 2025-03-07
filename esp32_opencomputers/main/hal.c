@@ -738,25 +738,6 @@ bool hal_filesystem_sdcardUnmount() {
 	return false;
 }
 
-bool hal_filesystem_sdcardErase() {
-	#ifdef _SDCARD
-		bool result = false;
-		if (!_sdcard) {
-			_initSdcard(true);
-		}
-		if (_sdcard) {
-			uint8_t buff[512];
-			result = sdmmc_io_write_bytes(_sdcard, 0, 0, buff, 512) == ESP_OK;
-			_sdcard_deinit(_sdcard);
-			_sdcard = NULL;
-		}
-		_initSdcard(false);
-		return result;
-	#endif
-
-	return false;
-}
-
 static void _initFilesystem() {
 	{
 		static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;

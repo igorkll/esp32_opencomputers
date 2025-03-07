@@ -2215,20 +2215,61 @@ regComponent({
 			end,
 			direct = true,
 			doc = "function():boolean -- unmounts the sd card"
-		},
-		sdcardErase = {
-			callback = function(self)
-				return hal_filesystem_sdcardErase()
-			end,
-			direct = true,
-			doc = "function():boolean -- erase the sdcard COMPLETELY. there won't even be a filesystem left"
 		}
 	}
 })
 
 addComponent({}, "device", deviceUuid())
 
-print(hal_filesystem_sdcardErase())
+---------------------------------------------------- disk_drive component
+
+local function insertSdcardToDrive(self)
+	
+end
+
+regComponent({
+	type = "disk_drive",
+	slot = -1,
+	api = {
+		isEmpty = {
+			callback = function(self)
+				return not not self.media
+			end,
+			direct = true,
+			doc = "function():boolean -- Checks whether some medium is currently in the drive."
+		},
+		media = {
+			callback = function(self)
+				if self.media then
+					return self.media
+				else
+					return nil, "drive is empty"
+				end
+			end,
+			direct = true,
+			doc = "function(): string -- Return the internal floppy disk address"
+		},
+		eject = {
+			callback = function(self, velocity)
+				if self.media then
+					delComponent(self.media)
+					if self.eject then
+						self.eject()
+					end
+					self.media = nil
+					return true
+				end
+				return false
+			end,
+			direct = false,
+			doc = "function([velocity:number]):boolean -- Eject the currently present medium from the drive."
+		}
+	}
+})
+
+local disk_drive_self = {}
+addComponent(disk_drive_self, "disk_drive", deviceUuid())
+insertSdcardToDrive(disk_drive_self)
 
 ----------------------------------------------------
 

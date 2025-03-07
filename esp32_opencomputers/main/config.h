@@ -52,6 +52,12 @@
 #define LEDS_HDD_LIGHT_ON  24  //0-255
 #define LEDS_HDD_LIGHT_OFF 0   //0-255
 
+#define LEDS_SDCARD_ALIAS_HDD //it indicates that the LED of the SD card operation indicator is the same LED as the disk indicator
+//#define LEDS_SDCARD_PIN 19 //optional
+//#define LEDS_SDCARD_INVERT false
+//#define LEDS_SDCARD_LIGHT_ON  24  //0-255
+//#define LEDS_SDCARD_LIGHT_OFF 0   //0-255
+
 // ---------------------------------------------- power settings
 
 //implements power self-locking. you can make a non-locking button that turns on the device and add a relay or transistor that supplies power and is opened by a control signal from the microcontroller. in this case, when calling computer.shutdown the power supply is physically cut off.

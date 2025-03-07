@@ -51,7 +51,6 @@ bool hal_filesystem_sdcardAvailable();
 bool hal_filesystem_sdcardNeedFormat();
 bool hal_filesystem_sdcardFormat();
 bool hal_filesystem_sdcardUnmount();
-bool hal_filesystem_sdcardErase();
 
 // ---------------------------------------------- sound
 
