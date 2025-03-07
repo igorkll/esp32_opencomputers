@@ -609,7 +609,7 @@ static sdmmc_card_t* _sdcard = NULL;
 		return host;
 	}
 
-	static void _initSdcard(bool format) {
+	static bool _initSdcard(bool format) {
 		if (!_sdcard_spiInited) {
 			spi_bus_config_t buscfg={
 				#ifdef SDCARD_MISO
@@ -636,7 +636,7 @@ static sdmmc_card_t* _sdcard = NULL;
 			};
 
 			if (spi_bus_initialize(SDCARD_SPI, &buscfg, SPI_DMA_CH_AUTO) != ESP_OK) {
-				return;
+				return false;
 			}
 			_sdcard_spiInited = true;
 		}
@@ -740,23 +740,16 @@ bool hal_filesystem_sdcardUnmount() {
 bool hal_filesystem_sdcardErase() {
 	#ifdef _SDCARD
 		bool result = false;
-
-		_sdcard_available = false;
-		_sdcard_needFormat = false;
-		if (_sdcard) {
-			result = sdmmc_full_erase(_sdcard) == ESP_OK;
-		} else {
-			sdmmc_host_t host = _sdcard_host();
-			sdmmc_card_t* sdcard = NULL;
-			ESP_ERROR_CHECK_WITHOUT_ABORT(sdmmc_card_init(&host, &sdcard));
-			if (sdcard) {
-				result = sdmmc_full_erase(sdcard) == ESP_OK;
-				_sdcard_deinit(sdcard);
-			}
+		if (!_sdcard) {
+			_initSdcard(true);
 		}
-
+		if (_sdcard) {
+			esp_vfs_fat_sdcard_unmount("/sdcard", _sdcard);
+			result = sdmmc_full_erase(_sdcard) == ESP_OK;
+			_sdcard_deinit(_sdcard);
+			_sdcard = NULL;
+		}
 		_initSdcard(false);
-
 		return result;
 	#endif
 

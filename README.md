@@ -64,6 +64,7 @@
 * device.sdcardNeedFormat():boolean - indicates that the sd card needs to be formatted in order to be used in the device
 * device.sdcardFormat():boolean - formats the sd card
 * device.sdcardUnmount():boolean - unmounts the sd card
+* device.sdcardErase():boolean - erase the sdcard COMPLETELY. there won't even be a filesystem left
 
 ## available components
 * device (this component is added by the emulator, it contains the emulator API)
