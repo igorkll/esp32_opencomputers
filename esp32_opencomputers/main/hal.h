@@ -49,8 +49,9 @@ void hal_filesystem_loadStorageDataFromROM();
 
 bool hal_filesystem_sdcardAvailable();
 bool hal_filesystem_sdcardNeedFormat();
-void hal_filesystem_sdcardFormat();
-void hal_filesystem_sdcardUnmount();
+bool hal_filesystem_sdcardFormat();
+bool hal_filesystem_sdcardUnmount();
+bool hal_filesystem_sdcardErase();
 
 // ---------------------------------------------- sound
 

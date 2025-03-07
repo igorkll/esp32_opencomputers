@@ -2190,36 +2190,45 @@ regComponent({
 		},
 		sdcardAvailable = {
 			callback = function(self)
-				return hal_filesystem_sdcardAvailable();
+				return hal_filesystem_sdcardAvailable()
 			end,
 			direct = true,
 			doc = "function():boolean -- returns true if the sd card is inserted into the device"
 		},
 		sdcardNeedFormat = {
 			callback = function(self)
-				return hal_filesystem_sdcardNeedFormat();
+				return hal_filesystem_sdcardNeedFormat()
 			end,
 			direct = true,
 			doc = "function():boolean -- indicates that the sd card needs to be formatted in order to be used in the device"
 		},
 		sdcardFormat = {
 			callback = function(self)
-				hal_filesystem_sdcardFormat();
+				return hal_filesystem_sdcardFormat()
 			end,
 			direct = true,
-			doc = "function() -- formats the sd card"
+			doc = "function():boolean -- formats the sd card"
 		},
 		sdcardUnmount = {
 			callback = function(self)
-				hal_filesystem_sdcardUnmount();
+				return hal_filesystem_sdcardUnmount()
 			end,
 			direct = true,
-			doc = "function() -- unmounts the sd card"
+			doc = "function():boolean -- unmounts the sd card"
+		},
+		sdcardErase = {
+			callback = function(self)
+				return hal_filesystem_sdcardErase()
+			end,
+			direct = true,
+			doc = "function():boolean -- erase the sdcard COMPLETELY. there won't even be a filesystem left"
 		}
 	}
 })
 
 addComponent({}, "device", deviceUuid())
+
+print(hal_filesystem_sdcardErase())
 
 ----------------------------------------------------
 

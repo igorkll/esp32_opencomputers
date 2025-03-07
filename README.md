@@ -62,8 +62,8 @@
 * device.getInternalDiskAddress():string - returns the address of the device's internal disk (regardless of where the boot is from)
 * device.sdcardAvailable():boolean - returns true if the sd card is inserted into the device
 * device.sdcardNeedFormat():boolean - indicates that the sd card needs to be formatted in order to be used in the device
-* device.sdcardFormat() - formats the sd card
-* device.sdcardUnmount() - unmounts the sd card
+* device.sdcardFormat():boolean - formats the sd card
+* device.sdcardUnmount():boolean - unmounts the sd card
 
 ## available components
 * device (this component is added by the emulator, it contains the emulator API)

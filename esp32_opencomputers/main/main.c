@@ -180,8 +180,9 @@ static void rawSandbox(lua_State* lua, canvas_t* canvas) {
 	LUA_BIND_RETR(hal_filesystem_lastModified, (LUA_ARG_STR), LUA_RET_INT);
 	LUA_BIND_RETR(hal_filesystem_sdcardAvailable, (), LUA_RET_BOOL);
 	LUA_BIND_RETR(hal_filesystem_sdcardNeedFormat, (), LUA_RET_BOOL);
-	LUA_BIND_VOID(hal_filesystem_sdcardFormat, ());
-	LUA_BIND_VOID(hal_filesystem_sdcardUnmount, ());
+	LUA_BIND_RETR(hal_filesystem_sdcardFormat, (), LUA_RET_BOOL);
+	LUA_BIND_RETR(hal_filesystem_sdcardUnmount, (), LUA_RET_BOOL);
+	LUA_BIND_RETR(hal_filesystem_sdcardErase, (), LUA_RET_BOOL);
 	lua_pushcfunction(lua, _list_bind);
 	lua_setglobal(lua, "hal_filesystem_list");
 
