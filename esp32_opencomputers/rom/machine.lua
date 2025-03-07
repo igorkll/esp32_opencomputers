@@ -427,18 +427,33 @@ local function regComponent(base)
 	baseComponentList[base.type] = base
 end
 
-local function addComponent(self, ctype, address)
+local function addComponent(self, ctype, address, overrideDeviceinfo)
 	checkArg(1, self, "table")
 	checkArg(2, ctype, "string")
 	checkArg(3, address, "string")
+	checkArg(4, overrideDeviceinfo, "table", "nil")
 
 	local base = baseComponentList[ctype]
+	
+	local deviceinfo
+	if overrideDeviceinfo then
+		deviceinfo = {}
+		for k, v in pairs(base.deviceinfo) do
+			deviceinfo[k] = v
+		end
+		for k, v in pairs(overrideDeviceinfo) do
+			deviceinfo[k] = v
+		end
+	else
+		deviceinfo = base.deviceinfo
+	end
+
 	componentList[address] = {
 		type = ctype,
 		self = self,
 		base = base,
 		api = base.api,
-		deviceinfo = base.deviceinfo
+		deviceinfo = deviceinfo
 	}
 
 	if addComponentEventEnabled then
@@ -1744,9 +1759,9 @@ regComponent({
 		}
 	},
 	deviceinfo = {
-		capacity = "4294967",
-		size = "4194304",
-		clock = "200/200/80",
+		capacity = "2147483",
+		size = "2097152",
+		clock = "140/140/60",
 		class = "volume",
 		description = "Filesystem",
 		product = "Filesystem"
@@ -1755,7 +1770,11 @@ regComponent({
 
 filesys.makeDirectory("/storage/tmpfs")
 addComponent({path = "/storage/system", readonly = false, labelReadonly = false, label = "system", size = 2 * 1024 * 1024, led = _hdd_blink}, "filesystem", diskAddress)
-addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress)
+addComponent({ram = {used = 0, fs = {}}, readonly = false, labelReadonly = true, label = "tmpfs", size = 64 * 1024, led = function() end}, "filesystem", tmpAddress, {
+	capacity = "67108",
+	size = "65536",
+	clock = "260/260/100"
+})
 
 ---------------------------------------------------- gpu component
 
@@ -2069,8 +2088,8 @@ regComponent({
 		capacity = "8000",
 		class = "display",
 		clock = "2560/2560/320/5120/1280/2560",
-		description = "Filesystem",
-		product = "Filesystem",
+		description = "Graphics controller",
+		product = "GPU",
 		width = "8"
 	}
 })
@@ -2225,7 +2244,12 @@ addComponent({}, "device", deviceUuid())
 
 local function attachSdcard(self)
 	local sdcardUuid = genUuid()
-	addComponent({path = "/sdcard", readonly = false, labelReadonly = false, label = "sdcard", size = 2 * 1024 * 1024, led = _sdcard_blink}, "filesystem", sdcardUuid)
+	local size = 2 * 1024 * 1024
+	addComponent({path = "/sdcard", readonly = false, labelReadonly = false, label = "sdcard", size = size, led = _sdcard_blink}, "filesystem", sdcardUuid, {
+		capacity = tostring(size),
+		size = tostring(size),
+		clock = "20/20/20"
+	})
 	self.media = sdcardUuid
 	self.eject = function ()
 		hal_filesystem_sdcardUnmount()
@@ -2236,6 +2260,16 @@ local function detachSdcard(self)
 	delComponent(self.media)
 	self.media = nil
 	self.eject = nil
+end
+
+local function detectSdcard(self)
+	if hal_filesystem_sdcardAvailable() and not hal_filesystem_sdcardNeedFormat() then
+		if not self.media then
+			attachSdcard(self)
+		end
+	elseif self.media then
+		detachSdcard(self)
+	end
 end
 
 regComponent({
@@ -2281,7 +2315,7 @@ regComponent({
 
 local disk_drive_self = {}
 addComponent(disk_drive_self, "disk_drive", deviceUuid())
-attachSdcard(disk_drive_self)
+detectSdcard(disk_drive_self)
 
 ----------------------------------------------------
 
