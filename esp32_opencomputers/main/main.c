@@ -260,7 +260,7 @@ static void _lua_hook(lua_State *L) {
 }
 
 static void shutdownAction(canvas_t* canvas, lua_State* lua, bool reboot) {
-	HAL_LOGI("shutdown: %i\n", reboot);
+	HAL_LOGI("shutdown: %i", reboot);
 	blackscreen(canvas);
 	if (!reboot) {
 		hal_led_disable(led_power);
