@@ -128,12 +128,12 @@ local image_num_0 = {
 }
 
 local image_num_1 = {
-	"  AAA   ",
-    "     A  ",
-    "     A  ",
-    "     A  ",
-    "     A  ",
-    "     A  "
+	"    AA  ",
+    "  AA  A ",
+    "      A ",
+    "      A ",
+    "      A ",
+    "      A "
 }
 
 local image_num_2 = {
@@ -175,7 +175,7 @@ local image_num_5 = {
 local image_num_6 = {
 	" AAAAAA ",
     "A       ",
-    "AAAAAAA ",
+    " AAAAAA ",
     "A      A",
     "A      A",
     " AAAAAA "
@@ -440,12 +440,51 @@ local function gui_menu_time()
             pos = arrow4
         end
 
-        drawImage(pos - 1, numberLine, images_number, color)
+        drawImage(pos - 1, numberLine, images_number[number], color)
     end
 
     local function drawNumbers(color, list)
         for i = 1, 4 do
             drawNumber(color, i, list[i])
+        end
+    end
+
+    local function drawTitle(color, title)
+        gpu.setBackground(backgroundColor)
+        gpu.setForeground(color)
+        centerSet(arrowsDown, title, 21, rx - 7 - 3)
+    end
+
+    local function eventHandle(eventData, list)
+        local index
+        local side
+        
+        if eventData[1] == "touch" then
+            if eventData[4] == arrowsUp and eventData[4] < arrowsUp + 2 then
+                side = 1
+            elseif eventData[4] == arrowsDown and eventData[4] < arrowsDown + 2 then
+                side = -1
+            end
+
+            local function checkButton(xpos)
+                return eventData[3] >= xpos and eventData[3] < xpos + 6
+            end
+
+            if checkButton(arrow1) then
+                index = 1
+            elseif checkButton(arrow2) then
+                index = 2
+            elseif checkButton(arrow3) then
+                index = 3
+            elseif checkButton(arrow4) then
+                index = 4
+            end
+        end
+
+        if index and side then
+            list[index] = list[index] + side
+            if list[index] < 0 then list[index] = 9 end
+            if list[index] > 9 then list[index] = 0 end
         end
     end
 
@@ -458,27 +497,30 @@ local function gui_menu_time()
 			draw = function()
 				drawTimeButtonsBase(timeColor)
                 drawNumbers(timeColor, timeList)
+                drawTitle(timeColor, "time")
 			end,
 			event = function(eventData)
-				
+				eventHandle(eventData, timeList)
 			end
 		},
 		{
 			draw = function()
 				drawTimeButtonsBase(dateColor)
                 drawNumbers(dateColor, dateList)
+                drawTitle(timeColor, "date")
 			end,
 			event = function(eventData)
-				
+				eventHandle(eventData, dateList)
 			end
 		},
 		{
 			draw = function()
 				drawTimeButtonsBase(yearColor)
                 drawNumbers(yearColor, yearList)
+                drawTitle(timeColor, "year")
 			end,
 			event = function(eventData)
-				
+				eventHandle(eventData, yearList)
 			end
 		}
 	})
