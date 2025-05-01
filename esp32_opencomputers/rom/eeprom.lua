@@ -464,9 +464,9 @@ local function gui_menu_time()
         local side
         
         if eventData[1] == "touch" then
-            if eventData[4] == arrowsUp and eventData[4] < arrowsUp + 2 then
+            if eventData[4] >= arrowsUp and eventData[4] < arrowsUp + 2 then
                 side = 1
-            elseif eventData[4] == arrowsDown and eventData[4] < arrowsDown + 2 then
+            elseif eventData[4] >= arrowsDown and eventData[4] < arrowsDown + 2 then
                 side = -1
             end
 
