@@ -146,12 +146,79 @@ local image_num_2 = {
 }
 
 local image_num_3 = {
-	"        ",
-    "        ",
-    "        ",
-    "        ",
-    "        ",
-    "        "
+	"AAAAAAA ",
+    "       A",
+    "       A",
+    "AAAAAAA ",
+    "       A",
+    "AAAAAAA "
+}
+
+local image_num_4 = {
+	"A      A",
+    "A      A",
+    "A      A",
+    " AAAAAA ",
+    "       A",
+    "       A"
+}
+
+local image_num_5 = {
+	"AAAAAAAA",
+    "A       ",
+    "A       ",
+    " AAAAAA ",
+    "       A",
+    "AAAAAAA "
+}
+
+local image_num_6 = {
+	" AAAAAA ",
+    "A       ",
+    "AAAAAAA ",
+    "A      A",
+    "A      A",
+    " AAAAAA "
+}
+
+local image_num_7 = {
+	"AAAAAAAA",
+    "       A",
+    "       A",
+    "      A ",
+    "      A ",
+    "     A  "
+}
+
+local image_num_8 = {
+	" AAAAAA ",
+    "A      A",
+    "A      A",
+    " AAAAAA ",
+    "A      A",
+    " AAAAAA "
+}
+
+local image_num_9 = {
+	" AAAAAA ",
+    "A      A",
+    "A      A",
+    " AAAAAA ",
+    "       A",
+    " AAAAAA "
+}
+
+local images_number = {
+    [0] = image_num_0,
+    image_num_1,
+    image_num_2,
+    image_num_3,
+    image_num_4,
+    image_num_5,
+    image_num_6,
+    image_num_7,
+    image_num_8,
+    image_num_9
 }
 
 ----------------------------------------------------------
@@ -360,10 +427,25 @@ local function gui_menu_time()
         drawArrow(arrow4, arrowsDown, true)
     end
 
+    local function drawNumber(color, index, number)
+        drawImage(images_number)
+    end
+
+    local function drawNumbers(color, list)
+        for i = 1, 4 do
+            drawNumber(color, i, list[i])
+        end
+    end
+
+    local timeList = {1, 2, 3, 4}
+    local dateList = {4, 1, 2, 0}
+    local yearList = {6, 7, 7, 4}
+
 	gui_list({
 		{
 			draw = function()
 				drawTimeButtonsBase(timeColor)
+                drawNumbers(timeColor, timeList)
 			end,
 			event = function(eventData)
 				
@@ -372,6 +454,7 @@ local function gui_menu_time()
 		{
 			draw = function()
 				drawTimeButtonsBase(dateColor)
+                drawNumbers(timeColor, dateList)
 			end,
 			event = function(eventData)
 				
@@ -380,6 +463,7 @@ local function gui_menu_time()
 		{
 			draw = function()
 				drawTimeButtonsBase(yearColor)
+                drawNumbers(timeColor, yearList)
 			end,
 			event = function(eventData)
 				
