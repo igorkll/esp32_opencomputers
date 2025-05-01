@@ -5,22 +5,28 @@ local pointColor = 0xffffff
 local arrowColor = 0xff4444
 local buttonColor = 0x30a1ff
 local buttonTextColor = 0xffffff
-local dotsColor = 0xffffff
 local numberColor = 0xffffff
+
+local timeColor = 0xff3333
+local dateColor = 0x33ff33
+local yearColor = 0x3333ff
 
 ----------------------------------------------------------
 
+local device = component.proxy(component.list("device")())
 local gpu = component.proxy(component.list("gpu")())
 gpu.bind((component.list("screen")()))
 gpu.setResolution(rx, ry)
 
-local device = component.proxy(component.list("device")())
-device.setTime(42222)
-
-----------------------------------------------------------
-
 local computer_shutdown = computer.shutdown
 local bootDisk = device.getInternalDiskAddress()
+
+computer.setBootAddress = function()
+end
+
+computer.getBootAddress = function()
+	return bootDisk
+end
 
 local arrow = {
 	"       ██       ",
@@ -112,12 +118,41 @@ local image_no = {
 	"AA            AA"
 }
 
-computer.setBootAddress = function()
-end
+local image_num_0 = {
+	"  AAAA  ",
+    " A    A ",
+    "A      A",
+    "A      A",
+    " A    A ",
+    "  AAAA  "
+}
 
-computer.getBootAddress = function()
-	return bootDisk
-end
+local image_num_1 = {
+	"  AAA   ",
+    "     A  ",
+    "     A  ",
+    "     A  ",
+    "     A  ",
+    "     A  "
+}
+
+local image_num_2 = {
+	" AAAAAA ",
+    "A      A",
+    "       A",
+    " AAAAAA ",
+    "A       ",
+    " AAAAAAA"
+}
+
+local image_num_3 = {
+	"        ",
+    "        ",
+    "        ",
+    "        ",
+    "        ",
+    "        "
+}
 
 ----------------------------------------------------------
 
@@ -131,7 +166,7 @@ local imageColors = {
 	["L"] = 0x000000
 }
 
-local function drawImage(x, y, img)
+local function drawImage(x, y, img, customColor)
 	if not img then
 		return
 	end
@@ -140,7 +175,7 @@ local function drawImage(x, y, img)
 		for lx = 1, #line do
 			local color = imageColors[line:sub(lx, lx)]
 			if color then
-				gpu.setBackground(color)
+				gpu.setBackground(customColor or color)
 				gpu.set(x + (lx - 1), y + (ly - 1), " ")
 			end
 		end
@@ -293,39 +328,42 @@ local function gui_menu_wifi()
 end
 
 local function gui_menu_time()
+    local function drawArrow(x, y, revers)
+        for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
+            gpu.set(x, y, small_arrow[i])
+            y = y + 1
+        end
+    end
+
+    local arrowsUp = 2
+    local arrowsDown = ry - 4
+    local arrow1 = 5
+    local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
+    local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
+    local arrow4 = rx - (small_arrow_sizeX - 1) - 4
+
+    local function drawTimeButtonsBase(color)
+        gpu.setBackground(backgroundColor)
+        gpu.setForeground(color)
+
+        gpu.fill(1, 1, rx, ry, " ")
+        gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
+        gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
+
+        drawArrow(arrow1, arrowsUp, false)
+        drawArrow(arrow2, arrowsUp, false)
+        drawArrow(arrow3, arrowsUp, false)
+        drawArrow(arrow4, arrowsUp, false)
+        drawArrow(arrow1, arrowsDown, true)
+        drawArrow(arrow2, arrowsDown, true)
+        drawArrow(arrow3, arrowsDown, true)
+        drawArrow(arrow4, arrowsDown, true)
+    end
+
 	gui_list({
 		{
 			draw = function()
-				local function drawArrow(x, y, revers)
-					for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
-						gpu.set(x, y, small_arrow[i])
-						y = y + 1
-					end
-				end
-			
-				local arrowsUp = 2
-				local arrowsDown = ry - 4
-				local arrow1 = 5
-				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
-				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
-				local arrow4 = rx - (small_arrow_sizeX - 1) - 4
-			
-				gpu.setBackground(backgroundColor)
-				gpu.setForeground(dotsColor)
-				gpu.fill(1, 1, rx, ry, " ")
-		
-				gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
-				gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
-		
-				gpu.setForeground(arrowColor)
-				drawArrow(arrow1, arrowsUp, false)
-				drawArrow(arrow2, arrowsUp, false)
-				drawArrow(arrow3, arrowsUp, false)
-				drawArrow(arrow4, arrowsUp, false)
-				drawArrow(arrow1, arrowsDown, true)
-				drawArrow(arrow2, arrowsDown, true)
-				drawArrow(arrow3, arrowsDown, true)
-				drawArrow(arrow4, arrowsDown, true)
+				drawTimeButtonsBase(timeColor)
 			end,
 			event = function(eventData)
 				
@@ -333,36 +371,15 @@ local function gui_menu_time()
 		},
 		{
 			draw = function()
-				local function drawArrow(x, y, revers)
-					for i = revers and #small_arrow or 1, revers and 1 or #small_arrow, revers and -1 or 1 do
-						gpu.set(x, y, small_arrow[i])
-						y = y + 1
-					end
-				end
-			
-				local arrowsUp = 2
-				local arrowsDown = ry - 4
-				local arrow1 = 5
-				local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
-				local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
-				local arrow4 = rx - (small_arrow_sizeX - 1) - 4
-			
-				gpu.setBackground(backgroundColor)
-				gpu.setForeground(pointColor)
-				gpu.fill(1, 1, rx, ry, " ")
-		
-				gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
-				gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
-		
-				drawArrow(arrow1, arrowsUp, false)
-				drawArrow(arrow2, arrowsUp, false)
-				drawArrow(arrow3, arrowsUp, false)
-				drawArrow(arrow4, arrowsUp, false)
-		
-				drawArrow(arrow1, arrowsDown, true)
-				drawArrow(arrow2, arrowsDown, true)
-				drawArrow(arrow3, arrowsDown, true)
-				drawArrow(arrow4, arrowsDown, true)
+				drawTimeButtonsBase(dateColor)
+			end,
+			event = function(eventData)
+				
+			end
+		},
+		{
+			draw = function()
+				drawTimeButtonsBase(yearColor)
 			end,
 			event = function(eventData)
 				
@@ -382,4 +399,4 @@ end
 
 --gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_wifi, image_time, image_shutdown}, {boot, gui_menu_wifi, gui_menu_time, computer.shutdown})
 --gui_menu("MENU", {"boot", "shutdown"}, {image_boot, image_shutdown}, {boot, computer.shutdown})
-gui_menu("MENU", {"boot", "wifi", "time", "shutdown"}, {image_boot, image_time, image_shutdown}, {boot, gui_menu_time, computer.shutdown})
+gui_menu("MENU", {"boot", "time", "shutdown"}, {image_boot, image_time, image_shutdown}, {boot, gui_menu_time, computer.shutdown})
