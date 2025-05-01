@@ -441,6 +441,7 @@ local function gui_menu_time()
         end
 
         if fill then
+            gpu.setBackground(backgroundColor)
             gpu.fill(pos - 1, numberLine, #image_num_0[1], #image_num_0, " ")
         end
         drawImage(pos - 1, numberLine, images_number[number], color)
