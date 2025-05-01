@@ -384,9 +384,7 @@ local function gui_list(points)
 					break
 				end
 			else
-				if points[current]:event(eventData) then
-                    redraw()
-                end
+				points[current]:event(eventData)
 			end
 		end
 	end
@@ -430,7 +428,7 @@ local function gui_menu_time()
         drawArrow(arrow4, arrowsDown, true)
     end
 
-    local function drawNumber(color, index, number)
+    local function drawNumber(color, index, number, fill)
         local pos
         if index == 1 then
             pos = arrow1
@@ -442,6 +440,9 @@ local function gui_menu_time()
             pos = arrow4
         end
 
+        if fill then
+            gpu.fill(pos - 1, numberLine, #image_num_0[1], #image_num_0, backgroundColor)
+        end
         drawImage(pos - 1, numberLine, images_number[number], color)
     end
 
@@ -457,7 +458,7 @@ local function gui_menu_time()
         centerSet(ry - 1, title, 21, rx - 7 - 3 - 20)
     end
 
-    local function eventHandle(eventData, list)
+    local function eventHandle(color, eventData, list)
         local index
         local side
         
@@ -487,7 +488,7 @@ local function gui_menu_time()
             list[index] = list[index] + side
             if list[index] < 0 then list[index] = 9 end
             if list[index] > 9 then list[index] = 0 end
-            return true
+            drawNumber(color, index, list[index], true)
         end
     end
 
@@ -503,7 +504,7 @@ local function gui_menu_time()
                 drawTitle(timeColor, "time")
 			end,
 			event = function(self, eventData)
-				return eventHandle(eventData, timeList)
+				eventHandle(timeColor, eventData, timeList)
 			end
 		},
 		{
@@ -513,7 +514,7 @@ local function gui_menu_time()
                 drawTitle(dateColor, "date")
 			end,
 			event = function(self, eventData)
-				return eventHandle(eventData, dateList)
+				eventHandle(dateColor, eventData, dateList)
 			end
 		},
 		{
@@ -523,7 +524,7 @@ local function gui_menu_time()
                 drawTitle(yearColor, "year")
 			end,
 			event = function(self, eventData)
-				return eventHandle(eventData, yearList)
+				eventHandle(yearColor, eventData, yearList)
 			end
 		}
 	})
