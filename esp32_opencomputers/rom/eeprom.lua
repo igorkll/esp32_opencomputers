@@ -408,14 +408,15 @@ local function gui_menu_time()
     local arrow2 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + -7
     local arrow3 = ((rx / 2) - (small_arrow_sizeX / 2)) + 1 + 7
     local arrow4 = rx - (small_arrow_sizeX - 1) - 4
+    local numberLine = arrowsUp + 3
 
     local function drawTimeButtonsBase(color)
         gpu.setBackground(backgroundColor)
         gpu.setForeground(color)
 
         gpu.fill(1, 1, rx, ry, " ")
-        gpu.fill(rx / 2, arrowsUp + 3, 2, 6, "█")
-        gpu.fill(rx / 2, arrowsUp + 4, 2, 4, " ")
+        gpu.fill(rx / 2, numberLine, 2, 6, "█")
+        gpu.fill(rx / 2, numberLine + 1, 2, 4, " ")
 
         drawArrow(arrow1, arrowsUp, false)
         drawArrow(arrow2, arrowsUp, false)
@@ -428,7 +429,18 @@ local function gui_menu_time()
     end
 
     local function drawNumber(color, index, number)
-        drawImage(images_number)
+        local pos
+        if index == 1 then
+            pos = arrow1
+        elseif index == 2 then
+            pos = arrow2
+        elseif index == 3 then
+            pos = arrow3
+        elseif index == 4 then
+            pos = arrow4
+        end
+
+        drawImage(pos - 1, numberLine, images_number, color)
     end
 
     local function drawNumbers(color, list)
@@ -454,7 +466,7 @@ local function gui_menu_time()
 		{
 			draw = function()
 				drawTimeButtonsBase(dateColor)
-                drawNumbers(timeColor, dateList)
+                drawNumbers(dateColor, dateList)
 			end,
 			event = function(eventData)
 				
@@ -463,7 +475,7 @@ local function gui_menu_time()
 		{
 			draw = function()
 				drawTimeButtonsBase(yearColor)
-                drawNumbers(timeColor, yearList)
+                drawNumbers(yearColor, yearList)
 			end,
 			event = function(eventData)
 				
