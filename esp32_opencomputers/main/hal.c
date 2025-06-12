@@ -281,7 +281,7 @@ typedef struct {
 } CharCacheData;
 
 static int _hashmap_free(const void *key, size_t ksize, uintptr_t value, void *usr) {
-	void* chardata = value;
+	void* chardata = (void*)value;
 	free(key);
 	free(chardata);
 	return 0;
