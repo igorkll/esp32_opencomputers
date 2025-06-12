@@ -1,4 +1,5 @@
 # ESP32 - opencomputers emulator
+## recommended esp-idf version: v5.4.1
 * emulates opencomputers on esp32
 * the original opencomputers font
 * sound is supported
